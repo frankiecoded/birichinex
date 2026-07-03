@@ -1,0 +1,6 @@
+{
+  "name": "Portmetals Africa",
+  "description": "Africa's leading wholesale ecosystem for fashion entrepreneurship, business growth academy, and Europe-Africa trade.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
