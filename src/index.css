@@ -1,11 +1,114 @@
 @import "tailwindcss";
 
+/* ============================================
+   CSS @property DECLARATIONS
+   Animated custom properties for premium effects
+   ============================================ */
+
+@property --glare-x {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+
+@property --glare-y {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+
+@property --glare-opacity {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --shimmer-position {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: -100%;
+}
+
+@property --ambient-rotate {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --float-y {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --pulse-scale {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --glass-frost {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0.72;
+}
+
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --color-surface: #f5f5f7;
+  --font-sans: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacFont, "Inter", "Segoe UI", sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+
+  /* ─── Apple 2026 Surface System ─── */
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f5f5f7;
+  --color-surface-tertiary: #fbfbfd;
   --color-ink: #1d1d1f;
-  --color-brand: #d97706;
-  --color-brand-light: #fbbf24;
+  --color-ink-secondary: #6e6e73;
+  --color-ink-tertiary: #86868b;
+  --color-ink-quaternary: #aeaeb2;
+
+  /* ─── BirichiNex Brand ─── */
+  --color-brand: #d4af37;
+  --color-brand-light: #f3e5ab;
+  --color-brand-dark: #aa7c11;
+  --color-brand-muted: rgba(212, 175, 55, 0.12);
+
+  /* ─── Liquid Glass Material Tokens ─── */
+  --color-glass: rgba(255, 255, 255, 0.72);
+  --color-glass-border: rgba(0, 0, 0, 0.06);
+  --color-glass-shadow: rgba(0, 0, 0, 0.04);
+  --color-glass-dark: rgba(28, 28, 30, 0.82);
+  --color-glass-dark-border: rgba(255, 255, 255, 0.08);
+
+  /* ─── Semantic Colors ─── */
+  --color-success: #30d158;
+  --color-warning: #ff9f0a;
+  --color-error: #ff453a;
+  --color-info: #64d2ff;
+
+  /* ─── Apple Concentric Radii (continuous squircle) ─── */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+  --radius-full: 9999px;
+
+  /* ─── Apple Shadows (restraint principle: almost no elevation shadows) ─── */
+  --shadow-glass: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-glass-lg: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-glass-xl: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+  /* ─── Apple Spring Physics ─── */
+  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @layer base {
@@ -13,98 +116,492 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-[#f5f5f7] text-[#1d1d1f];
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    @apply bg-surface-secondary text-ink overflow-x-hidden;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "kern";
+    font-size: 17px;
+    line-height: 1.5;
   }
 
   ::selection {
-    @apply bg-amber-500 text-white;
+    background: rgba(212, 175, 55, 0.25);
+    color: #1d1d1f;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
   }
 }
 
 @layer utilities {
-  .glass-panel {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-  }
+  /* ============================================
+     LIQUID GLASS MATERIAL SYSTEM — THREE-LAYER COMPOSITES
+     Layer 1: Refraction (frosted glass + backdrop blur)
+     Layer 2: Chromatic rim (inset highlight + subtle border)
+     Layer 3: Specular sheen (diagonal light reflection)
+     ============================================ */
 
-  .glass-dark {
-    background: rgba(24, 24, 27, 0.75);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .perspective-1000 {
-    perspective: 1000px;
-  }
-
-  .preserve-3d {
-    transform-style: preserve-3d;
-  }
-
-  .text-gradient-brand {
-    background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .hero-gradient {
-    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(217, 119, 6, 0.15), transparent),
-      radial-gradient(ellipse 60% 50% at 90% 50%, rgba(251, 191, 36, 0.08), transparent),
-      linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
-  }
-
-  .image-overlay-gradient {
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
-  }
-
-  .card-shine {
+  /* ─── Light Glass — Content Cards, Panels ─── */
+  .glass-material {
     position: relative;
-    overflow: hidden;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    -webkit-backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.2),
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 0 0 0.5px rgba(0, 0, 0, 0.03);
   }
 
-  .card-shine::before {
+  .glass-material::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(255, 255, 255, 0.15) 100%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-apple);
+  }
+
+  .glass-material:hover::before {
+    opacity: 1;
+  }
+
+  .glass-material-lg {
+    position: relative;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(12px) saturate(200%) brightness(1.08);
+    -webkit-backdrop-filter: blur(12px) saturate(200%) brightness(1.08);
+    border: 0.5px solid rgba(0, 0, 0, 0.06);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.3),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      0 0 0 0.5px rgba(0, 0, 0, 0.03);
+  }
+
+  .glass-material-lg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0) 35%,
+      rgba(255, 255, 255, 0) 65%,
+      rgba(255, 255, 255, 0.2) 100%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-apple);
+  }
+
+  .glass-material-lg:hover::before {
+    opacity: 1;
+  }
+
+  /* ─── Dark Glass — Navigation, Overlays ─── */
+  .glass-dark-material {
+    position: relative;
+    background: rgba(28, 28, 30, 0.82);
+    backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    -webkit-backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.2),
+      0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-dark-material::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  /* ─── Brand Glass — Gold Accent Panels ─── */
+  .glass-brand {
+    position: relative;
+    background: rgba(212, 175, 55, 0.08);
+    backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    -webkit-backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    border: 0.5px solid rgba(212, 175, 55, 0.2);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 0 rgba(212, 175, 55, 0.1),
+      0 4px 24px rgba(212, 175, 55, 0.08);
+  }
+
+  .glass-brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  /* ─── Sidebar Glass — Navigation Sidebar ─── */
+  .glass-sidebar {
+    position: relative;
+    background: rgba(245, 245, 247, 0.82);
+    backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    -webkit-backdrop-filter: blur(8px) saturate(180%) brightness(1.1);
+    border-right: 0.5px solid rgba(0, 0, 0, 0.06);
+    box-shadow:
+      inset -1px 0 0 0 rgba(255, 255, 255, 0.4),
+      1px 0 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .glass-sidebar::before {
     content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(
-      105deg,
-      transparent 40%,
-      rgba(255, 255, 255, 0.12) 45%,
-      rgba(255, 255, 255, 0.06) 50%,
-      transparent 55%
+      180deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0) 100%
     );
-    transform: translateX(-100%);
-    transition: transform 0.6s ease;
     pointer-events: none;
-    z-index: 1;
   }
 
-  .card-shine:hover::before {
-    transform: translateX(100%);
+  /* ─── Scroll Edge Effects — Apple-style content fade ─── */
+  .scroll-edge-top {
+    mask-image: linear-gradient(to bottom, transparent, black 20px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 20px);
+  }
+
+  .scroll-edge-bottom {
+    mask-image: linear-gradient(to top, transparent, black 20px);
+    -webkit-mask-image: linear-gradient(to top, transparent, black 20px);
+  }
+
+  /* ============================================
+     APPLE 2026 TYPOGRAPHY SYSTEM
+     Body: 17px (Apple's HIG standard)
+     Weight 500 reserved for active states
+     Tight letter-spacing on display sizes
+     ============================================ */
+
+  .text-display {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .text-headline {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.12;
+  }
+
+  .text-title {
+    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .text-body {
+    font-size: 1.0625rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+
+  .text-callout {
+    font-size: 0.9375rem;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  .text-subhead {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .text-caption {
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+  }
+
+  .text-overline {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  /* ============================================
+     CONCENTRIC RADIUS SYSTEM
+     Apple's continuous squircle approximation
+     Curvature scales with element size
+     ============================================ */
+
+  .radius-content {
+    border-radius: var(--radius-lg);
+  }
+
+  .radius-card {
+    border-radius: var(--radius-xl);
+  }
+
+  .radius-panel {
+    border-radius: var(--radius-2xl);
+  }
+
+  .radius-sheet {
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  }
+
+  /* ============================================
+     SPATIAL LAYERS — Apple's Depth System
+     Content layer vs UI layer
+     ============================================ */
+
+  .layer-content { position: relative; z-index: 0; }
+  .layer-controls { position: relative; z-index: 10; }
+  .layer-overlay { position: relative; z-index: 20; }
+  .layer-modal { position: relative; z-index: 30; }
+  .layer-toast { position: relative; z-index: 40; }
+
+  /* ============================================
+     AMBIENT GRADIENT ORBS
+     Soft colored light sources for depth
+     ============================================ */
+
+  .ambient-orb-gold {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    animation: orbFloat 20s ease-in-out infinite;
+  }
+
+  .ambient-orb-blue {
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(100, 210, 255, 0.12) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    animation: orbFloatInverse 25s ease-in-out infinite;
+  }
+
+  .ambient-orb-green {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(48, 209, 88, 0.1) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    animation: orbFloat 30s ease-in-out infinite;
+  }
+
+  .ambient-orb-purple {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(175, 82, 222, 0.1) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    animation: orbFloatInverse 22s ease-in-out infinite;
+  }
+
+  /* ============================================
+     PRODUCT IMAGE SHADOWS
+     Apple's one exception to shadow restraint:
+     Only product imagery gets elevated shadows
+     ============================================ */
+
+  .shadow-product {
+    box-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px;
+  }
+
+  .shadow-product-lg {
+    box-shadow: rgba(0, 0, 0, 0.3) 6px 10px 40px;
+  }
+
+  /* ============================================
+     APPLE-STYLE INTERACTIVE STATES
+     No hover shadows — elevation through
+     surface-color change and transform only
+     ============================================ */
+
+  .interactive-lift {
+    transition:
+      transform 0.3s var(--ease-apple),
+      background-color 0.3s var(--ease-apple),
+      border-color 0.3s var(--ease-apple);
+  }
+
+  .interactive-lift:hover {
+    transform: translateY(-2px) scale(1.005);
+  }
+
+  .interactive-lift:active {
+    transform: translateY(0) scale(0.995);
+    transition-duration: 0.1s;
+  }
+
+  .interactive-scale {
+    transition:
+      transform 0.2s var(--ease-spring),
+      background-color 0.3s var(--ease-apple);
+  }
+
+  .interactive-scale:hover {
+    transform: scale(1.02);
+  }
+
+  .interactive-scale:active {
+    transform: scale(0.98);
+    transition-duration: 0.1s;
+  }
+
+  /* ============================================
+     ANIMATION UTILITIES
+     Apple spring curves, staggered reveals
+     ============================================ */
+
+  .animate-in {
+    animation: animateIn 0.5s var(--ease-apple) forwards;
+  }
+
+  .animate-in-up {
+    animation: animateInUp 0.5s var(--ease-apple) forwards;
+  }
+
+  .animate-in-scale {
+    animation: animateInScale 0.4s var(--ease-spring) forwards;
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.4s var(--ease-apple) forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.4s var(--ease-apple) forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.4s var(--ease-apple) forwards;
+  }
+
+  .animate-pulse-soft {
+    animation: pulseSoft 3s ease-in-out infinite;
   }
 
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
 
-  .animate-float-delayed {
-    animation: float 6s ease-in-out 2s infinite;
+  /* Staggered reveal delays (Apple-style) */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-7 { animation-delay: 0.35s; }
+  .stagger-8 { animation-delay: 0.4s; }
+
+  /* ============================================
+     CONCENTRIC BORDERS
+     ============================================ */
+
+  .border-concentric {
+    border-radius: inherit;
+    border: 0.5px solid rgba(0, 0, 0, 0.06);
   }
 
-  .animate-pulse-soft {
-    animation: pulseSoft 3s ease-in-out infinite;
+  .border-brand-subtle {
+    border: 0.5px solid rgba(212, 175, 55, 0.2);
+  }
+
+  /* ============================================
+     FOCUS STATES (Accessibility)
+     ============================================ */
+
+  .focus-ring:focus-visible {
+    outline: 2px solid rgba(212, 175, 55, 0.6);
+    outline-offset: 2px;
+    border-radius: inherit;
+  }
+
+  /* ============================================
+     PERFORMANCE
+     ============================================ */
+
+  .will-change-transform { will-change: transform; }
+  .will-change-opacity { will-change: opacity; }
+
+  .content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
   }
 
   .scrollbar-hide {
@@ -115,38 +612,535 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* ============================================
+     MOBILE
+     ============================================ */
+
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ============================================
+     SHIMMER LOADING STATE
+     ============================================ */
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.04) 0%,
+      rgba(0, 0, 0, 0.08) 50%,
+      rgba(0, 0, 0, 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* ============================================
+     GLASS DIVIDER
+     ============================================ */
+
+  .glass-divider {
+    height: 0.5px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.08) 20%,
+      rgba(0, 0, 0, 0.08) 80%,
+      transparent 100%
+    );
+  }
+
+  /* ============================================
+     INSET RIM HIGHLIGHT
+     Apple's signature glass rim lighting
+     ============================================ */
+
+  .rim-highlight {
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .rim-highlight-dark {
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.2);
+  }
+
+  /* ============================================
+     SPECULAR SHEEN
+     Diagonal light reflection on glass
+     ============================================ */
+
+  .specular-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0) 70%,
+      rgba(255, 255, 255, 0.1) 100%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-apple);
+  }
+
+  .specular-sheen:hover::after {
+    opacity: 1;
+  }
+
+  /* ============================================
+     CHROMATIC ABERRATION EDGES
+     Subtle prismatic effect on glass borders
+     ============================================ */
+
+  .chromatic-edge::after {
+    content: "";
+    position: absolute;
+    inset: -0.5px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 100, 100, 0.03) 0%,
+      rgba(100, 255, 100, 0.03) 33%,
+      rgba(100, 100, 255, 0.03) 66%,
+      rgba(255, 100, 100, 0.03) 100%
+    );
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 0.5px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s var(--ease-apple);
+  }
+
+  .chromatic-edge:hover::after {
+    opacity: 1;
+  }
+}
+
+@keyframes animateIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes animateInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes animateInScale {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-12px);
-  }
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes pulseSoft {
-  0%,
-  100% {
-    opacity: 0.6;
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, -40px) scale(1.1); }
+  66% { transform: translate(-40px, 60px) scale(0.9); }
+}
+
+@keyframes orbFloatInverse {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-80px, 50px) scale(1.15); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.15); }
+}
+
+/* ============================================
+   @property-DRIVEN ANIMATED GRADIENTS
+   ============================================ */
+
+.animated-gradient-border {
+  position: relative;
+  border-radius: 20px;
+}
+
+.animated-gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 25%,
+    rgba(212, 175, 55, 0.4) 50%,
+    transparent 75%
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  padding: 1px;
+  animation: borderRotate 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes borderRotate {
+  to { --border-angle: 360deg; }
+}
+
+/* ============================================
+   SCROLL-DRIVEN ANIMATIONS (CSS)
+   ============================================ */
+
+@supports (animation-timeline: scroll()) {
+  .scroll-reveal {
+    animation: scrollReveal 1s ease both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 100%;
   }
-  50% {
-    opacity: 1;
+
+  .scroll-fade-up {
+    animation: scrollFadeUp 1s ease both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 80%;
+  }
+
+  .scroll-scale-in {
+    animation: scrollScaleIn 1s ease both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 80%;
+  }
+
+  .scroll-parallax-slow {
+    animation: scrollParallaxSlow 1s linear both;
+    animation-timeline: scroll();
+    animation-range: 0% 100%;
+  }
+
+  .scroll-parallax-fast {
+    animation: scrollParallaxFast 1s linear both;
+    animation-timeline: scroll();
+    animation-range: 0% 100%;
   }
 }
+
+@supports not (animation-timeline: scroll()) {
+  .scroll-reveal,
+  .scroll-fade-up,
+  .scroll-scale-in,
+  .scroll-parallax-slow,
+  .scroll-parallax-fast {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes scrollReveal {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes scrollFadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scrollScaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scrollParallaxSlow {
+  from { transform: translateY(-30px); }
+  to { transform: translateY(30px); }
+}
+
+@keyframes scrollParallaxFast {
+  from { transform: translateY(-60px); }
+  to { transform: translateY(60px); }
+}
+
+/* ============================================
+   CONTAINER QUERIES
+   ============================================ */
+
+@container (min-width: 400px) {
+  .container-responsive {
+    padding: 1.5rem;
+  }
+}
+
+@container (min-width: 600px) {
+  .container-responsive {
+    padding: 2rem;
+  }
+}
+
+@container (min-width: 800px) {
+  .container-responsive {
+    padding: 2.5rem;
+  }
+}
+
+/* ============================================
+   color-mix() UTILITIES
+   ============================================ */
+
+.color-mix-brand-10 {
+  background-color: color-mix(in srgb, var(--color-brand) 10%, transparent);
+}
+
+.color-mix-brand-20 {
+  background-color: color-mix(in srgb, var(--color-brand) 20%, transparent);
+}
+
+.color-mix-ink-5 {
+  background-color: color-mix(in srgb, var(--color-ink) 5%, transparent);
+}
+
+.color-mix-ink-8 {
+  background-color: color-mix(in srgb, var(--color-ink) 8%, transparent);
+}
+
+/* ============================================
+   3D CARD DEPTH SYSTEM
+   ============================================ */
+
+.card-3d {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+}
+
+.card-3d-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-3d:hover .card-3d-inner {
+  transform: translateZ(20px);
+}
+
+/* ============================================
+   AMBIENT GLOW SYSTEM
+   ============================================ */
+
+.glow-brand {
+  box-shadow:
+    0 0 20px rgba(212, 175, 55, 0.15),
+    0 0 60px rgba(212, 175, 55, 0.05);
+}
+
+.glow-brand-hover:hover {
+  box-shadow:
+    0 0 30px rgba(212, 175, 55, 0.25),
+    0 0 80px rgba(212, 175, 55, 0.1);
+}
+
+.glow-brand-active {
+  box-shadow:
+    0 0 40px rgba(212, 175, 55, 0.3),
+    0 0 100px rgba(212, 175, 55, 0.15),
+    inset 0 0 20px rgba(212, 175, 55, 0.05);
+}
+
+/* ============================================
+   ADVANCED GLASS EFFECTS
+   ============================================ */
+
+.glass-ultra {
+  position: relative;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(200%) brightness(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(200%) brightness(1.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.04),
+    0 0 0 0.5px rgba(0, 0, 0, 0.02);
+}
+
+.glass-ultra::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0) 70%,
+    rgba(255, 255, 255, 0.25) 100%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* ============================================
+   NOISE TEXTURE OVERLAY
+   ============================================ */
+
+.noise-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
+/* ============================================
+   SHIMMER + SKELETON LOADING
+   ============================================ */
+
+.shimmer-advanced {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.02) 0%,
+      rgba(0, 0, 0, 0.06) 50%,
+      rgba(0, 0, 0, 0.02) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.02) 100%
+    );
+  background-size: 200% 100%, 100% 100%;
+  animation: shimmerAdvanced 2s ease-in-out infinite;
+}
+
+@keyframes shimmerAdvanced {
+  0% { background-position: -200% 0, 0 0; }
+  100% { background-position: 200% 0, 0 0; }
+}
+
+/* ============================================
+   TEXT GRADIENT UTILITIES
+   ============================================ */
+
+.text-gradient-brand {
+  background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-glass {
+  background: linear-gradient(135deg, #1d1d1f 0%, #6e6e73 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   PREMIUM HOVER EFFECTS
+   ============================================ */
+
+.hover-lift-glow {
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hover-lift-glow:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.08),
+    0 0 40px rgba(212, 175, 55, 0.06);
+}
+
+.hover-magnify {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hover-magnify:hover {
+  transform: scale(1.03);
+}
+
+/* ============================================
+   LAYERED DEPTH SYSTEM
+   ============================================ */
+
+.depth-1 {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 0 0 0.5px rgba(0, 0, 0, 0.02);
+}
+
+.depth-2 {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03),
+    0 0 0 0.5px rgba(0, 0, 0, 0.02);
+}
+
+.depth-3 {
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.05),
+    0 8px 24px rgba(0, 0, 0, 0.04),
+    0 16px 48px rgba(0, 0, 0, 0.03),
+    0 0 0 0.5px rgba(0, 0, 0, 0.02);
+}
+
+.depth-4 {
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.05),
+    0 32px 96px rgba(0, 0, 0, 0.04),
+    0 0 0 0.5px rgba(0, 0, 0, 0.02);
+}
+
+/* ============================================
+   PREFERS-REDUCED-MOTION
+   ============================================ */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -159,5 +1153,52 @@
 
   html {
     scroll-behavior: auto;
+  }
+
+  .scroll-reveal,
+  .scroll-fade-up,
+  .scroll-scale-in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================
+   TOUCH DEVICE HOVER GUARD
+   Disable hover effects on touch devices
+   ============================================ */
+
+@media (hover: none) {
+  .interactive-lift:hover,
+  .glass-material:hover::before,
+  .glass-material-lg:hover::before,
+  .hover-lift-glow:hover,
+  .hover-magnify:hover {
+    transform: none;
+    box-shadow: inherit;
+  }
+  .interactive-lift:hover::after,
+  .interactive-lift:hover::before {
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   MOBILE GLASS REDUCTION
+   Reduce backdrop blur on mobile for performance
+   ============================================ */
+
+@media (max-width: 768px) {
+  .glass-material,
+  .glass-material-lg,
+  .glass-dark-material,
+  .glass-brand,
+  .glass-sidebar {
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+  }
+  .glass-ultra {
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
   }
 }
