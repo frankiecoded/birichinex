@@ -1,0 +1,218 @@
+[
+  {
+    "id": "ds-mi-region-overview",
+    "topic": "Market — East Africa commerce landscape",
+    "subtopic": "One region, hundreds of millions of consumers",
+    "keywords": ["market", "east africa", "kenya", "tanzania", "uganda", "rwanda", "eac", "commerce", "region", "opportunity"],
+    "content": "East Africa is one of the world's fastest-growing consumer regions — a young, mobile-first population across Kenya, Tanzania, Uganda and Rwanda, increasingly connected by the East African Community's single market. Commerce is a mix of modern retail, vibrant informal trade, and fast-growing digital channels. The opportunity is serving this population with what it actually wants: fair prices, trustworthy sellers, and delivery that arrives. BirichiNex is built for exactly this blend — mobile money, multi-currency, cross-border logistics and trust tools. Integrate: use Analytics to watch which markets and products respond, Currency to price in the buyer's currency, and Logistics to serve beyond your city.",
+    "tips": [
+      "Your next million customers speak the language of mobile money, not cards",
+      "Regional trade lets you arbitrage supply and demand across markets",
+      "Youth + smartphone adoption is expanding the digital buyer pool yearly",
+      "Trust is the scarcest asset — sellers who build it win"
+    ],
+    "examples": [
+      "A Dar seller adds a Nairobi listing in KES and a Kampala listing in UGX — three markets from one storefront."
+    ],
+    "relatedTopics": ["ds-f-currency", "ds-f-analytics", "ds-mkt-cross-border-growth", "ds-mi-cross-border"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-mobile-money",
+    "topic": "Market — The mobile money economy",
+    "subtopic": "M-Pesa is the backbone of East African payments",
+    "keywords": ["market", "mpesa", "mobile money", "mtn momo", "airtel money", "tigo", "payments", "penetration", "cashless"],
+    "content": "Mobile money — M-Pesa leading in Kenya and Tanzania, MTN MoMo and Airtel Money elsewhere — is how East Africans actually pay. Penetration is among the highest in the world, and many buyers have never used a card. That changes commerce: a checkout without mobile money is a checkout without most of your market. BirichiNex Payments supports mobile money so buyers pay the way they live. Integrate: enable mobile-money payment collection → publish your till prominently → expect most orders to settle this way → reconcile against your mobile-money statement in Finance.",
+    "tips": [
+      "If your checkout doesn't accept mobile money, most buyers can't pay",
+      "Publish the till number at checkout and in chat — trust converts",
+      "Confirm the payment before dispatch; the statement is the proof",
+      "Cards serve the international and premium niche; mobile money serves everyone"
+    ],
+    "examples": [
+      "A seller's conversion jumps when M-Pesa becomes the default payment method — buyers stop hesitating at checkout."
+    ],
+    "relatedTopics": ["ds-f-payments", "ds-f-money-finance", "ds-fin-mpesa", "ds-mi-digital-adoption"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-cross-border",
+    "topic": "Market — Regional trade patterns",
+    "subtopic": "The EAC single market is a trader's multiplier",
+    "keywords": ["market", "cross border", "eac", "tariff", "regional trade", "import", "export", "single market", "border"],
+    "content": "The East African Community gives member states a single market: goods move between Kenya, Tanzania, Uganda and Rwanda under a common external tariff and coordinated customs. That means the price differences between markets are real opportunities — a product scarce in Kampala commands more than one plentiful in Dar. Trade flows follow demand gaps and currency swings. BirichiNex models this reality with multi-currency pricing and Logistics import/export customs tracking. Integrate: watch price gaps between markets via Analytics and sourcing → list in the buyer's currency → ship through Logistics with customs status → include duty in landed cost so the opportunity is genuinely profitable.",
+    "tips": [
+      "Look for what's scarce in one market and cheap in another",
+      "The border is a process to master, not a wall",
+      "Currency swings can create or destroy cross-border margin — monitor them",
+      "One mastered corridor beats ten half-explored countries"
+    ],
+    "examples": [
+      "A trader notices electronics pricing is thin in Arusha, sources in Nairobi, and builds a steady two-city line."
+    ],
+    "relatedTopics": ["ds-f-currency", "ds-f-logistics", "ds-m-cross-border", "ds-mi-trade-hubs"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-consumer",
+    "topic": "Market — How East Africans buy",
+    "subtopic": "Price-aware, relationship-driven, proof-seeking",
+    "keywords": ["market", "consumer", "buying", "behaviour", "price", "trust", "informal", "relationship", "proof"],
+    "content": "East African consumers are price-aware, relationship-driven, and increasingly digital. Many decisions start informal — a recommendation, a WhatsApp message, a street vendor — then move to proof: price, photos, delivery time, and 'has anyone bought from them?'. Trust is the conversion factor. BirichiNex maps onto this psychology: Storefront listings give the proof, Live Map tracking shows reliability, Community reviews carry word of mouth, and loyalty keeps relationships warm. Integrate: lead with clear price and real photos → show tracked-delivery proof → collect and display reviews → answer chats fast (relationships close deals) → reward repeat buyers.",
+    "tips": [
+      "The first purchase is about trust; the second is about habit",
+      "Fast chat replies are the modern 'come see my stall'",
+      "Reviews and delivery proof are your shop front",
+      "Price is the entry; relationship is the reason they return"
+    ],
+    "examples": [
+      "A seller who replies in under 10 minutes and shows delivery proof closes at double the rate of a slower, prouder competitor."
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-f-orders-live", "ds-f-community", "ds-mkt-targeting"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-trade-hubs",
+    "topic": "Market — Where the trade lives",
+    "subtopic": "The cities and corridors that move goods",
+    "keywords": ["market", "trade hubs", "nairobi", "dar es salaam", "kampala", "mombasa", "arusha", "kigali", "corridor"],
+    "content": "Trade clusters around hubs: Nairobi (Kenya's commerce capital), Dar es Salaam and Mombasa (the ports), Kampala (Uganda's gateway), Arusha (the corridor junction) and Kigali (the region's frontier). Ports and corridors (the Northern and Central Corridors) define supply routes, while cities define demand. A seller's geography is a strategy: where you source, where you sell, and where the demand gaps are. BirichiNex Logistics and the Live Map make serving multiple hubs practical. Integrate: map your source and demand hubs → price per market with Currency → ship via Logistics routes → use Analytics to compare performance across cities → expand hub by hub, not everywhere at once.",
+    "tips": [
+      "Source near ports, sell near demand — know which is which",
+      "A corridor position (like Arusha) is a logistics advantage",
+      "Test a new hub with a small listing before committing stock",
+      "Each hub has its own price level and habits — learn them"
+    ],
+    "examples": [
+      "A seller in Arusha sources from Dar's port and sells into Nairobi and Kampala — hub arbitrage without a warehouse anywhere."
+    ],
+    "relatedTopics": ["ds-f-logistics", "ds-f-currency", "ds-f-analytics", "ds-mi-region-overview"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-sectors",
+    "topic": "Market — High-demand categories",
+    "subtopic": "Where the region's money flows",
+    "keywords": ["market", "sectors", "demand", "electronics", "clothing", "mitumba", "home goods", "agri", "phone", "fashion"],
+    "content": "Recurring demand centres on a few categories: electronics (phones and accessories are the region's most wanted), clothing including the vast second-hand (mitumba) trade, home and kitchen goods, personal care, and agricultural inputs/tools in rural corridors. Demand also skews practical and value-seeking. BirichiNex lets sellers follow this demand with data rather than guesswork. Integrate: let Analytics and Marketplace best-sellers reveal what's actually moving → source those categories via Deals/Procurement → use bales for the clothing trade → price for the practical buyer → restock winners before they sell out.",
+    "tips": [
+      "Phones and accessories have the deepest, most consistent demand",
+      "Mitumba is a volume game — grade and pricing decide the winner",
+      "Home goods ride the 'setting up home' moment — big, recurring purchases",
+      "Follow best-seller data, not fashion intuition"
+    ],
+    "examples": [
+      "Analytics shows accessories outselling everything else; the seller reallocates restock and revenue climbs 30%."
+    ],
+    "relatedTopics": ["ds-f-analytics", "ds-f-shopping-bales", "ds-f-shopping-deals", "ds-m-retail-margin"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-seasonality",
+    "topic": "Market — Buying seasons & cycles",
+    "subtopic": "Trade has a rhythm; ride it",
+    "keywords": ["market", "seasonality", "seasons", "harvest", "back to school", "holidays", "december", "ramadan", "cycle"],
+    "content": "Demand follows the calendar: back-to-school spikes, holiday peaks (December, Eid/Ramadan), harvest and salary cycles that drive rural and urban spending at different times, and seasonal weather (rains that slow delivery, heat that boosts certain goods). Sellers who read the rhythm buy before the spike and cash in at the peak. BirichiNex Analytics carries your own sales history across time, revealing YOUR seasonality. Integrate: review monthly sales patterns in Analytics → stock up ahead of known peaks → align promotions (bundles, deals) to the season → plan cash for slower months → let Routines remind you when it's time to prep.",
+    "tips": [
+      "Stock the peak before the peak — late stock is discount stock",
+      "December and Eid move volume; prepare inventory and help",
+      "Slow months are for planning, fixing and learning — not panic",
+      "Your own sales history beats generic 'busy season' advice"
+    ],
+    "examples": [
+      "A seller who stocks school supplies by late December catches the January spike at full margin instead of chasing restocks mid-surge."
+    ],
+    "relatedTopics": ["ds-f-analytics", "ds-f-shopping-deals", "ds-f-routines", "ds-m-arbitrage-deals"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-currency-market",
+    "topic": "Market — Currency & buying power",
+    "subtopic": "Rates move margins — watch them",
+    "keywords": ["market", "currency", "exchange rate", "kes", "tzs", "ugx", "rwf", "inflation", "buying power"],
+    "content": "Regional currencies (KES, TZS, UGX, RWF) move against each other and against the dollar, which shapes both import costs and cross-border margins. Inflation affects how quickly a shilling loses buying power. For traders, this means: price in your cost currency, sell in the buyer's currency, and monitor the rate so today's margin isn't tomorrow's loss. BirichiNex Currency handles multi-market pricing and lets you track your home-currency result. Integrate: quote in the buyer's currency at checkout → compute your real margin in home currency after conversion → review FX movement monthly in Analytics → add a small FX buffer on cross-border lines.",
+    "tips": [
+      "Never price cross-border on a stale rate",
+      "Convert when the rate suits you, not just when asked",
+      "A 2-3% FX buffer absorbs normal movement",
+      "Home-currency margin is the only margin that counts"
+    ],
+    "examples": [
+      "A seller reviews the UGX/KES rate monthly and adjusts Kampala prices; a 4% rate move becomes profit rather than surprise loss."
+    ],
+    "relatedTopics": ["ds-f-currency", "ds-f-analytics", "ds-fin-fx", "ds-mi-cross-border"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-logistics-market",
+    "topic": "Market — Logistics reality on the ground",
+    "subtopic": "Last-mile, borders and the roads between",
+    "keywords": ["market", "logistics", "last mile", "roads", "borders", "delivery", "corridor", "infrastructure", "rider"],
+    "content": "Logistics in East Africa is improving but uneven: strong same-day capacity in cities, longer and less predictable routes between regions, border formalities that add days, and last-mile delivery that still leans on riders and agents rather than fully automated networks. The winning posture is realistic promises backed by tracking. BirichiNex Logistics and the Live Map turn this reality into a strength — every shipment has a status, route and ETA. Integrate: set delivery promises that match your actual route performance → create shipments in Logistics with carrier and status → track exceptions early on the Live Map → price shipping per route from real costs → publish honest ETAs and under-promise.",
+    "tips": [
+      "In town, speed is the weapon; between regions, honesty is",
+      "Border crossings need a day or two of buffer in every promise",
+      "A tracked shipment is trust; an untracked one is anxiety",
+      "Set ETA from your history, not from hope"
+    ],
+    "examples": [
+      "A seller promises '2-3 days, tracked' on a regional route and beats it consistently — delivery time becomes a marketing point."
+    ],
+    "relatedTopics": ["ds-f-logistics", "ds-f-orders-live", "ds-ops-shipping", "ds-mi-trade-hubs"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-trust",
+    "topic": "Market — The trust economy",
+    "subtopic": "In a low-trust market, proof is power",
+    "keywords": ["market", "trust", "reputation", "reviews", "proof", "scams", "verified", "credibility"],
+    "content": "Scams and counterfeits have made East African buyers cautious — which is exactly why trust is the strongest selling advantage available. Proof (real photos, tracking, reviews, delivery history) out-converts any advertising because it answers the buyer's core fear: 'will I get what I paid for?' BirichiNex is engineered around this: every order is tracked, deliveries show on the Live Map, and Community carries reputation. Integrate: show tracking and delivery proof at every opportunity → collect and display reviews → under-promise and over-deliver → never burn trust for one sale — it compounds → let the platform's record be your credibility.",
+    "tips": [
+      "A tracked order is worth a thousand promises",
+      "Display reviews and delivery proof prominently",
+      "One trust-breaking sale costs more than a dozen good ones",
+      "Verified, documented sellers own the market"
+    ],
+    "examples": [
+      "A seller's Live Map proof and reviews let them charge more than cheaper, untracked rivals — trust converts to margin."
+    ],
+    "relatedTopics": ["ds-f-orders-live", "ds-f-community", "ds-f-orders-track", "ds-mkt-brand"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-competition",
+    "topic": "Market — The competitive mix",
+    "subtopic": "You compete with street, supermarket and screen",
+    "keywords": ["market", "competition", "informal", "supermarket", "online", "competitor", "price", "differentiate"],
+    "content": "East African sellers compete on three fronts at once: informal street trade (lowest price, high trust-by-touch), modern retail and supermarkets (range, convenience), and a growing online channel (convenience, delivery). Trying to beat all three on price is a losing game. The winning position is usually trust + convenience + a defined niche. BirichiNex gives small sellers the professional-grade trust tools that used to belong to big retail — tracking, verified delivery, loyalty, structured listings. Integrate: define the niche you can win (speed, category, region) → compete on proof and convenience, not just price → use Loyalty to hold the customers the street can't → let Analytics show where you actually win.",
+    "tips": [
+      "Don't fight the street on price — fight it on proof and delivery",
+      "Big retail has range; you have speed and personal service",
+      "A defined niche beats a vague everything",
+      "Compete where your evidence is strongest"
+    ],
+    "examples": [
+      "A seller stops price-matching the street market and wins on 1-day tracked delivery instead — margins and sales both improve."
+    ],
+    "relatedTopics": ["ds-f-analytics", "ds-f-loyalty", "ds-f-orders-live", "ds-mkt-positioning"],
+    "category": "market-intelligence"
+  },
+  {
+    "id": "ds-mi-digital-adoption",
+    "topic": "Market — Digital adoption trends",
+    "subtopic": "The region's buyers are moving to screens fast",
+    "keywords": ["market", "digital", "smartphone", "social commerce", "online", "internet", "adoption", "social media"],
+    "content": "Smartphone adoption and affordable internet are pulling East African consumers into digital buying — often via social commerce (Instagram, TikTok, WhatsApp) before formal marketplaces. Buyers still want the platform benefits (proof, tracking, returns) even when they discover products on social. That mix is BirichiNex's home turf: social-driven discovery landing in a real storefront with real logistics. Integrate: use social channels as the shop window → send followers to your Storefront where they get tracked checkout → capture chat interest into CRM → treat every digital channel as an entry point into the same trusted system.",
+    "tips": [
+      "Discovery happens on social; conversion happens where trust exists",
+      "One link to a real storefront beats selling in chat chaos",
+      "Buyers research on the phone, then buy where it's easy and safe",
+      "Digital adoption widens your market — use it deliberately"
+    ],
+    "examples": [
+      "A seller's TikTok discovery funnel lands in a tracked Storefront checkout; followers convert because the buying is safer than a DM order."
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-f-crm", "ds-mkt-social", "ds-mi-mobile-money"],
+    "category": "market-intelligence"
+  }
+]

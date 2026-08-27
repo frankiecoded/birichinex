@@ -1,0 +1,236 @@
+[
+  {
+    "id": "ds-m-resell-bales",
+    "topic": "Making Money — Wholesale bales",
+    "subtopic": "The classic East Africa reselling play",
+    "keywords": ["make money", "bales", "resell", "mitumba", "wholesale", "sort", "retail", "profit"],
+    "content": "The fastest proven money-maker: buy a wholesale clothing bale (Shopping mode → Bales), sort the pieces by condition/style, and sell them individually or in mini-lots. A 45kg grade-A bale at ~TZS 700,000 typically yields 40-60 wearable pieces that retail for TZS 15,000-45,000 each — 2-3x return. Integrate: buy in Shopping mode with M-Pesa, check the cart/checkout for the tracking number, log the bale as inventory in Products, post the good pieces on your Marketplace Storefront, and watch orders flow into the Orders Live Map.",
+    "tips": [
+      "Grade A+ sells fast at premium; grade B/C suits budget markets — price accordingly",
+      "Start with one 25kg bale to learn sorting before risking bigger capital",
+      "Log unsold pieces as inventory items so they can sell online while you're away",
+      "Track your per-piece cost here — it makes pricing a formula, not a guess"
+    ],
+    "examples": [
+      "A Dar reseller buys a 45kg bale, sorts 52 pieces, posts the best 30 on the Storefront, sells 24 online and the rest to local vendors — 2.4x on the bale."
+    ],
+    "relatedTopics": ["ds-f-shopping-bales", "ds-f-inventory", "ds-f-marketplace-list", "ds-m-retail-margin"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-retail-margin",
+    "topic": "Making Money — Marketplace retail",
+    "subtopic": "Sell products with a real margin",
+    "keywords": ["make money", "marketplace", "retail", "margin", "markup", "sell products", "storefront", "profit"],
+    "content": "The core business: buy wholesale (Shopping deals/bales or Procurement suppliers) and sell retail on your Storefront. Your margin = retail price minus landed cost (buy price + shipping + customs + transaction fees). Integrate: source via Deals/Bales/Procurement → value into Inventory (know your cost) → post to Storefront priced for your market → collect via Payments → revenue lands in Finance → Analytics shows which products actually make money.",
+    "tips": [
+      "Know your landed cost before setting a price — shipping and fees eat naive margins",
+      "Rotate listings; fresh well-priced items outsell stale ones",
+      "Use the AI Advisor's pricing framework to set the sweet spot",
+      "Kill slow movers: Analytics tells you what isn't selling — discount or drop it"
+    ],
+    "examples": [
+      "A Nairobi seller buys 3 flash-sale bundles at 30% off, lists them at market price, and banks the 43% gross margin."
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-f-analytics", "ds-f-ai-advisor", "ds-m-profit-cash"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-dropship-margin",
+    "topic": "Making Money — Dropshipping",
+    "subtopic": "Sell without ever holding stock",
+    "keywords": ["make money", "dropship", "no stock", "supplier ships", "margin", "passive", "gold", "tier"],
+    "content": "Sell products you never see — the supplier ships directly to your customer. You set the retail price, keep the margin, and BirichiNex handles sourcing and fulfilment visibility. Dropshipping tiers (Gold unlocks more suppliers and higher order values) control how much you can scale. Integrate: pick winning products from the Marketplace catalog → list them on your Storefront with your margin → when a customer buys, the supplier fulfils → you track the shipment on the Live Map → loyalty points still accrue.",
+    "tips": [
+      "Choose products with proven demand — let Analytics/Marketplace best-sellers guide you",
+      "Price for the destination market so shipping stays competitive",
+      "Dropship items are tracked separately — no warehouse needed",
+      "Stack with loyalty: every dropship order still earns points for your customers"
+    ],
+    "examples": [
+      "A Kampala seller dropships tech gadgets on Gold tier, selling 40 units a month with zero warehouse space."
+    ],
+    "relatedTopics": ["ds-f-dropship", "ds-f-marketplace-list", "ds-f-membership", "ds-m-retail-margin"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-cross-border",
+    "topic": "Making Money — Cross-border trade",
+    "subtopic": "Buy low in one market, sell high in another",
+    "keywords": ["make money", "cross border", "export", "import", "kenya", "tanzania", "uganda", "customs", "arbitrage", "currency"],
+    "content": "East Africa's biggest edge: price differences between markets. Buy where it's cheap (supplier location, deals, another country's catalog) and sell where it's expensive. The platform supports it end-to-end: multi-currency pricing (TZS/KES/UGX...), Logistics shipments with customs status for import/export, and cross-border delivery routes. Integrate: set the buyer's currency in your listings → customer checks out in their currency → create a Logistics shipment (type import/export) → customs status tracks clearance → Live Map shows the whole route.",
+    "tips": [
+      "Watch the currency — your real margin is in your home currency after conversion",
+      "Use Logistics import/export + customs status for every border crossing",
+      "Quote in the buyer's currency to remove checkout hesitation",
+      "Keep customs documents in the Documents tab — crossing borders needs paperwork"
+    ],
+    "examples": [
+      "A trader buys bales in Tanzania (TZS), lists them priced in KES for Nairobi buyers, and ships via Logistics with cleared customs."
+    ],
+    "relatedTopics": ["ds-f-currency", "ds-f-logistics", "ds-f-orders-documents", "ds-m-retail-margin"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-retention",
+    "topic": "Making Money — Repeat customers",
+    "subtopic": "Loyalty + Amani = recurring revenue",
+    "keywords": ["make money", "repeat customer", "retention", "loyalty", "points", "amani", "follow up", "recurring", "lifetime value"],
+    "content": "Your cheapest profit is the customer who already trusts you. Retail profit comes from margin; wealth comes from lifetime value. BirichiNex automates retention: customers earn loyalty points (1 per 150 KES spent) and rise through tiers, and Amani the AI sales agent calls lapsed customers, abandoned carts and unpaid invoices to win them back. Integrate: configure Loyalty → let points accrue on every order → set Amani on abandoned/pending orders → she recovers sales and logs contacts to your CRM → Finance shows the recovered revenue.",
+    "tips": [
+      "A 5% increase in retention can lift profit 25-95% — protect repeat buyers",
+      "Announce tier milestones so customers chase the next level",
+      "Let Amani call pending orders daily; transcripts reveal real objections",
+      "Redeem points for your own stock to keep margin in-house"
+    ],
+    "examples": [
+      "A Nairobi seller configures Amani to call abandoned carts; she recovers 3 orders in week one — TZS 240,000 of sales that would have been lost."
+    ],
+    "relatedTopics": ["ds-f-loyalty", "ds-f-ai-agent", "ds-f-crm", "ds-m-profit-cash"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-profit-cash",
+    "topic": "Making Money — Cash flow discipline",
+    "subtopic": "Profitability & healthy cash flow",
+    "keywords": ["make money", "cash flow", "profit", "expenses", "income", "budget", "finance", "survive", "tax"],
+    "content": "Revenue is vanity, profit is sanity, cash is king. Money made = completed income minus real expenses. Log every transaction in Finance so the dashboard revenue is honest, keep expenses separate, and use Payments (M-Pesa/cards) to get paid in the buyer's currency fast. Integrate: Finance records every sale and cost → dashboard revenue and Analytics compute real profit → AI Advisor reads your numbers for pricing/cash-flow advice → Documents invoices keep money moving.",
+    "tips": [
+      "Log small payments too — patterns are power",
+      "Invoice immediately on delivery; documented money gets paid faster",
+      "Keep personal and business money separate — true profit needs clean books",
+      "Ask the AI Advisor to run your numbers before big decisions"
+    ],
+    "examples": [
+      "A Mombasa seller logs every sale and expense for a month; the dashboard shows 31% real margin — she reprices the bottom 20% of products and lifts it to 38%."
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-payments", "ds-f-orders-documents", "ds-f-analytics"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-m-arbitrage-deals",
+    "topic": "Making Money — Deal arbitrage",
+    "subtopic": "Buy discounted, sell at market",
+    "keywords": ["make money", "deals", "flash sale", "discount", "arbitrage", "bundle", "restock"],
+    "content": "Flash sales and bundles exist to move volume — that's your entry price. Buy at the discount, sell at market price on your Storefront, and the discount is pure extra margin. Bundles become gift sets and starter kits at a higher combined retail. Integrate: watch Deals in Shopping mode → buy discounted stock → land it in Inventory at your real cost → list on Storefront at market price → Analytics shows the margin.",
+    "tips": [
+      "Check Deals before every restock — it's the cheapest entry price",
+      "Turn bundles into gift sets: 3 items bought together sell for more than the sum of parts",
+      "Countdown timers are real — decide before it expires",
+      "Avoid buying deals you can't sell; margin only counts when stock moves"
+    ],
+    "examples": [
+      "A Kisumu seller buys a 3-item kitchen bundle at 25% off, splits it into 3 single listings, and sells each above the bundle's unit price."
+    ],
+    "relatedTopics": ["ds-f-shopping-deals", "ds-f-inventory", "ds-f-marketplace-list", "ds-m-resell-bales"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-procure-margin",
+    "topic": "Making Money — Procurement leverage",
+    "subtopic": "Negotiated wholesale beats retail buying",
+    "keywords": ["make money", "procurement", "suppliers", "wholesale", "purchase order", "buying power", "negotiate"],
+    "content": "Every repeat order should go through Procurement so you build buying history and negotiate better terms. Verified suppliers with ratings are your safe lane into new categories. Buying power compounds: larger purchase orders → better prices → fatter margins. Integrate: find verified suppliers in Procurement → issue purchase orders → stock lands in Inventory at your real cost → list on Storefront → reorder history gives you negotiation leverage.",
+    "tips": [
+      "Track supplier ratings; 4.9-rated suppliers are your safest first orders",
+      "Buy through procurement so reorders are one tap, not a new hunt",
+      "Negotiate with history: 'I've ordered 12 times — what's your best price?'",
+      "Let inventory alerts tell you when to reorder before you run out of best-sellers"
+    ],
+    "examples": [
+      "A Dar seller reorders a fast-moving line for the 10th time via Procurement and negotiates 8% off — the whole margin goes up on every future unit."
+    ],
+    "relatedTopics": ["ds-f-procurement", "ds-f-inventory", "ds-f-marketplace-list", "ds-m-cross-border"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-pricing-margin",
+    "topic": "Making Money — Smarter pricing",
+    "subtopic": "Use the AI Advisor & analytics to price for profit",
+    "keywords": ["make money", "pricing", "margin", "ai advisor", "strategy", "price", "optimize", "framework"],
+    "content": "Most sellers underprice because they guess. The AI Advisor applies pricing frameworks (cost-plus, value-based, competitive) to YOUR numbers, and Analytics shows what actually sells. The combination: price with a method, verify with data, adjust monthly. Integrate: ask the Advisor (Context ON) 'what should I charge for X?' → apply the framework → post priced items → let Analytics confirm → reprice slow movers and raise winners.",
+    "tips": [
+      "Turn Context ON so pricing advice uses your real costs and volumes",
+      "Cost-plus first, then test value-based pricing on your best products",
+      "Review analytics weekly; reprice slow movers, never chase losses",
+      "A 5% price lift on 80% of your catalog can double your profit"
+    ],
+    "examples": [
+      "A Kampala seller stops guessing: the Advisor prices his flagship shirt at KES 28,000 using value-based logic; Analytics confirms it outsells the old price by 40%."
+    ],
+    "relatedTopics": ["ds-f-ai-advisor", "ds-f-frameworks", "ds-f-analytics", "ds-m-profit-cash"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-speed-stock",
+    "topic": "Making Money — Stock turns over money",
+    "subtopic": "Sell fast, restock faster, cash flows",
+    "keywords": ["make money", "stock", "turnover", "inventory", "restock", "cash flow", "fast", "working capital", "reorder"],
+    "content": "Money dies sitting in a warehouse. The goal is stock turns: buy → sell → restock, quickly. BirichiNex speeds the cycle: Deals for cheap stock, Storefront for fast listings, Live Map so you never lose a package, Analytics to spot what sells, inventory alerts to reorder before you empty out. Integrate: track turns in Analytics → clear slow movers → reinvest into best-sellers → use inventory low-stock alerts to keep the flywheel spinning.",
+    "tips": [
+      "Money made is money moving — don't hoard slow stock",
+      "Discount or bundle slow movers to free cash for best-sellers",
+      "Restock winners before they run out — stockouts kill the flywheel",
+      "Small, fast, frequent orders beat one giant bet"
+    ],
+    "examples": [
+      "A Nairobi seller runs 3 stock turns a month on fast fashion; his KES 400,000 capital does KES 1.2M of sales a month."
+    ],
+    "relatedTopics": ["ds-f-analytics", "ds-f-inventory", "ds-f-shopping-deals", "ds-m-profit-cash"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-buyer-multiplier",
+    "topic": "Making Money — One buyer, many products",
+    "subtopic": "Cross-sell & upsell every customer",
+    "keywords": ["make money", "cross sell", "upsell", "bundle", "loyalty", "cart", "average order"],
+    "content": "Each customer you acquire should buy from you again and again. Cross-sell: pair products (phone + case + charger). Upsell: offer the grade-A version or the bundle. Loyalty points make the next purchase cheaper for them and repeatable for you. Integrate: build bundles from Deals/Inventory → list them on the Storefront → customers earn loyalty points → Amani follows up for reorders → Analytics tracks average order value rising.",
+    "tips": [
+      "Raise average order value first — cheaper than finding new customers",
+      "Bundles sell the slow mover attached to the best-seller",
+      "Loyalty redemption brings customers back with a built-in reason",
+      "Watch AOV in Analytics; small lifts compound fast"
+    ],
+    "examples": [
+      "A seller bundles phone + case + screen protector at KES 500 off the combined price; average order value climbs 34% in a month."
+    ],
+    "relatedTopics": ["ds-f-loyalty", "ds-f-marketplace-list", "ds-f-ai-agent", "ds-m-retention"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-saas-biz",
+    "topic": "Making Money — Run a service business on the platform",
+    "subtopic": "Automation, fulfillment & agency-style services",
+    "keywords": ["make money", "services", "saas", "automation", "fulfillment", "agency", "b2b", "consulting"],
+    "content": "Beyond selling goods, you can run service plays: become a fulfillment agent (store, pack, ship for other sellers via Logistics), a procurement agent (source for brands via Procurement + documents), or a commerce consultant (use the AI Advisor, Academy and Analytics to advise other businesses). The platform is your operational backbone. Integrate: build capacity with Logistics shipments + automation templates → sign service contracts in Documents → invoice via Finance → collect via Payments.",
+    "tips": [
+      "Fulfillment-as-a-service needs Logistics + Live Map trust — show clients their shipments",
+      "Sell your sourcing skill: brands pay for verified suppliers + negotiating",
+      "Use automation templates to run repeat client work on autopilot",
+      "Document every service contract — invoices keep B2B cash flowing"
+    ],
+    "examples": [
+      "A Dar entrepreneur packs and ships for 6 online sellers via Logistics, charging a handling fee per order — a second revenue line with zero stock risk."
+    ],
+    "relatedTopics": ["ds-f-automation", "ds-f-logistics", "ds-f-orders-documents", "ds-f-money-finance"],
+    "category": "business"
+  },
+  {
+    "id": "ds-m-franchise",
+    "topic": "Making Money — Build a reseller network",
+    "subtopic": "Wholesale to many, not retail to one",
+    "keywords": ["make money", "wholesale", "reseller", "network", "distribution", "franchise", "b2b"],
+    "content": "Go one level up: instead of only retailing to end customers, build a network of small resellers who buy from you wholesale. You source (Procurement/Bales), they distribute. Your customers hub becomes your distribution channel. Integrate: manage resellers as CRM customers → set wholesale pricing on Storefront → take bulk orders → fulfil via Logistics shipments → track each on the Live Map → Amani chases their payments.",
+    "tips": [
+      "Wholesale margin is thinner but volume is bigger and recurring",
+      "Give resellers reliable restock cycles — they'll order again",
+      "Use Live Map visibility as your trust pitch to resellers",
+      "Put every reseller in CRM so you see aggregate buying patterns"
+    ],
+    "examples": [
+      "A Mombasa distributor supplies 14 resellers across the coast; wholesale revenue now equals 70% of total turnover."
+    ],
+    "relatedTopics": ["ds-f-crm", "ds-f-procurement", "ds-f-logistics", "ds-m-retention"],
+    "category": "business"
+  }
+]

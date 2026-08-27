@@ -5,20 +5,54 @@
 
 import express from "express";
 import path from "path";
-import { fileURLToPath } from "url";
+import http from "http";
+import crypto from "crypto";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
+import { WebSocketServer } from "ws";
+import {
+  TwilioCallContext,
+  buildInboundTwiml,
+  buildConversationalTwiml,
+  buildOutboundTwiml,
+  getTwilioConfigStatus,
+  isLiveReady,
+  placeOutboundCall,
+} from "./ai/src/twilio-client";
+import {
+  handleTwilioMediaStream,
+  isLiveConversationReady,
+} from "./ai/src/media-stream";
+import {
+  getPaymentMode,
+  getPaymentProvider,
+  isSimulationProvider,
+  verifyFlutterwaveWebhook,
+} from "./payments/provider";
+import { MEMBERSHIP_TIERS } from "./src/data/platform";
+import {
+  HF_MODEL,
+  callHuggingFaceChat,
+  callHuggingFaceStream,
+  hfConfigured,
+  type HFChatMessage,
+} from "./ai/src/hf-client";
 
-dotenv.config();
-
-// Resolve paths for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config({ quiet: true });
+// Prefer a local .env.local override when present (dev machines often keep
+// secrets there). Server-side keys are read after this, so override wins.
+dotenv.config({ path: path.join(process.cwd(), ".env.local"), override: true, quiet: true });
 
 const app = express();
-app.use(express.json());
+// Trust the first proxy hop so req.protocol / req.ip reflect the original
+// client request (needed for Twilio signature validation behind Caddy/Funnel).
+app.set("trust proxy", true);
+// Business snapshots (inventory, orders, docs…) can be a few MB of JSON.
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Lazy initialization of Gemini client
 let aiClient: GoogleGenAI | null = null;
@@ -41,11 +75,222 @@ function getGeminiClient(): GoogleGenAI | null {
   return aiClient;
 }
 
+// ─── Supabase (Postgres) — cloud state sync ─────────────────────────────────
+
+let supabaseClient: any = null;
+function getSupabase(): any {
+  if (!supabaseClient) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return null;
+    supabaseClient = createClient(url, key, { auth: { persistSession: false } });
+  }
+  return supabaseClient;
+}
+
+function syncEnabled(): boolean {
+  return Boolean(
+    process.env.SUPABASE_URL &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY &&
+    process.env.SYNC_DEVICE_SECRET
+  );
+}
+
+// Shared device secret gates the sync endpoints. The browser bundle carries the
+// matching VITE_SYNC_DEVICE_SECRET value; this stops anonymous drive-by reads/
+// writes of business_state while keeping the single-user flow simple. Fails
+// closed: if the secret is missing, sync is disabled entirely. The server reads
+// either SYNC_DEVICE_SECRET or VITE_SYNC_DEVICE_SECRET, so a deploy can set one
+// shared generated value (Render's generateValue) that both sides see.
+const SYNC_DEVICE_SECRET = process.env.SYNC_DEVICE_SECRET || process.env.VITE_SYNC_DEVICE_SECRET || "";
+
+function deviceSecretValid(req: express.Request): boolean {
+  const provided = String(req.headers["x-device-secret"] || "");
+  if (!provided || !SYNC_DEVICE_SECRET) return false;
+  const a = crypto.createHash("sha256").update(provided).digest();
+  const b = crypto.createHash("sha256").update(SYNC_DEVICE_SECRET).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
+// ─── Rate limiting (in-memory, per-IP) ───────────────────────────────────────
+// Enough for a single-owner app: a few requests per second on the AI endpoints
+// keeps a misbehaving client from burning the free Gemini tier or the VPS.
+
+const RATE_WINDOW_MS = 10_000;
+const RATE_MAX = 40; // per window per IP across all AI endpoints
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimited(req: express.Request): boolean {
+  const ip = String(req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.socket.remoteAddress || "unknown");
+  const now = Date.now();
+  const bucket = rateBuckets.get(ip);
+  if (!bucket || bucket.resetAt <= now) {
+    rateBuckets.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  bucket.count += 1;
+  if (bucket.count > RATE_MAX) return true;
+  return false;
+}
+
+function applyRateLimit(req: express.Request, res: express.Response): boolean {
+  if (rateLimited(req)) {
+    res.status(429).json({ error: "Too many requests. Please slow down." });
+    return true;
+  }
+  return false;
+}
+
+// ─── Ollama (self-hosted Qwen3 on the Contabo VPS) — the primary live provider ──
+
+// Enable by setting OLLAMA_ENABLED=true (or OLLAMA_BASE_URL) in production. In
+// local dev with no Ollama install, the server skips it and uses Gemini/local.
+const OLLAMA_ENABLED = process.env.OLLAMA_ENABLED === "true" || Boolean(process.env.OLLAMA_BASE_URL);
+const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1").replace(/\/+$/, "");
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3:4b";
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "ollama"; // required but ignored by Ollama
+
+let ollamaHealthy: boolean | null = null;
+async function checkOllama(): Promise<boolean> {
+  if (!OLLAMA_ENABLED) return false;
+  if (ollamaHealthy !== null) return ollamaHealthy;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const res = await fetch(`${OLLAMA_BASE_URL}/models`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    ollamaHealthy = res.ok;
+  } catch {
+    ollamaHealthy = false;
+  }
+  if (!ollamaHealthy) {
+    console.warn(`Ollama unreachable at ${OLLAMA_BASE_URL}. Falling back to Gemini/local.`);
+  }
+  return ollamaHealthy;
+}
+
+// Provider resolution: Hugging Face (primary) → Ollama (self-hosted VPS) →
+// Gemini (free tier) → local. HF is the user's chosen production AI.
+async function getActiveProvider(): Promise<"huggingface" | "ollama" | "gemini" | "local"> {
+  if (hfConfigured()) return "huggingface";
+  if (await checkOllama()) return "ollama";
+  if (process.env.GEMINI_API_KEY) return "gemini";
+  return "local";
+}
+async function getActiveModel(): Promise<string> {
+  if (hfConfigured()) return HF_MODEL;
+  if (await checkOllama()) return OLLAMA_MODEL;
+  if (process.env.GEMINI_API_KEY) return "gemini-3.5-flash";
+  return "local";
+}
+
+interface OllamaChatOptions {
+  temperature?: number;
+  maxTokens?: number;
+}
+
+async function callOllamaChat(
+  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
+  options: OllamaChatOptions = {},
+): Promise<{ text: string; model: string; citations: string[] }> {
+  const res = await fetch(`${OLLAMA_BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OLLAMA_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 2048,
+      stream: false,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Ollama error ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  const text: string = data?.choices?.[0]?.message?.content || "";
+  return { text, model: data?.model || OLLAMA_MODEL, citations: [] };
+}
+
+// ─── Gemini TTS (Google AI Studio, free tier) — the copilot's voice ──────────
+
+const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts";
+// Female, firm, calm — the closest match to Gemini's assistant voice. Other
+// free voices: Zephyr, Callirrhoe, Leda, Aoede, Erinome (all female).
+const GEMINI_TTS_VOICE = process.env.GEMINI_TTS_VOICE || "Kore";
+
+async function callGeminiTts(
+  text: string,
+  voice: string,
+  model: string = GEMINI_TTS_MODEL,
+): Promise<{ audioBase64: string; mimeType: string; model: string; voice: string }> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text }] }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
+          },
+        },
+      }),
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Gemini TTS error ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  const part = data?.candidates?.[0]?.content?.parts?.find((p: any) => p?.inlineData?.data);
+  if (!part) throw new Error("Gemini TTS returned no audio");
+  const mimeType: string = part.inlineData.mimeType || "audio/L16;codec=pcm;rate=24000";
+  // Gemini TTS returns raw LINEAR16 PCM (audio/L16;codec=pcm;rate=NNNN), which
+  // browsers can't decode. Wrap it in a standard WAV container (mono, 16-bit).
+  const rateMatch = mimeType.match(/rate=(\d+)/);
+  const sampleRate = rateMatch ? Number(rateMatch[1]) : 24000;
+  const pcm = Buffer.from(part.inlineData.data, "base64");
+  const wav = pcmToWav(pcm, sampleRate);
+  return { audioBase64: wav.toString("base64"), mimeType: "audio/wav", model, voice };
+}
+
+function pcmToWav(pcm: Buffer, sampleRate: number): Buffer {
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const dataSize = pcm.length;
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + dataSize, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16); // fmt chunk size
+  header.writeUInt16LE(1, 20); // PCM
+  header.writeUInt16LE(numChannels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write("data", 36);
+  header.writeUInt32LE(dataSize, 40);
+  return Buffer.concat([header, pcm]);
+}
+
 // System instructions for the Portmetals Advisor
 const SYSTEM_INSTRUCTION = `
-You are "Amani", the lead Portmetals Africa Business Advisor. Your personality combines the visionary engineering standards of Apple with the commercial wisdom and scale of Alibaba/Costco, blended with the genuine warmth, reliability, and accessibility of a dedicated African business partner.
+You are Amani, the lead Portmetals Africa Business Advisor and the operator layer of BirichiNex. You serve entrepreneurs, boutique owners, and traders building fashion businesses out of sorted European Mitumba clothing, leather, and premium refurbished technology from Europe.
 
-Your goal is to help entrepreneurs, boutique owners, and traders build thriving fashion businesses using sorted European Mitumba clothing, leather, and premium refurbished technology from Europe.
+Your tone and voice are set by the advisor personality instructions provided with each request — follow them for how you speak. This block is your factual source: the prices and bale tiers below, plus the live intelligence block, are the ground truth for the business.
 
 You have access to the official Portmetals Africa Reviewed Prices (in Tanzanian Shilling - TZS):
 1. Men Cotton Shirt - 27,000 TZS
@@ -78,9 +323,9 @@ We also offer Premium Sorted Bales:
 - 55kg Premium Business Bale: For growing retailers looking for top "Cream" grade items.
 - 70kg Commercial Bale: For established distributors.
 
-Provide crisp, valuable, actionable advice. Frame second-hand clothes as a structured business venture, not a raffle. Use pricing math (buying unit price vs expected selling price) to show how they can earn 50% to 150% profit. Talk about customer acquisition (marketing, social media, visual merchandising) and financial discipline (saving capital to buy the next bale).
+Frame second-hand clothes as a structured business venture, not a raffle. Use pricing math (buying unit price vs expected selling price) when margins or profit are in question. Anchor customer acquisition (marketing, social media, visual merchandising) and financial discipline (saving capital for the next bale) to the founder's actual live numbers when they are in the intelligence block.
 
-Keep responses structured and professional. Avoid fluffy praise; focus on data, strategy, and inspiration. Do not use emojis in your responses.
+Be factually reliable above all: the reviewed prices above are the seller's official list prices, so quote them exactly and base math on them. Do not use emojis.
 `;
 
 // API Endpoints
@@ -90,57 +335,407 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "healthy", timestamp: new Date().toISOString() });
 });
 
-// 2. Chat Endpoint (Gemini)
-app.post("/api/chat", async (req, res) => {
+// ─── Cloud State Sync (Supabase Postgres) ─────────────────────────────────────
+// The client stores its whole business state as one JSONB document per
+// user_key. The service-role key stays server-side; the browser only ever
+// calls these endpoints. Without SUPABASE_* env vars the sync layer reports
+// "disabled" (503) and the app runs offline exactly as before.
+
+const VALID_USER_KEY = /^[a-zA-Z0-9._%+-@]{1,160}$/;
+
+app.get("/api/sync", async (req, res) => {
   try {
-    const { messages } = req.body;
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: "Invalid messages array" });
+    if (!syncEnabled()) return res.status(503).json({ error: "Sync disabled", enabled: false });
+    if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+    const userKey = String(req.query.userKey || "").trim();
+    if (!VALID_USER_KEY.test(userKey)) return res.status(400).json({ error: "Invalid userKey" });
+    const db = getSupabase();
+    const { data, error } = await db
+      .from("business_state")
+      .select("payload, version, updated_at")
+      .eq("user_key", userKey)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.json({ enabled: true, payload: null, version: 0, updatedAt: null });
+    res.json({ enabled: true, payload: data.payload, version: data.version, updatedAt: data.updated_at });
+  } catch (error: any) {
+    console.error("GET /api/sync error:", error);
+    res.status(500).json({ error: error?.message || "Sync read failed", enabled: true });
+  }
+});
+
+app.put("/api/sync", async (req, res) => {
+  try {
+    if (!syncEnabled()) return res.status(503).json({ error: "Sync disabled", enabled: false });
+    if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+    const { userKey, payload } = req.body || {};
+    const key = String(userKey || "").trim();
+    if (!VALID_USER_KEY.test(key)) return res.status(400).json({ error: "Invalid userKey" });
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return res.status(400).json({ error: "payload must be an object" });
+    }
+    const db = getSupabase();
+    const { data, error } = await db.rpc("save_business_state", {
+      p_key: key,
+      p_payload: payload,
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    res.json({ enabled: true, version: row?.out_version ?? 0, updatedAt: row?.out_updated_at ?? null });
+  } catch (error: any) {
+    console.error("PUT /api/sync error:", error);
+    res.status(500).json({ error: error?.message || "Sync write failed", enabled: true });
+  }
+});
+
+app.delete("/api/sync", async (req, res) => {
+  try {
+    if (!syncEnabled()) return res.status(503).json({ error: "Sync disabled", enabled: false });
+    if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+    const userKey = String(req.query.userKey || "").trim();
+    if (!VALID_USER_KEY.test(userKey)) return res.status(400).json({ error: "Invalid userKey" });
+    const db = getSupabase();
+    const { error } = await db.rpc("clear_business_state", { p_key: userKey });
+    if (error) throw error;
+    res.json({ enabled: true, cleared: true });
+  } catch (error: any) {
+    console.error("DELETE /api/sync error:", error);
+    res.status(500).json({ error: error?.message || "Sync delete failed", enabled: true });
+  }
+});
+
+// ─── Payments & Membership Billing (Flutterwave / local simulation) ──────────
+// Subscriptions are charged in USD (matching MEMBERSHIP_TIERS); wallet payouts
+// are made in TZS to a configured bank account. Prices are validated server-side
+// so the client can never send a discounted amount.
+
+const PAYMENT_REF = /^[a-zA-Z0-9_-]{1,80}$/;
+const VALID_BILLING_PERIODS = new Set(["monthly", "yearly"]);
+const VALID_PAYMENT_METHODS = new Set(["card", "mpesa"]);
+const YEARLY_PRICE_MONTHS = 10; // two months free on annual plans
+
+const PAID_TIER_PRICES = new Map<string, number>();
+for (const t of MEMBERSHIP_TIERS) {
+  if (t.monthlyPrice !== null && t.monthlyPrice > 0) {
+    PAID_TIER_PRICES.set(t.tier, t.monthlyPrice);
+  }
+}
+
+const WITHDRAW_MIN_TZS = 5_000;
+const WITHDRAW_MAX_TZS = 50_000_000;
+const VALID_PAYOUT_COUNTRIES = new Set(["TZ", "KE", "UG", "NG", "GH"]);
+
+function paymentOrigin(req: express.Request): string {
+  const forwarded = req.get("x-forwarded-proto");
+  const proto = forwarded ? forwarded.split(",")[0].trim() : req.protocol;
+  return `${proto}://${req.get("host")}`;
+}
+
+// 1. Create a checkout (subscription purchase).
+app.post("/api/payments/checkout", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { tier, billingPeriod, method, email } = req.body || {};
+    const tierName = String(tier || "").toLowerCase();
+    const period = String(billingPeriod || "monthly").toLowerCase();
+    const payMethod = String(method || "card").toLowerCase();
+
+    const monthlyPrice = PAID_TIER_PRICES.get(tierName);
+    if (monthlyPrice === undefined) {
+      return res.status(400).json({ error: "Invalid tier. Enterprise is quoted via the sales team." });
+    }
+    if (!VALID_BILLING_PERIODS.has(period)) {
+      return res.status(400).json({ error: "billingPeriod must be monthly or yearly" });
+    }
+    if (!VALID_PAYMENT_METHODS.has(payMethod)) {
+      return res.status(400).json({ error: "method must be card or mpesa" });
+    }
+    const customerEmail = String(email || "").trim().slice(0, 120);
+    if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      return res.status(400).json({ error: "Invalid email" });
     }
 
-    const ai = getGeminiClient();
-    if (!ai) {
-      // Simulate intelligent response if API key is missing
-      const lastMessage = messages[messages.length - 1]?.content || "";
-      const lowerMsg = lastMessage.toLowerCase();
-      let mockReply = "";
+    const amount = period === "yearly" ? monthlyPrice * YEARLY_PRICE_MONTHS : monthlyPrice;
+    const reference = `sub_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
+    const provider = getPaymentProvider();
+    const { redirectUrl } = await provider.createCheckout({
+      reference,
+      amount,
+      currency: "USD",
+      description: `BirichiNex ${tierName} membership — ${period} plan`,
+      customerEmail,
+      paymentOptions: payMethod === "mpesa" ? ["mobilemoneytz"] : ["card"],
+      redirectUrl: `${paymentOrigin(req)}/`,
+      meta: { tier: tierName, billingPeriod: period },
+    });
 
-      if (lowerMsg.includes("start") || lowerMsg.includes("how to")) {
-        mockReply = `Starting a fashion business requires strategic selection. For beginners, we highly recommend the 25kg Starter Bale or starting with Ladies Jeans (15,000 TZS) and Mix T-Shirts (13,000 TZS). By sorting them professionally and selling them individually, you can target a markup of 100%. What is your budget or target location? Let me map out a custom plan for you.`;
-      } else if (lowerMsg.includes("price") || lowerMsg.includes("cost") || lowerMsg.includes("bale")) {
-        mockReply = `Portmetals Africa offers premium sorted wholesale prices to guarantee profitability. For example, our Men Cotton Shirts are priced at 27,000 TZS per unit, and Ladies Jeans at 15,000 TZS. If you purchase our 25kg Starter Bale, you will find approximately 80-100 high-quality, pre-sorted pieces. This keeps your cost per item extremely low, allowing for higher profit margins in retail markets. Would you like me to calculate the specific returns on a particular category?`;
-      } else if (lowerMsg.includes("tech") || lowerMsg.includes("laptop") || lowerMsg.includes("phone")) {
-        mockReply = `Our refurbished technology is imported directly from European partners, certified, tested, and comes with a 12-month warranty. For retail or office setup, we supply premium business-grade laptops and high-performance monitors starting at affordable rates. This allows entrepreneurs to run their offices and digital marketing campaigns efficiently without heavy capital overheads. What specs are you looking for?`;
-      } else {
-        mockReply = `Welcome to Portmetals Africa, your dedicated growth partner. I can advise you on selecting the right inventory, calculating your retail margins, developing effective digital marketing strategies, or understanding the Europe-to-Africa supply chain logistics. How can I assist your business growth today?`;
+    res.json({ reference, amount, currency: "USD", billingPeriod: period, mode: provider.mode, redirectUrl });
+  } catch (error: any) {
+    console.error("POST /api/payments/checkout error:", error);
+    res.status(500).json({ error: error?.message || "Checkout failed" });
+  }
+});
+
+// 2. Check a checkout's payment status (polled by the client after checkout).
+app.get("/api/payments/status", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const reference = String(req.query.reference || "").trim();
+    if (!PAYMENT_REF.test(reference)) {
+      return res.status(400).json({ error: "Invalid reference" });
+    }
+    const provider = getPaymentProvider();
+    const { status, amount, currency } = await provider.getStatus(reference);
+    res.json({ reference, status, amount, currency, mode: provider.mode });
+  } catch (error: any) {
+    console.error("GET /api/payments/status error:", error);
+    res.status(500).json({ error: error?.message || "Status check failed" });
+  }
+});
+
+// 3. Simulation-only helpers so every flow can be tested end-to-end locally.
+function requireSimulation(res: express.Response): boolean {
+  const provider = getPaymentProvider();
+  if (!isSimulationProvider(provider)) {
+    res.status(409).json({ error: "Simulation endpoints are disabled in live mode" });
+    return true;
+  }
+  return false;
+}
+
+app.post("/api/payments/simulate-pay", (req, res) => {
+  if (applyRateLimit(req, res)) return;
+  if (requireSimulation(res)) return;
+  const reference = String(req.body?.reference || "").trim();
+  if (!PAYMENT_REF.test(reference)) return res.status(400).json({ error: "Invalid reference" });
+  const provider = getPaymentProvider();
+  if (!isSimulationProvider(provider)) return res.status(409).json({ error: "Not in simulation mode" });
+  const ok = provider.markPaid(reference);
+  if (!ok) return res.status(404).json({ error: "Unknown reference" });
+  res.json({ reference, status: "paid", mode: "simulation" });
+});
+
+app.post("/api/payments/simulate-fail", (req, res) => {
+  if (applyRateLimit(req, res)) return;
+  if (requireSimulation(res)) return;
+  const reference = String(req.body?.reference || "").trim();
+  if (!PAYMENT_REF.test(reference)) return res.status(400).json({ error: "Invalid reference" });
+  const provider = getPaymentProvider();
+  if (!isSimulationProvider(provider)) return res.status(409).json({ error: "Not in simulation mode" });
+  const ok = provider.markFailed(reference);
+  if (!ok) return res.status(404).json({ error: "Unknown reference" });
+  res.json({ reference, status: "failed", mode: "simulation" });
+});
+
+// 4. Withdraw platform-wallet earnings to a bank account.
+app.post("/api/payments/withdraw", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { amount, bankAccount } = req.body || {};
+    const amountNum = Number(amount);
+    if (!Number.isInteger(amountNum) || amountNum < WITHDRAW_MIN_TZS || amountNum > WITHDRAW_MAX_TZS) {
+      return res.status(400).json({
+        error: `Amount must be between ${WITHDRAW_MIN_TZS.toLocaleString("en-US")} and ${WITHDRAW_MAX_TZS.toLocaleString("en-US")} TZS`,
+      });
+    }
+    const accountBank = String(bankAccount?.accountBank || "").trim().slice(0, 64);
+    const accountNumber = String(bankAccount?.accountNumber || "").trim().slice(0, 64);
+    const accountName = String(bankAccount?.accountName || "").trim().slice(0, 160);
+    const country = String(bankAccount?.country || "").trim().toUpperCase().slice(0, 2);
+    const destinationBranchCode = String(bankAccount?.destinationBranchCode || "").trim().slice(0, 16) || undefined;
+    if (!accountBank || !/^[a-zA-Z0-9 ]+$/.test(accountBank)) {
+      return res.status(400).json({ error: "A valid bank code is required" });
+    }
+    if (!accountNumber || !/^[a-zA-Z0-9-]+$/.test(accountNumber)) {
+      return res.status(400).json({ error: "A valid account number is required" });
+    }
+    if (accountName.length < 2) return res.status(400).json({ error: "Beneficiary name is required" });
+    if (!VALID_PAYOUT_COUNTRIES.has(country)) {
+      return res.status(400).json({ error: "Payouts are supported for TZ, KE, UG, NG, GH banks" });
+    }
+
+    const reference = `wdr_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
+    const provider = getPaymentProvider();
+    const result = await provider.createPayout({
+      reference,
+      amount: amountNum,
+      currency: "TZS",
+      narration: "BirichiNex wallet withdrawal",
+      bankAccount: {
+        accountBank,
+        accountNumber,
+        accountName,
+        country,
+        destinationBranchCode,
+      },
+    });
+
+    res.json({ reference, amount: amountNum, currency: "TZS", mode: provider.mode, status: result.status, message: result.message });
+  } catch (error: any) {
+    console.error("POST /api/payments/withdraw error:", error);
+    res.status(500).json({ error: error?.message || "Withdrawal failed" });
+  }
+});
+
+// 5. Payment config — lets the UI reflect the live/simulation mode.
+app.get("/api/payments/config", (_req, res) => {
+  const mode = getPaymentMode();
+  res.json({
+    mode,
+    live: mode === "flutterwave",
+    currency: "TZS",
+    withdraw: { min: WITHDRAW_MIN_TZS, max: WITHDRAW_MAX_TZS, currency: "TZS" },
+    subscriptions: { currency: "USD", yearlyMonthsCharged: YEARLY_PRICE_MONTHS },
+  });
+});
+
+// 6. Flutterwave webhook (production). Signature verified against the secret
+//    hash; the client independently confirms via GET /api/payments/status.
+app.post("/api/payments/webhook", (req, res) => {
+  if (!verifyFlutterwaveWebhook(req.headers as Record<string, string | undefined>, req.body)) {
+    return res.status(401).json({ error: "Invalid signature" });
+  }
+  const txRef = String(req.body?.txRef || req.body?.tx_ref || "");
+  const event = String(req.body?.event || "unknown");
+  console.log(`[payments-webhook] ${event} → ${txRef}`);
+  res.sendStatus(200);
+});
+
+// 2. Chat Endpoint (Ollama → Gemini → local)
+const MAX_CHAT_MESSAGES = 40;
+const MAX_CHAT_MSG_CHARS = 4000;
+app.post("/api/chat", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { messages } = req.body;
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "Invalid messages array" });
+    }
+    if (messages.length > MAX_CHAT_MESSAGES) {
+      return res.status(400).json({ error: `Too many messages (max ${MAX_CHAT_MESSAGES})` });
+    }
+    if (messages.some((m: any) => !m?.role || typeof m.content !== "string" || m.content.length > MAX_CHAT_MSG_CHARS)) {
+      return res.status(400).json({ error: `Each message must be text ≤ ${MAX_CHAT_MSG_CHARS} characters` });
+    }
+
+    const provider = await getActiveProvider();
+
+    const clientSystem = (messages.find((m: any) => m.role === "system")?.content || "").trim();
+    // qwen3 non-thinking mode marker for local Ollama + a fresh chat context.
+    const system = `/no_think\n\n${SYSTEM_INSTRUCTION.trim()}\n\n${clientSystem}`.trim();
+    const chat = messages
+      .filter((m: any) => m.role !== "system")
+      .map((m: any): { role: "user" | "assistant"; content: string } => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: String(m.content),
+      }));
+
+    const wantStream = Boolean(req.body?.stream);
+    let streamStarted = false;
+
+    // Primary: Hugging Face (user's production AI).
+    if (provider === "huggingface") {
+      try {
+        const payload: HFChatMessage[] = [
+          { role: "system", content: system },
+          ...chat,
+        ];
+        if (wantStream) {
+          streamStarted = true;
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache, no-transform");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.write(`event: meta\ndata: ${JSON.stringify({ source: "huggingface", model: HF_MODEL, live: true })}\n\n`);
+          let received = 0;
+          for await (const delta of callHuggingFaceStream(payload)) {
+            if (delta) {
+              received += delta.length;
+              res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+            }
+          }
+          res.write(`event: done\ndata: ${JSON.stringify({ received })}\n\n`);
+          res.end();
+          return;
+        }
+        const { text, model } = await callHuggingFaceChat(payload);
+        return res.json({ text, source: "huggingface", model, live: true });
+      } catch (err: any) {
+        console.error("Hugging Face chat failed, falling back:", err);
+        if (wantStream && !res.writableEnded) {
+          if (streamStarted) {
+            // Headers already sent — close the SSE envelope gracefully.
+            try { res.write(`event: error\ndata: ${JSON.stringify({ error: err?.message || "Stream failed" })}\n\n`); res.end(); } catch { res.end(); }
+            return;
+          }
+          // Nothing written yet — stay on JSON.
+          res.removeHeader("Content-Length");
+          res.setHeader("Content-Type", "application/json");
+          return res.status(502).json({ error: err?.message || "Hugging Face unavailable", live: true });
+        }
       }
+    }
+
+    // Secondary: Ollama (self-hosted Qwen3 on the VPS).
+    if (provider === "ollama") {
+      try {
+        const { text, model } = await callOllamaChat([
+          { role: "system", content: system },
+          ...chat,
+        ]);
+        return res.json({ text, source: "ollama", model, live: true });
+      } catch (err: any) {
+        console.error("Ollama chat failed, falling back to Gemini:", err);
+        ollamaHealthy = false;
+      }
+    }
+
+    // Fallback: Gemini.
+    const ai = getGeminiClient();
+    if (ai) {
+      // Convert messages for GoogleGenAI
+      const contents = messages.map(m => {
+        return {
+          role: m.role === "user" ? "user" : "model",
+          parts: [{ text: m.content }]
+        };
+      });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: contents,
+        config: {
+          systemInstruction: `${SYSTEM_INSTRUCTION.trim()}\n\n${clientSystem}`.trim(),
+          temperature: 0.7,
+        }
+      });
 
       return res.json({
-        text: mockReply,
-        source: "simulated-advisor"
+        text: response.text || "I apologize, I could not generate a response. Please try again.",
+        source: "gemini-3.5-flash",
+        live: true
       });
     }
 
-    // Convert messages for GoogleGenAI
-    const contents = messages.map(m => {
-      return {
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }]
-      };
-    });
+    // Simulate intelligent response if no live provider is configured
+    const lastMessage = messages[messages.length - 1]?.content || "";
+    const lowerMsg = lastMessage.toLowerCase();
+    let mockReply = "";
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: contents,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.7,
-      }
-    });
+    if (lowerMsg.includes("start") || lowerMsg.includes("how to")) {
+      mockReply = `Starting a fashion business requires strategic selection. For beginners, we highly recommend the 25kg Starter Bale or starting with Ladies Jeans (15,000 TZS) and Mix T-Shirts (13,000 TZS). By sorting them professionally and selling them individually, you can target a markup of 100%. What is your budget or target location? Let me map out a custom plan for you.`;
+    } else if (lowerMsg.includes("price") || lowerMsg.includes("cost") || lowerMsg.includes("bale")) {
+      mockReply = `Portmetals Africa offers premium sorted wholesale prices to guarantee profitability. For example, our Men Cotton Shirts are priced at 27,000 TZS per unit, and Ladies Jeans at 15,000 TZS. If you purchase our 25kg Starter Bale, you will find approximately 80-100 high-quality, pre-sorted pieces. This keeps your cost per item extremely low, allowing for higher profit margins in retail markets. Would you like me to calculate the specific returns on a particular category?`;
+    } else if (lowerMsg.includes("tech") || lowerMsg.includes("laptop") || lowerMsg.includes("phone")) {
+      mockReply = `Our refurbished technology is imported directly from European partners, certified, tested, and comes with a 12-month warranty. For retail or office setup, we supply premium business-grade laptops and high-performance monitors starting at affordable rates. This allows entrepreneurs to run their offices and digital marketing campaigns efficiently without heavy capital overheads. What specs are you looking for?`;
+    } else {
+      mockReply = `Welcome to Portmetals Africa, your dedicated growth partner. I can advise you on selecting the right inventory, calculating your retail margins, developing effective digital marketing strategies, or understanding the Europe-to-Africa supply chain logistics. How can I assist your business growth today?`;
+    }
 
     res.json({
-      text: response.text || "I apologize, I could not generate a response. Please try again.",
-      source: "gemini-3.5-flash"
+      text: mockReply,
+      source: "simulated-advisor",
+      live: false
     });
 
   } catch (error: any) {
@@ -150,14 +745,23 @@ app.post("/api/chat", async (req, res) => {
 });
 
 // 3. AI Quote Analyst Endpoint
+const MAX_QUOTE_ITEMS = 60;
+const MAX_QUOTE_PROFILE_CHARS = 600;
+
 app.post("/api/quote", async (req, res) => {
   try {
+    if (applyRateLimit(req, res)) return;
     const { items, businessProfile } = req.body;
-    if (!items || !Array.isArray(items)) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "No items provided for quotation" });
     }
+    if (items.length > MAX_QUOTE_ITEMS) {
+      return res.status(400).json({ error: `Too many items (max ${MAX_QUOTE_ITEMS})` });
+    }
+    if (businessProfile && String(JSON.stringify(businessProfile)).length > MAX_QUOTE_PROFILE_CHARS) {
+      return res.status(400).json({ error: "Business profile is too large" });
+    }
 
-    const ai = getGeminiClient();
     const itemsSummary = items.map((i: any) => `- ${i.name} (Qty: ${i.quantity}, Price: ${i.priceTZS.toLocaleString()} TZS)`).join("\n");
     const profileSummary = businessProfile 
       ? `Business Name: ${businessProfile.businessName}, Location: ${businessProfile.businessLocation}, Experience: ${businessProfile.experience}`
@@ -175,6 +779,41 @@ ${itemsSummary}
 Buyer Profile:
 ${profileSummary}
 `;
+
+    // Primary: Hugging Face.
+    if (hfConfigured()) {
+      try {
+        const { text, model } = await callHuggingFaceChat(
+          [
+            { role: "system", content: SYSTEM_INSTRUCTION },
+            { role: "user", content: prompt },
+          ],
+          { temperature: 0.5, maxTokens: 1200 },
+        );
+        return res.json({ playbook: text.trim(), source: "huggingface", model });
+      } catch (err: any) {
+        console.error("Hugging Face quote failed, falling back:", err);
+      }
+    }
+
+    // Secondary: Ollama.
+    if (await checkOllama()) {
+      try {
+        const { text, model } = await callOllamaChat(
+          [
+            { role: "system", content: `/no_think\n\n${SYSTEM_INSTRUCTION}` },
+            { role: "user", content: prompt },
+          ],
+          { temperature: 0.5, maxTokens: 1200 },
+        );
+        return res.json({ playbook: text.trim(), source: "ollama", model });
+      } catch (err: any) {
+        console.error("Ollama quote failed, falling back to Gemini:", err);
+        ollamaHealthy = false;
+      }
+    }
+
+    const ai = getGeminiClient();
 
     if (!ai) {
       // Return smart simulated playbook
@@ -221,9 +860,385 @@ Location: ${businessProfile?.businessLocation || "East Africa"}
   }
 });
 
+// ─── Live AI Calling (Twilio Voice) ──────────────────────────────────────────
+
+// Recent Twilio call status events (in-memory; surfaced in logs).
+const callStatusLog: Array<Record<string, string>> = [];
+
+// Live conversational call transcript lines (in-memory; latest 200).
+const liveCallTranscripts: Array<{ at: string; streamSid: string | null; role: string; text: string }> = [];
+
+// Transcript of recent live AI conversations (owner inbox).
+app.get("/api/agent-call/transcripts", (_req, res) => {
+  res.json({ transcripts: liveCallTranscripts.slice(-100) });
+});
+
+// AI provider mode — lets the UI show live provider vs local/simulated.
+app.get("/api/ai/mode", async (_req, res) => {
+  const provider = await getActiveProvider();
+  const model = await getActiveModel();
+  res.json({
+    live: provider !== "local",
+    provider,
+    model,
+    ollama: provider === "ollama",
+    gemini: provider === "gemini",
+    huggingface: provider === "huggingface",
+    label:
+      provider === "huggingface"
+        ? `Hugging Face (${HF_MODEL.split("/").pop()})`
+        : provider === "ollama"
+          ? `Ollama (${OLLAMA_MODEL})`
+          : provider === "gemini"
+            ? "Google Gemini"
+            : "Local simulation",
+  });
+});
+
+// Gemini TTS (Google AI Studio, free tier) — the copilot's voice. The Gemini
+// assistant uses the same neural voices, so this sounds like Gemini for free.
+const MAX_TTS_CHARS = 500;
+
+app.post("/api/ai/voice", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { text, voice, model } = req.body || {};
+    const content = String(text || "").trim();
+    if (!content) return res.status(400).json({ error: "No text provided" });
+    if (content.length > MAX_TTS_CHARS) {
+      return res.status(400).json({ error: `Text too long (max ${MAX_TTS_CHARS} characters)` });
+    }
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({ error: "Gemini TTS not configured", voice: false });
+    }
+
+    const ttsVoice = voice || GEMINI_TTS_VOICE;
+    const ttsModel = model || GEMINI_TTS_MODEL;
+    const { audioBase64, mimeType, voice: usedVoice, model: usedModel } = await callGeminiTts(content, ttsVoice, ttsModel);
+
+    res.json({
+      audioBase64,
+      format: mimeType,
+      provider: "gemini",
+      model: usedModel,
+      voice: usedVoice,
+      live: true,
+    });
+  } catch (error: any) {
+    console.error("Error in /api/ai/voice:", error);
+    res.status(500).json({ error: error?.message || "TTS failed", voice: false });
+  }
+});
+
+// ─── Zahara — AI Finance Agent ────────────────────────────────────────────────
+
+const FINANCE_SYSTEM_INSTRUCTION = `
+You are "Zahara", the AI Finance Agent of BirichiNex (a marketplace for East African entrepreneurs: sorted European Mitumba clothing, leather goods, and refurbished tech).
+
+You combine the rigor of a professional CFO with the warmth of a trusted East African business partner.
+
+HARD GUARDRAILS — never break these:
+1. You NEVER withdraw money, make purchases, or transfer funds on your own. You only PROPOSE such actions; the business owner must approve them.
+2. Any action touching balances, prices, supplier payments, or personal data is presented for explicit confirmation.
+3. You can run day-to-day analysis, recommend strategies, and create plans autonomously — but money and sensitive changes always require approval.
+4. Be honest about uncertainty. If a figure (e.g. exchange rate, tax rate) should be verified live, say so and offer to research it.
+
+Answer in clear, concise business English, in plain text (no markdown headers, no emojis). Use TZS figures where relevant and explain the reasoning behind every recommendation. When you propose an action, state exactly what you would do and mark it [NEEDS APPROVAL].
+`;
+
+app.post("/api/finance/advise", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { question, snapshot } = req.body || {};
+    const provider = await getActiveProvider();
+
+    if (provider === "huggingface") {
+      try {
+        const { text, model } = await callHuggingFaceChat(
+          [
+            { role: "system", content: FINANCE_SYSTEM_INSTRUCTION },
+            { role: "user", content: String(question || "Give me an overview of my finances.") },
+          ],
+          { temperature: 0.4, maxTokens: 900 },
+        );
+        return res.json({ text, source: "huggingface", model, live: true, grounded: false });
+      } catch (err: any) {
+        console.error("Hugging Face advise failed, falling back:", err);
+      }
+    }
+
+    if (provider === "ollama") {
+      try {
+        const { text, model } = await callOllamaChat(
+          [
+            { role: "system", content: `/no_think\n\n${FINANCE_SYSTEM_INSTRUCTION}` },
+            { role: "user", content: String(question || "Give me an overview of my finances.") },
+          ],
+          { temperature: 0.4, maxTokens: 900 },
+        );
+        return res.json({ text, source: "ollama", model, live: true, grounded: false });
+      } catch (err: any) {
+        console.error("Ollama advise failed, falling back:", err);
+        ollamaHealthy = false;
+      }
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      const { localFinanceReply } = await import("./ai/src/finance-agent");
+      const text = localFinanceReply(String(question || "Overview of my finances"), snapshot || {});
+      return res.json({ text, source: "simulated-advisor", live: false });
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [{ role: "user", parts: [{ text: String(question || "Give me an overview of my finances.") }] }],
+      config: {
+        systemInstruction: FINANCE_SYSTEM_INSTRUCTION,
+        tools: [{ googleSearch: {} }],
+        temperature: 0.4,
+        maxOutputTokens: 900,
+      },
+    });
+    const text = response.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "I couldn't form an answer.";
+    res.json({ text, source: "gemini-3.5-flash", live: true, grounded: Boolean(response.candidates?.[0]?.groundingMetadata) });
+  } catch (err) {
+    console.error("Finance advise error:", err);
+    const { localFinanceReply } = await import("./ai/src/finance-agent");
+    const text = localFinanceReply(String(req.body?.question || ""), req.body?.snapshot || {});
+    res.json({ text, source: "simulated-advisor", live: false });
+  }
+});
+
+app.post("/api/finance/research", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { query } = req.body || {};
+    const provider = await getActiveProvider();
+
+    if (provider === "huggingface") {
+      try {
+        const { text, model } = await callHuggingFaceChat(
+          [
+            {
+              role: "system",
+              content:
+                "You are Zahara, a financial research assistant for East African businesses. Answer concisely with the facts you know and clearly flag anything that should be verified against live sources before acting. Plain text only.",
+            },
+            { role: "user", content: String(query || "") },
+          ],
+          { temperature: 0.3, maxTokens: 700 },
+        );
+        return res.json({ text, source: "huggingface", model, live: true, citations: [] });
+      } catch (err: any) {
+        console.error("Hugging Face research failed, falling back:", err);
+      }
+    }
+
+    if (provider === "ollama") {
+      try {
+        const { text, model } = await callOllamaChat(
+          [
+            {
+              role: "system",
+              content:
+                "/no_think\n\nYou are Zahara, a financial research assistant for East African businesses. Answer concisely with the facts you know and clearly flag anything that should be verified against live sources before acting. Plain text only.",
+            },
+            { role: "user", content: String(query || "") },
+          ],
+          { temperature: 0.3, maxTokens: 700 },
+        );
+        return res.json({ text, source: "ollama", model, live: true, citations: [] });
+      } catch (err: any) {
+        console.error("Ollama research failed, falling back:", err);
+        ollamaHealthy = false;
+      }
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      const { localFinanceResearch } = await import("./ai/src/finance-agent");
+      return res.json(localFinanceResearch(String(query || "")));
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [{ role: "user", parts: [{ text: String(query || "") }] }],
+      config: {
+        systemInstruction: "You are Zahara, a financial research assistant for East African businesses. Research the question using Google Search and answer concisely with the current facts and figures. Note where data should be verified before acting. Plain text only.",
+        tools: [{ googleSearch: {} }],
+        temperature: 0.3,
+        maxOutputTokens: 700,
+      },
+    });
+    const text = response.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "No results.";
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const citations: string[] = chunks
+      .map((c: any) => c.web?.uri || c.retrievedContext?.uri)
+      .filter(Boolean)
+      .slice(0, 3);
+    res.json({ text, source: "gemini-3.5-flash", live: true, citations });
+  } catch (err) {
+    console.error("Finance research error:", err);
+    const { localFinanceResearch } = await import("./ai/src/finance-agent");
+    res.json(localFinanceResearch(String(req.body?.query || "")));
+  }
+});
+
+function twilioContextFromRequest(query: any): TwilioCallContext {
+  return {
+    to: String(query.to || ""),
+    customer: String(query.customer || "Customer"),
+    agent: String(query.agent || "Amani"),
+    business: String(query.business || "BirichiNex"),
+    orderId: query.order ? String(query.order) : undefined,
+    productName: query.product ? String(query.product) : undefined,
+    orderStatus: query.status ? String(query.status) : undefined,
+    opener: query.opener ? String(query.opener) : undefined,
+    closing: query.close ? String(query.close) : undefined,
+    tone: (query.tone as TwilioCallContext["tone"]) || "warm",
+    language: (query.language as TwilioCallContext["language"]) || "en",
+    voice: (query.voice as TwilioCallContext["voice"]) || "kore",
+    objective: (query.objective as TwilioCallContext["objective"]) || "inform",
+    humanTouch: query.human === "true",
+    repeatEnabled: query.repeat === "true",
+    record: query.record === "true",
+    type: query.type === "outbound-sales" ? "outbound-sales" : "outbound-followup",
+    conversational: query.live === "true",
+  };
+}
+
+// 4. Connection status — lets the UI show Live vs Simulation mode.
+app.get("/api/agent-call/mode", (_req, res) => {
+  const status = getTwilioConfigStatus();
+  const conversational = isLiveConversationReady();
+  res.json({
+    mode: conversational ? "conversational" : isLiveReady() ? "live" : "simulated",
+    conversational,
+    configured: status.configured,
+    fromNumber: status.fromNumber,
+    twimlBaseUrl: status.twimlBaseUrl,
+    record: status.record,
+  });
+});
+
+// 5. Place an outbound live call. When Gemini + Twilio are configured the
+//    call runs as a LIVE AI CONVERSATION (Media Streams -> Gemini Live).
+//    Otherwise it falls back to scripted DTMF (live) or simulation.
+app.post("/api/agent-call", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { type, contact, order, config } = req.body || {};
+
+    if (!isLiveReady() || !contact?.phone || type === "inbound") {
+      return res.json({ mode: "simulated" });
+    }
+
+    const conversational = isLiveConversationReady();
+
+    const ctx: TwilioCallContext = {
+      to: String(contact.phone),
+      customer: String(contact.name || "Customer"),
+      agent: String(config?.name || "Amani"),
+      business: String(config?.business || "BirichiNex"),
+      orderId: order?.id ? String(order.id) : undefined,
+      productName: order?.productName ? String(order.productName) : undefined,
+      orderStatus: order?.status ? String(order.status) : undefined,
+      opener: Array.isArray(config?.openingPhrases) ? String(config.openingPhrases[0]) : undefined,
+      closing: Array.isArray(config?.closingPhrases) ? String(config.closingPhrases[0]) : undefined,
+      tone: (config?.tone as TwilioCallContext["tone"]) || "warm",
+      language: (config?.language as TwilioCallContext["language"]) || "en",
+      voice: (config?.voice as TwilioCallContext["voice"]) || "kore",
+      objective: (config?.callObjective as TwilioCallContext["objective"]) || "inform",
+      humanTouch: Boolean(config?.humanTouch),
+      repeatEnabled: Boolean(config?.repeatOrders),
+      record: Boolean(config?.recordCalls),
+      type: type === "outbound-sales" ? "outbound-sales" : "outbound-followup",
+      conversational,
+    };
+
+    const { lines } = conversational ? buildConversationalTwiml(ctx) : buildOutboundTwiml(ctx);
+    const placed = await placeOutboundCall(ctx);
+
+    res.json({
+      mode: conversational ? "conversational" : "live",
+      conversational,
+      callSid: placed.callSid,
+      status: placed.status,
+      to: placed.to,
+      transcript: lines.map((text) => ({ speaker: "agent" as const, text })),
+    });
+  } catch (error: any) {
+    console.error("Error placing Twilio call:", error);
+    res.status(500).json({ mode: "error", error: error?.message || "Twilio call failed" });
+  }
+});
+
+// 6. Outbound TwiML — Twilio fetches this to run the live conversation.
+
+// Validates Twilio's X-Twilio-Signature (HMAC-SHA1 over the full request URL +
+// sorted form params, keyed by the account auth token). When TWILIO_AUTH_TOKEN
+// is set, unsigned/forged requests are rejected; without it (dev), we allow but
+// warn — the webhooks only emit TwiML and never expose data.
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || "";
+
+function twilioSignatureValid(req: express.Request): boolean {
+  if (!TWILIO_AUTH_TOKEN) return true; // dev mode — token not configured
+  const signature = String(req.headers["x-twilio-signature"] || "");
+  if (!signature) return false;
+  const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+  const params: Record<string, string> = { ...(req.body || {}) };
+  const sorted = Object.keys(params)
+    .sort()
+    .map((k) => `${k}${params[k]}`)
+    .join("");
+  const expected = crypto.createHmac("sha1", TWILIO_AUTH_TOKEN).update(url + sorted).digest("base64");
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
+app.all("/api/twilio/twiml", (req, res) => {
+  if (!twilioSignatureValid(req)) return res.status(401).send("Signature validation failed");
+  const ctx = twilioContextFromRequest(req.query);
+  if (ctx.conversational) {
+    const { twiml } = buildConversationalTwiml(ctx);
+    return res.type("text/xml").send(twiml);
+  }
+  const digits = String(req.body?.Digits || req.query?.Digits || "");
+  const { twiml } = buildOutboundTwiml(ctx, digits || undefined);
+  res.type("text/xml").send(twiml);
+});
+
+// 7. Inbound TwiML — point a Twilio phone number here to answer real calls.
+app.all("/api/twilio/inbound", (req, res) => {
+  if (!twilioSignatureValid(req)) return res.status(401).send("Signature validation failed");
+  const ctx = twilioContextFromRequest(req.query);
+  if (ctx.conversational) {
+    const { twiml } = buildConversationalTwiml(ctx);
+    return res.type("text/xml").send(twiml);
+  }
+  const digits = String(req.body?.Digits || req.query?.Digits || "");
+  const { twiml } = buildInboundTwiml(ctx, digits || undefined);
+  res.type("text/xml").send(twiml);
+});
+
+// 8. Call status callback — rings, answered, completed, no-answer, etc.
+app.post("/api/twilio/status", (req, res) => {
+  if (!twilioSignatureValid(req)) return res.status(401).send("Signature validation failed");
+  const event = {
+    at: new Date().toISOString(),
+    CallSid: String(req.body?.CallSid || ""),
+    CallStatus: String(req.body?.CallStatus || ""),
+    To: String(req.body?.To || ""),
+    From: String(req.body?.From || ""),
+    RecordingUrl: String(req.body?.RecordingUrl || ""),
+  };
+  callStatusLog.push(event);
+  console.log(`[Twilio] ${event.CallSid} → ${event.CallStatus} (${event.To})`);
+  res.sendStatus(200);
+});
+
 // Vite server integration
-async function setupVite() {
-  if (process.env.NODE_ENV !== "production") {
+async function setupVite() {  if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -233,6 +1248,11 @@ async function setupVite() {
     console.log("Vite middleware mounted in development mode.");
   } else {
     const distPath = path.join(process.cwd(), "dist");
+    // Unknown API routes return a JSON 404 instead of the SPA fallback, so
+    // scrapers/bots never receive the app shell.
+    app.all("/api/*", (req, res) => {
+      res.status(404).json({ error: "Not found", path: req.path });
+    });
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
@@ -240,9 +1260,59 @@ async function setupVite() {
     console.log("Serving static production assets from /dist.");
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = http.createServer(app);
+
+  // ─── Live conversational call bridge (Twilio Media Streams -> Gemini Live) ─
+  const wss = new WebSocketServer({ server, path: "/api/twilio/media-stream" });
+  wss.on("connection", (ws, req) => {
+    const params: Record<string, string> = {};
+    try {
+      const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+      url.searchParams.forEach((value, key) => { params[key] = value; });
+    } catch { /* keep empty params */ }
+    const ctx = twilioContextFromRequest(params);
+    console.log(`[media-stream] WebSocket connected (${ctx.business} / ${ctx.agent} — ${ctx.customer}).`);
+    void handleTwilioMediaStream(ws, ctx, getGeminiClient(), {
+      onTranscription: (role, text, partial) => {
+        if (partial) return;
+        const entry = {
+          at: new Date().toISOString(),
+          streamSid: null as string | null,
+          role,
+          text,
+        };
+        liveCallTranscripts.push(entry);
+        if (liveCallTranscripts.length > 200) liveCallTranscripts.splice(0, liveCallTranscripts.length - 200);
+        console.log(`[media-stream][${role}] ${text}`);
+      },
+    });
+  });
+
+  server.listen(PORT, "0.0.0.0", () => {
     console.log(`Portmetals Africa Full-Stack server running on http://localhost:${PORT}`);
   });
+
+  // ─── Graceful shutdown ────────────────────────────────────────────────────
+  let shuttingDown = false;
+  function shutdown(signal: string) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`\n${signal} received — shutting down gracefully…`);
+    const forceExit = setTimeout(() => {
+      console.error("Shutdown timed out — forcing exit.");
+      process.exit(1);
+    }, 10_000);
+    forceExit.unref();
+    for (const client of wss.clients) {
+      try { client.close(1001, "Server shutting down"); } catch { /* already closed */ }
+    }
+    server.close(() => {
+      console.log("HTTP server closed.");
+      process.exit(0);
+    });
+  }
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 setupVite().catch(err => {

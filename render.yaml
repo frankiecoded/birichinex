@@ -1,0 +1,32 @@
+# Render Blueprint — one-command production deployment for Portmetals Africa.
+#
+#   render blueprint launch   (or: use "Blueprint" as the source on render.com)
+#
+# Then set the optional secrets below in the Render dashboard (see deploy/RENDER.md):
+#   GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OLLAMA_BASE_URL,
+#   OLLAMA_ENABLED, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER,
+#   TWILIO_TWIML_BASE_URL.
+#
+# VITE_SYNC_DEVICE_SECRET is generated automatically and shared by both the
+# server and the browser bundle — no manual matching needed.
+
+services:
+  - type: web
+    name: portmetals-africa
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_SYNC_DEVICE_SECRET
+        generateValue: true
+      - key: GEMINI_TTS_MODEL
+        value: gemini-2.5-flash-preview-tts
+      - key: GEMINI_TTS_VOICE
+        value: Kore
+      - key: OLLAMA_MODEL
+        value: qwen3:4b

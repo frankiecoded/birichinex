@@ -1,0 +1,200 @@
+[
+  {
+    "id": "ds-leg-registration",
+    "topic": "Legal — Business registration",
+    "subtopic": "A registered business is a real business",
+    "keywords": ["legal", "registration", "register", "business", "company", "license", "biz number", "kenya", "tanzania", "uganda"],
+    "content": "Every market requires some form of business registration: a business name/sole trader or company registration — via eCitizen in Kenya, BRELA in Tanzania, URSB in Uganda. Registration unlocks bank accounts, supplier trust, loans and (eventually) tax compliance. It also protects you — an unregistered business has no shield when disputes happen. BirichiNex keeps the paperwork organised in Documents so your registration evidence lives with the business. Integrate: register in your market's official system → keep certificates in Documents → use your registered details on Storefront and contracts → upgrade from sole trader to company when revenue justifies it.",
+    "tips": [
+      "Start with the cheapest compliant structure; upgrade when needed",
+      "Registration is an investment, not an expense",
+      "Banks and top suppliers check registration before dealing",
+      "Keep renewal dates in a routine so nothing lapses"
+    ],
+    "examples": [
+      "A seller registers her business name via BRELA, gets a bank account, and lands a supplier who previously refused to deal with individuals."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-fin-bookkeeping", "ds-leg-tax-compliance", "ds-leg-licenses"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-licenses",
+    "topic": "Legal — Trading licenses & permits",
+    "subtopic": "The paper that makes selling legal where you trade",
+    "keywords": ["legal", "license", "permit", "trade", "local government", "business permit", "hawker", "shop"],
+    "content": "Beyond registration, many localities require a trading license or business permit from the local authority — a city council, municipality, or county. Selling without it risks fines and closures, and some products (food, electronics, cosmetics) need additional permits. The practical approach: identify every license your location and products require, renew on schedule, and keep them on file. BirichiNex Documents holds them, and Routines can schedule renewals. Integrate: list your required licenses per market → keep copies in Documents → set renewal reminders in Routines → attach permit numbers to the relevant product lines.",
+    "tips": [
+      "Ask your local authority for the exact requirements — don't guess",
+      "Some product categories need extra permits (food, cosmetics, electronics)",
+      "Renewal reminders stop silent lapses that turn into fines",
+      "A visible permit also signals legitimacy to customers"
+    ],
+    "examples": [
+      "A seller adds a routine for license renewal after a near-lapse; a lapse that could have closed her stall never happens."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-f-routines", "ds-leg-registration", "ds-fin-tax"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-customs",
+    "topic": "Legal — Import & export compliance",
+    "subtopic": "Borders are legal processes, not just routes",
+    "keywords": ["legal", "customs", "import", "export", "compliance", "duty", "tariff", "hs code", "clearance"],
+    "content": "Moving goods across borders is a legal process: classification (HS codes), valuation, duty and taxes, documentation, and clearance. Getting it wrong means holds, fines, or confiscation. The pattern that works: classify honestly, document everything, declare the true value, and keep the paperwork. BirichiNex supports it structurally — Logistics tracks customs status on import/export shipments and Documents files the clearance papers. Integrate: determine HS codes and duty for your products → keep invoices and packing lists in Documents → create Logistics shipments with the right type → track clearance → include duty in landed cost.",
+    "tips": [
+      "Honest declaration beats clever under-valuation — every time",
+      "HS codes are the language of customs; learn yours per product",
+      "Every import has a paper trail; keep it complete",
+      "One mastered route is worth ten guessed ones"
+    ],
+    "examples": [
+      "A trader's full customs folder in Documents clears a shipment in days while a competitor's incomplete file costs a week and a fine."
+    ],
+    "relatedTopics": ["ds-f-logistics", "ds-f-orders-documents", "ds-ops-logistics-customs", "ds-fin-tax"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-tax-compliance",
+    "topic": "Legal — Tax compliance",
+    "subtopic": "Pay what's due, when it's due",
+    "keywords": ["legal", "tax", "compliance", "kra", "tra", "ura", "vat", "income tax", "filing", "registration"],
+    "content": "Tax obligations differ per market — KRA (Kenya), TRA (Tanzania), URA (Uganda) — and usually include registration, VAT past a turnover threshold, income tax on profit, and import duty. Compliance is a legal requirement first and a financial one second. The winning habit: register early, set money aside in a tax bucket, file on time, and keep the records that prove your numbers. BirichiNex gives you clean revenue/profit figures from Finance and the supporting invoices in Documents. Integrate: keep Finance current so your figures are audit-ready → store invoices and returns in Documents → set aside tax money every collection → file on schedule and keep the receipts.",
+    "tips": [
+      "Set aside the tax percentage before spending the rest",
+      "On-time filing avoids penalties that dwarf the tax",
+      "Your clean ledger is your defence in any query",
+      "Cross VAT thresholds? Get professional help before you cross"
+    ],
+    "examples": [
+      "A growing seller crosses the VAT threshold; with clean Finance records and Documents proof, registration is smooth and no penalties accrue."
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-orders-documents", "ds-fin-tax", "ds-leg-registration"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-contracts",
+    "topic": "Legal — Contracts & agreements",
+    "subtopic": "Agreements in writing protect both sides",
+    "keywords": ["legal", "contract", "agreement", "supplier", "terms", "written", "sign", "partnership"],
+    "content": "Verbal agreements are fine until they aren't. Written contracts — supplier terms, wholesale terms, service agreements, partnerships — turn 'he said' into 'we agreed'. Key elements: parties, what's being delivered, price and payment terms, timelines, and what happens if it fails. BirichiNex Documents stores and shares these so both sides have a copy. Integrate: put every material deal in writing → file contracts in Documents → state payment terms clearly in invoices → review contracts when they renew → sign with the business's legal name.",
+    "tips": [
+      "Write it down when it matters — stock, money, or reputation is at stake",
+      "Payment terms in writing stop the 'I didn't know' excuse",
+      "Keep signed copies in Documents for both parties",
+      "A simple one-page agreement beats a brilliant unwritten one"
+    ],
+    "examples": [
+      "A wholesale deal is documented with terms; when a reseller delays payment, the written terms settle it in a week instead of a month."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-fin-invoicing", "ds-leg-registration", "ds-m-saas-biz"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-consumer",
+    "topic": "Legal — Consumer rights & fair trading",
+    "subtopic": "Fair dealing is a legal duty and a business strategy",
+    "keywords": ["legal", "consumer", "rights", "fair trade", "accurate", "advertising", "refund", "protection"],
+    "content": "Consumer protection law (across Kenya, Tanzania and Uganda) requires honest descriptions, accurate pricing, delivery of what was promised, and reasonable handling of defects. Violations invite complaints to authorities and damage trust. Fair dealing also happens to be the most profitable long-term strategy — it builds the reviews and word of mouth that marketing can't buy. BirichiNex encourages it structurally: honest listings, tracked delivery, and resolution records. Integrate: describe products accurately (condition, specs, origin) → price transparently → deliver what you promised → resolve defects quickly and log the outcome in CRM.",
+    "tips": [
+      "Honest descriptions prevent refunds and complaints",
+      "A refund handled well costs less than an authority complaint",
+      "Accurate delivery promises are a legal and trust matter",
+      "Let the platform's tracking and documents prove your side"
+    ],
+    "examples": [
+      "A seller discovers a batch is below advertised quality, contacts buyers proactively with a discount, and turns a would-be complaint into loyalty."
+    ],
+    "relatedTopics": ["ds-f-crm", "ds-f-orders-track", "ds-ops-returns", "ds-mkt-brand"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-employment",
+    "topic": "Legal — Hiring help",
+    "subtopic": "Staff legally, or don't staff at all",
+    "keywords": ["legal", "employment", "hire", "staff", "worker", "wages", "contract", "register"],
+    "content": "Once you hire, you take on legal obligations: employment contracts, minimum wage, working conditions, and statutory registrations (social security, PAYE where applicable) — with real penalties for informal arrangements that go wrong. The safe path is progressive: try freelancers and contracted help first, document everything, and move to formal employment when the role is proven. BirichiNex supports the documentation and scheduling side. Integrate: put every worker arrangement in writing → file contracts in Documents → keep wage and payment records in Finance → add payroll and renewal obligations to Routines → get professional advice before full-time hiring.",
+    "tips": [
+      "Start with contractors; convert to employees when the role is proven",
+      "Written terms prevent the most common disputes",
+      "Know your market's minimum wage and social obligations",
+      "Record payments — workers and authorities both look at the books"
+    ],
+    "examples": [
+      "A growing seller converts her first helper to a proper written contract with agreed pay; the helper's loyalty and the seller's legal risk both improve."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-f-money-finance", "ds-f-routines", "ds-leg-registration"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-data-privacy",
+    "topic": "Legal — Customer data & privacy",
+    "subtopic": "Customer data is a trust, not a resource",
+    "keywords": ["legal", "privacy", "data", "personal data", "customer records", "kyc", "consent", "security"],
+    "content": "Sellers hold customer names, phone numbers, addresses and payment records. Data protection law (and basic ethics) requires you to use that data only for the purpose it was given, keep it secure, and not sell or misuse it. In practice: collect what you need, don't share contact lists, secure the records, and use them to serve — not spam. BirichiNex keeps customer data in the CRM for your legitimate use (orders, follow-ups, loyalty). Integrate: use CRM data for service and follow-up only → keep records in the platform rather than random phone lists → get consent before sending marketing → delete or anonymise when asked.",
+    "tips": [
+      "Only collect what you need to serve the order",
+      "Never sell or share your customer list — it's both illegal and reputation suicide",
+      "Use CRM data to serve; ask before you market",
+      "Secure access to business accounts — a leaked list is a scandal"
+    ],
+    "examples": [
+      "A seller asked before adding a customer to a promotions list; the customer appreciated the respect and became a repeat buyer."
+    ],
+    "relatedTopics": ["ds-f-crm", "ds-f-loyalty", "ds-leg-consumer", "ds-mkt-social"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-ip",
+    "topic": "Legal — Brand & trademark protection",
+    "subtopic": "Own the name customers trust",
+    "keywords": ["legal", "trademark", "brand", "intellectual property", "logo", "name", "register", "protect", "copy"],
+    "content": "Your brand — name, logo, packaging — is an asset. Registering a trademark protects it from copycats who trade on your reputation, and it strengthens your position in disputes. It also works the other way: selling counterfeits or using others' brands illegally is a fast route to legal trouble. The sensible path: register your key marks in the markets you serve, and sell genuine goods only. BirichiNex holds your registration documents alongside the rest. Integrate: file trademark documents in Documents → use your registered mark consistently on Storefront and packaging → avoid listing products you can't prove genuine → review marks before launching new lines.",
+    "tips": [
+      "Register the name and logo you actually trade under",
+      "Trademark registration is cheaper than a copycat dispute",
+      "Sell genuine only — counterfeit margins end in confiscation and fines",
+      "File renewals in a routine so protection never lapses"
+    ],
+    "examples": [
+      "A seller's registered mark lets them stop a copycat using the same name; without registration, they'd have lost the customers they built."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-f-routines", "ds-mkt-brand", "ds-leg-registration"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-product-safety",
+    "topic": "Legal — Product safety & standards",
+    "subtopic": "Sell standards-compliant or not at all",
+    "keywords": ["legal", "product safety", "standards", "kebs", "tbs", "unbs", "compliance", "quality mark", "electronics", "food"],
+    "content": "Regulated products — electronics, food, cosmetics, children's goods — must meet national standards (KEBS in Kenya, TBS in Tanzania, UNBS in Uganda) and often carry a quality mark. Non-compliant products risk confiscation, fines and serious liability if they harm a buyer. The rule is simple: know which of your products are regulated, and source only compliant stock. BirichiNex lets you document compliance per product line. Integrate: identify regulated products in your catalog → source from suppliers who provide compliance proof → keep certificates in Documents → attach compliance status to listings → refuse deals on unverifiable stock.",
+    "tips": [
+      "If it plugs in, gets eaten, or touches a child, it's likely regulated",
+      "Ask suppliers for the standards certificate — it's a normal request",
+      "A quality mark is a selling point, not just paperwork",
+      "One non-compliant product can take down a whole store's trust"
+    ],
+    "examples": [
+      "A seller refuses a cheap unverified charger deal; a rival who accepted it gets a confiscation notice and a flood of complaints."
+    ],
+    "relatedTopics": ["ds-f-procurement", "ds-f-orders-documents", "ds-leg-customs", "ds-ops-procurement"],
+    "category": "legal"
+  },
+  {
+    "id": "ds-leg-disputes",
+    "topic": "Legal — Dispute resolution",
+    "subtopic": "Disputes are predictable — have a process",
+    "keywords": ["legal", "dispute", "resolution", "complaint", "mediation", "arbitration", "court", "evidence"],
+    "content": "Every business eventually faces a dispute — a customer, a supplier, an authority. The outcome is decided less by who is right and more by who has evidence and a process. The formula: record everything, try to resolve directly and professionally first, escalate to mediation/authorities only when necessary. BirichiNex's records (orders, tracking, documents, CRM history) become your evidence trail. Integrate: keep every order, tracking and document in the platform → attempt direct resolution with a clear record → log the dispute and outcome in CRM → escalate only after direct attempts fail → keep your evidence folder in Documents ready.",
+    "tips": [
+      "Written records win disputes; memory loses them",
+      "Professional direct resolution is cheaper than any escalation",
+      "Documents and tracking are your side of the story",
+      "Escalate calmly and only with evidence in hand"
+    ],
+    "examples": [
+      "A supplier dispute is settled quickly when the seller produces the signed terms and payment records from Documents — no court needed."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-f-crm", "ds-ops-returns", "ds-leg-contracts"],
+    "category": "legal"
+  }
+]

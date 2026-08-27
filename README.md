@@ -75,6 +75,49 @@ BirichiNex™️ is built from real business operations — not theoretical soft
 - **Icons:** Lucide React
 - **3D:** Three.js (React Three Fiber)
 - **AI:** Google GenAI
+- **Live AI Calling:** Twilio Voice API
+
+## Live AI Calling (Amani)
+
+The AI Sales Agent places **real outbound calls** through the Twilio Voice API when credentials are present, and gracefully falls back to its full simulation mode otherwise. Live calls play a conversational script (order follow-ups, sales pitches, repeat-order offers) and let customers navigate with keypad input. Every call is logged, transcribed, and emailed to the owner.
+
+To go live, add to your environment (see `.env.example`):
+
+```
+TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
+TWILIO_TWIML_BASE_URL   # public HTTPS URL — dev: ngrok tunnel, prod: deployed app URL
+```
+
+For inbound calls, point your Twilio number's "A call comes in" webhook at `<TWILIO_TWIML_BASE_URL>/api/twilio/inbound`. Call status flows back through `/api/twilio/status`.
+
+## Zahara — AI Finance Agent
+
+Zahara (Money → Zahara) is a CFO-grade agent that reads your live wallet, ledger, stock and orders, proposes strategies, and can **actually run business actions in the app** — restock inventory, settle payables, record purchases, place dropship orders, transfer to savings — but **never without your explicit approval**.
+
+- **Human-in-the-loop guardrail:** every money move or stock/price change is proposed with an exact amount, shown in the Actions tab, and executed only when you press **Approve**. Denied actions change nothing. All decisions are logged in an audit trail.
+- **Advice:** `POST /api/finance/advise` — Qwen3 (self-hosted on your VPS via Ollama) with the Zahara system prompt and guardrails; falls back to Gemini, then the local deterministic engine when no live provider is configured.
+- **Live research:** `POST /api/finance/research` — current exchange rates, taxes, mobile money and market prices, web-grounded via Gemini Google Search when available; otherwise answered by the on-device Qwen3 model, with a dataset-backed fallback.
+- **Per-user dataset:** your business data is saved as a dataset and re-synced automatically at most every **24 hours** (and instantly on manual sync) — see the Dataset tab.
+
+## AI Providers
+
+The app's production AI brain runs on **Hugging Face Inference Providers**
+(OpenAI-compatible router) with Qwen3/Ollama on your VPS as an offline fallback,
+then Google Gemini, then a smart local engine when no live provider is
+configured. Keys stay on the server — nothing ever ships to the browser.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `HUGGINGFACE_API_KEY` (alias `HF_TOKEN`) | — | **Primary AI** — HF Access Token with Inference enabled (chat, quote analyst, Zahara finance) |
+| `HUGGINGFACE_MODEL` | `meta-llama/Llama-3.3-70B-Instruct` | Model served by HF Inference Providers |
+| `OLLAMA_ENABLED` | — | Set to `true` to use the self-hosted Qwen3 (Ollama) fallback |
+| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Ollama's OpenAI-compatible endpoint (also enables Ollama on its own) |
+| `OLLAMA_MODEL` | `qwen3:4b` | Qwen3 model tag pulled into Ollama |
+| `GEMINI_API_KEY` | — | Powers the copilot voice (Gemini TTS) and the final fallback chat provider |
+| `GEMINI_TTS_MODEL` | `gemini-2.5-flash-preview-tts` | Free Gemini TTS model used by `POST /api/ai/voice` |
+| `GEMINI_TTS_VOICE` | `Kore` | Free female voice (Gemini's own assistant-class voice) |
+
+The copilot speaks through `POST /api/ai/voice` using **Gemini TTS** (free Google AI Studio tier — the same neural voices Gemini uses), and automatically falls back to the browser's speech synthesizer otherwise.
 
 ## Getting Started
 
@@ -83,8 +126,8 @@ BirichiNex™️ is built from real business operations — not theoretical soft
 npm install
 
 # Set up environment
-cp .env.example .env.local
-# Add your GEMINI_API_KEY
+cp .env.example .env
+# Set HUGGINGFACE_API_KEY (production AI) — OLLAMA/GEMINI are optional fallbacks
 
 # Run development server
 npm run dev
@@ -112,6 +155,7 @@ Built on Apple's 2026 Liquid Glass design language:
 src/
 ├── components/
 │   ├── shell/          # Navigation Shell (Apple sidebar)
+│   ├── ai/             # Copilot UI, GuideTour, Command Palette
 │   └── ui/             # Reusable UI components
 │       ├── GlassCard.tsx
 │       ├── Button.tsx
@@ -127,7 +171,7 @@ src/
 │   ├── CRMPage.tsx
 │   ├── InventoryPage.tsx
 │   ├── FinancePage.tsx
-│   ├── AIAssistantPage.tsx
+│   ├── AIAdvisorPage.tsx
 │   ├── LearningPage.tsx
 │   ├── EntrepreneurHubPage.tsx
 │   ├── AnalyticsPage.tsx
@@ -139,6 +183,13 @@ src/
 ├── App.tsx             # BirichiNex™️ OS shell
 ├── main.tsx            # Entry point
 └── index.css           # Design system tokens
+
+ai/                     # THE AI CENTER — all AI code, prompts & tuning
+├── README.md           # Center overview
+├── FEATURES.md         # Registry of every AI feature
+├── src/                # AI engines (imported by the app from here)
+├── tuning/             # Fine-tuning workspace & prompt templates
+└── lab/                # Terminal playground (npm run ai:lab)
 ```
 
 ## BirichiNex™️ Principle

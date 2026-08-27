@@ -35,8 +35,13 @@ npm install
 ### 2. Environment Variables Configuration
 Configure a `.env` file at the root of the workspace using the structure outlined in `.env.example`:
 ```env
-# Required for Amani's AI business advisor queries and live retail calculation projections
-GEMINI_API_KEY="YOUR_OFFICIAL_GEMINI_API_KEY"
+# Primary: Ollama (self-hosted Qwen3 on your Contabo VPS)
+OLLAMA_ENABLED="true"
+OLLAMA_BASE_URL="http://localhost:11434/v1"
+OLLAMA_MODEL="qwen3:4b"
+
+# Copilot voice (Gemini TTS, free AI Studio tier) + fallback chat provider
+GEMINI_API_KEY="YOUR_FREE_GEMINI_API_KEY"
 
 # Self-referential Linkages & callback handles
 APP_URL="http://localhost:3000"
@@ -61,6 +66,12 @@ After compiling, initiate the optimized node container to host the application:
 ```bash
 npm start
 ```
+
+### 6. Deployment (VPS AI + Supabase + Render)
+The AI model runs self-hosted on a Contabo VPS; the app deploys to Render; data lives in Supabase Postgres. Full step-by-step guides:
+- **VPS / Ollama setup:** [`deploy/VPS-OLLAMA.md`](./deploy/VPS-OLLAMA.md)
+- **App deployment to Render:** [`deploy/RENDER.md`](./deploy/RENDER.md)
+- **Database schema:** [`deploy/SUPABASE.md`](./deploy/SUPABASE.md)
 
 ---
 
