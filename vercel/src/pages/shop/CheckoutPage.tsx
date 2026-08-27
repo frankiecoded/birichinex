@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft, ArrowRight, Check, Lock, Truck, CreditCard,
-  Smartphone, Building2, Banknote, ShoppingBag, Package, X, Wallet, Loader2, Award
+  Smartphone, Building2, Banknote, ShoppingBag, Package, X, Wallet, Loader2, Award, AlertTriangle
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import { formatPrice, calculateLoyaltyPoints } from "../../data/platform";
@@ -284,7 +284,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
                 </div>
                 <div>
                   <label className="text-caption text-ink-secondary font-semibold block mb-1.5">Phone Number *</label>
-                  <input type="tel" required value={shipping.phone} onChange={(e) => setShipping((s) => ({ ...s, phone: e.target.value }))} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/30 transition-all" placeholder="+255 700 000 000" />
+                  <input type="tel" required value={shipping.phone} onChange={(e) => setShipping((s) => ({ ...s, phone: e.target.value }))} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/30 transition-all" placeholder="+255 7XX XXX XXX" />
                 </div>
                 <div>
                   <label className="text-caption text-ink-secondary font-semibold block mb-1.5">Email *</label>
@@ -372,26 +372,30 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
                           {pm.id === "mpesa" && (
                             <div>
                               <label className="text-caption text-ink-secondary font-semibold block mb-1.5">M-Pesa Phone Number</label>
-                              <input type="tel" value={mpesaPhone || shipping.phone} onChange={(e) => setMpesaPhone(e.target.value)} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" placeholder="+255 700 000 000" />
+                              <input type="tel" value={mpesaPhone || shipping.phone} onChange={(e) => setMpesaPhone(e.target.value)} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" placeholder="+255 7XX XXX XXX" />
                               <p className="text-caption text-ink-quaternary mt-1.5">You'll receive an STK push prompt on your phone to confirm payment.</p>
                             </div>
                           )}
                           {pm.id === "airtel" && (
                             <div>
                               <label className="text-caption text-ink-secondary font-semibold block mb-1.5">Airtel Money Phone Number</label>
-                              <input type="tel" value={airtelPhone || shipping.phone} onChange={(e) => setAirtelPhone(e.target.value)} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" placeholder="+255 700 000 000" />
+                              <input type="tel" value={airtelPhone || shipping.phone} onChange={(e) => setAirtelPhone(e.target.value)} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" placeholder="+255 7XX XXX XXX" />
                               <p className="text-caption text-ink-quaternary mt-1.5">You'll receive a payment prompt on your phone.</p>
                             </div>
                           )}
                           {pm.id === "bank" && (
                             <div className="space-y-2.5">
-                              <div className="grid grid-cols-2 gap-3 text-caption">
-                                <div><span className="text-ink-quaternary">Bank:</span> <span className="font-semibold text-ink ml-1">National Bank of Tanzania</span></div>
-                                <div><span className="text-ink-quaternary">Account Name:</span> <span className="font-semibold text-ink ml-1">PortMetals Africa Ltd</span></div>
-                                <div><span className="text-ink-quaternary">Account No:</span> <span className="font-semibold text-ink ml-1">0123456789</span></div>
-                                <div><span className="text-ink-quaternary">Reference:</span> <span className="font-semibold text-ink ml-1">Your phone number</span></div>
+                              <div className="grid grid-cols-1 gap-2 text-caption">
+                                <div className="flex items-start gap-2 rounded-[10px] bg-surface-secondary/50 border border-glass-border p-3">
+                                  <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                                  <p className="text-ink-secondary leading-relaxed">
+                                    Pay by bank transfer to the account details listed on this shop's storefront, then your
+                                    order is confirmed once the shop verifies the payment. The shop's bank details are shown
+                                    on its contact page.
+                                  </p>
+                                </div>
                               </div>
-                              <p className="text-caption text-ink-quaternary">Transfer will be verified within 2-4 hours. Your order will be processed after confirmation.</p>
+                              <p className="text-caption text-ink-quaternary">Orders paid by transfer are verified before fulfilment.</p>
                             </div>
                           )}
                           {pm.id === "card" && (

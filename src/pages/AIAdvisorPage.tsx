@@ -288,7 +288,7 @@ function APISettingsModal({ onClose }: { onClose: () => void }) {
               <p className="text-[11px] text-ink-tertiary leading-relaxed">
                 Uses the server's <span className="font-mono text-ink-secondary">OLLAMA_ENABLED</span> (self-hosted
                 Qwen3 on your VPS) or <span className="font-mono text-ink-secondary">GEMINI_API_KEY</span> with the
-                full BirichiNex/Portmetals advisor brain — no key is stored or sent from your browser. This is the
+                full BirichiNex advisor brain — no key is stored or sent from your browser. This is the
                 recommended option.
               </p>
             </div>

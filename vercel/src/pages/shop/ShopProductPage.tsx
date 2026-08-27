@@ -8,7 +8,7 @@ import {
 import GlassCard from "../../components/ui/GlassCard";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { PRODUCTS, TECH_PRODUCTS, formatPrice } from "../../data/platform";
+import { formatPrice } from "../../data/platform";
 import { Currency, Product } from "../../types";
 import TiltCard from "../../components/three/TiltCard";
 import MagneticButton from "../../components/three/MagneticButton";
@@ -149,7 +149,7 @@ function SpecCard({ label, value, index }: { label: string; value: string; index
 
 export default function ShopProductPage({ productId, selectedCurrency, onNavigate, onAddToCart }: ShopProductPageProps) {
   const inventoryItems = useStore((s) => s.inventoryItems);
-  const allProducts = [...PRODUCTS, ...TECH_PRODUCTS, ...postedInventoryToProducts(inventoryItems)];
+  const allProducts = postedInventoryToProducts(inventoryItems);
   const product = allProducts.find((p) => p.id === productId);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -181,8 +181,6 @@ export default function ShopProductPage({ productId, selectedCurrency, onNavigat
         className="flex items-center gap-2 text-caption text-ink-tertiary"
       >
         <button onClick={() => onNavigate("home")} className="hover:text-ink transition-colors">Home</button>
-        <ChevronRight className="h-3 w-3" />
-        <button onClick={() => onNavigate("category:fashion")} className="hover:text-ink transition-colors">Fashion</button>
         <ChevronRight className="h-3 w-3" />
         <span className="text-ink font-semibold">{product.name}</span>
       </motion.div>

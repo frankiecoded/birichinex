@@ -28,8 +28,8 @@ const DEFAULT_CONFIG: AIConfig = {
 /**
  * Talks to the server's AI brain (/api/chat). The server talks to Ollama
  * (self-hosted Qwen3 on the VPS) / Hugging Face / Google Gemini with the
- * Portmetals pricing/identity system prompt, so no key ever ships to (or
- * leaves) the browser. `live` is true only when the server actually answered
+ * shop-neutral system prompt, so no key ever ships to or leaves the
+ * browser. `live` is true only when the server actually answered
  * with a real provider. When `onToken` is provided the request is streamed
  * (SSE) so the page can render tokens as they arrive, like a human typing.
  */

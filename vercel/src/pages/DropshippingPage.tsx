@@ -29,9 +29,9 @@ import Button from "../components/ui/Button";
 import CursorSpotlight from "../components/three/CursorSpotlight";
 import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
-import { DROPSHIP_TIERS, DROPSHIP_CATALOG, formatPrice } from "../data/platform";
+import { DROPSHIP_TIERS, formatPrice } from "../data/platform";
 import { useStore } from "../store/useStore";
-import type { DropshippingTier, DropshipOrderStatus } from "../types";
+import type { DropshippingTier, DropshipOrderStatus, DropshipProduct } from "../types";
 
 const TIER_ORDER: DropshippingTier[] = ["starter", "growth", "pro", "enterprise"];
 
@@ -62,7 +62,7 @@ const ORDER_FILTER_MAP: Record<string, DropshipOrderStatus[]> = {
   cancelled: ["cancelled", "refunded"],
 };
 
-const ALL_CATEGORIES = Array.from(new Set(DROPSHIP_CATALOG.map((p) => p.category)));
+const ALL_CATEGORIES: string[] = [];
 
 export default function DropshippingPage() {
   const dropshipSubscription = useStore((s) => s.dropshipSubscription);
@@ -82,7 +82,7 @@ export default function DropshippingPage() {
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
   const [subscribeModal, setSubscribeModal] = useState<DropshippingTier | null>(null);
   const [orderDetailModal, setOrderDetailModal] = useState<string | null>(null);
-  const [checkoutModal, setCheckoutModal] = useState<typeof DROPSHIP_CATALOG[0] | null>(null);
+  const [checkoutModal, setCheckoutModal] = useState<DropshipProduct | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<"deliver" | "store">("deliver");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -95,14 +95,7 @@ export default function DropshippingPage() {
   );
 
   const filteredProducts = useMemo(() => {
-    return DROPSHIP_CATALOG.filter((p) => {
-      const matchesSearch =
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.origin.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
-      return matchesSearch && matchesCategory;
-    });
+    return [] as DropshipProduct[];
   }, [searchQuery, categoryFilter]);
 
   const filteredOrders = useMemo(() => {
@@ -115,7 +108,7 @@ export default function DropshippingPage() {
   const stats = useMemo(() => {
     const totalOrders = dropshipOrders.length;
     const totalRevenue = dropshipOrders.reduce((sum, o) => sum + o.total.amount, 0);
-    const activeProducts = DROPSHIP_CATALOG.filter((p) => p.stock > 0).length;
+    const activeProducts = 0;
     const discount = currentTierConfig.discount;
     return { totalOrders, totalRevenue, activeProducts, discount };
   }, [dropshipOrders, currentTierConfig]);
@@ -125,7 +118,7 @@ export default function DropshippingPage() {
     setSubscribeModal(null);
   };
 
-  const handleAddToDropship = (product: typeof DROPSHIP_CATALOG[0]) => {
+  const handleAddToDropship = (product: DropshipProduct) => {
     const retailProduct = {
       id: product.sourceProductId,
       name: product.name,
@@ -133,7 +126,7 @@ export default function DropshippingPage() {
       category: product.category,
       price: product.retailPrice,
       images: product.images,
-      supplier: { id: "sup-001", name: "PortMetals Africa", verified: true, rating: 4.8, location: "Dar es Salaam" },
+      supplier: { id: "sup-dropship", name: "BirichiNex Supplier Network", verified: true, rating: 4.8, location: "" },
       grade: product.grade,
       origin: product.origin,
       specifications: {},
@@ -144,7 +137,7 @@ export default function DropshippingPage() {
     addToCart(retailProduct);
   };
 
-  const handlePlaceOrder = (product: typeof DROPSHIP_CATALOG[0]) => {
+  const handlePlaceOrder = (product: DropshipProduct) => {
     const qty = checkoutQuantity;
     const totalAmount = product.dropshipPrice.amount * qty;
     placeDropshipOrder({
@@ -167,7 +160,7 @@ export default function DropshippingPage() {
         product.category,
         qty,
         product.dropshipPrice,
-        "PortMetals Dropship",
+        "BirichiNex Dropship",
       );
     } else {
       // Customer sale — the retail price minus drop cost accrues to the
@@ -210,7 +203,7 @@ export default function DropshippingPage() {
           <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-[40px] pointer-events-none" />
           <h1 className="text-headline text-gradient-brand">Dropshipping Hub</h1>
           <p className="text-callout text-ink-tertiary mt-2">
-            Source products from PortMetals Africa at discounted prices and start selling instantly
+            Source from the BirichiNex supplier network at discounted prices and start selling instantly
           </p>
           <div className="mt-3">
             <Badge variant="brand" size="md" dot>
@@ -414,132 +407,17 @@ export default function DropshippingPage() {
           className="mt-8"
         >
           <h2 className="text-title font-bold text-ink mb-1">Product Catalog</h2>
-          <p className="text-caption text-ink-tertiary mb-5">Browse {DROPSHIP_CATALOG.length} products available for dropshipping</p>
+          <p className="text-caption text-ink-tertiary mb-5">Products you can dropship appear here once suppliers list them</p>
 
           <GlassCard padding="lg">
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-quaternary" />
-                <input
-                  className="w-full h-10 pl-10 pr-3 rounded-[10px] bg-surface/72 border border-glass-border text-ink text-subhead placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30"
-                  placeholder="Search products, categories, origins..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-quaternary" />
-                <select
-                  className="h-10 pl-10 pr-8 rounded-[10px] bg-surface/72 border border-glass-border text-ink text-subhead focus:outline-none focus:ring-2 focus:ring-brand/30 appearance-none cursor-pointer"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                >
-                  <option value="all">All Categories</option>
-                  {ALL_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="text-center py-12">
+              <Package className="h-12 w-12 text-ink-quaternary/40 mx-auto mb-3" strokeWidth={1} />
+              <p className="text-subhead font-bold text-ink">Catalog coming soon</p>
+              <p className="text-caption text-ink-tertiary mt-1 max-w-sm mx-auto leading-relaxed">
+                When suppliers publish products on BirichiNex, they land here with wholesale pricing,
+                discount bands, and stock counts — ready to add to your store or buy to keep in stock.
+              </p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredProducts.map((product, i) => {
-                const dropshipAmount = getDropshipPrice(product.retailPrice.amount);
-                const savingsAmount = product.retailPrice.amount - dropshipAmount;
-                const inStock = product.stock > 0;
-
-                return (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: i * 0.03 }}
-                  >
-                    <GlassCard padding="none" hover className="h-full flex flex-col">
-                      <div className="relative h-36 bg-surface-secondary/40 rounded-t-[14px] flex items-center justify-center">
-                        <Package className="h-12 w-12 text-ink-quaternary/40" strokeWidth={1} />
-                        <div className="absolute top-3 left-3">
-                          <Badge variant="success" size="sm">
-                            <Tag className="h-3 w-3" /> -{currentTierConfig.discount}%
-                          </Badge>
-                        </div>
-                        <div className="absolute top-3 right-3">
-                          <Badge variant={product.grade === "A+" ? "brand" : "default"} size="sm">
-                            {product.grade}
-                          </Badge>
-                        </div>
-                        {!inStock && (
-                          <div className="absolute inset-0 bg-scrim rounded-t-[14px] flex items-center justify-center">
-                            <Badge variant="error" size="lg">Out of Stock</Badge>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4 flex flex-col flex-1">
-                        <h4 className="text-subhead font-bold text-ink mb-1 line-clamp-1">{product.name}</h4>
-                        <p className="text-caption text-ink-tertiary mb-3 line-clamp-2">{product.description}</p>
-                        <div className="flex items-center gap-2 mb-3">
-                          <Badge variant="info" size="sm">{product.category}</Badge>
-                          <Badge variant="default" size="sm">{product.origin}</Badge>
-                        </div>
-                        <div className="mt-auto">
-                          <div className="flex items-baseline justify-between mb-1">
-                            <div>
-                              <span className="text-title font-bold text-ink">
-                                {formatPrice(dropshipAmount, selectedCurrency)}
-                              </span>
-                              <span className="text-caption text-ink-quaternary line-through ml-2">
-                                {formatPrice(product.retailPrice.amount, selectedCurrency)}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-caption text-success font-semibold mb-3">
-                            You save {formatPrice(savingsAmount, selectedCurrency)} per unit
-                          </p>
-                          <div className="flex gap-2">
-                            <MagneticButton strength={0.1} className="flex-1">
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                fullWidth
-                                icon={<ShoppingCart className="h-3.5 w-3.5" />}
-                                disabled={!inStock}
-                                onClick={() => handleAddToDropship(product)}
-                              >
-                                Add to Store
-                              </Button>
-                            </MagneticButton>
-                            <MagneticButton strength={0.1} className="flex-1">
-                              <Button
-                                variant="brand"
-                                size="sm"
-                                fullWidth
-                                icon={<Box className="h-3.5 w-3.5" />}
-                                disabled={!inStock}
-                                onClick={() => { setCheckoutModal(product); setCheckoutQuantity(1); setFulfillmentType("deliver"); setCustomerName(""); setCustomerPhone(""); setCustomerAddress(""); }}
-                              >
-                                Buy
-                              </Button>
-                            </MagneticButton>
-                          </div>
-                          <p className="text-caption text-ink-quaternary mt-2 text-center">
-                            Stock: {product.stock.toLocaleString()} units
-                          </p>
-                        </div>
-                      </div>
-                    </GlassCard>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {filteredProducts.length === 0 && (
-              <div className="py-12 text-center">
-                <Package className="h-12 w-12 text-ink-quaternary/40 mx-auto mb-3" strokeWidth={1} />
-                <p className="text-subhead text-ink-tertiary">No products found</p>
-                <p className="text-caption text-ink-quaternary mt-1">Try adjusting your search or filter</p>
-              </div>
-            )}
           </GlassCard>
         </motion.div>
 

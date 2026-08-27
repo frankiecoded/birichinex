@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Rocket, TrendingUp, Users, Globe, ArrowUpRight, Star,
-  Target, Lightbulb, Handshake, DollarSign, X, Send
+  Target, Lightbulb, Handshake, DollarSign, X, Send, Users2
 } from "lucide-react";
 import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
@@ -21,8 +21,8 @@ const OPPORTUNITIES = [
   {
     id: "1",
     title: "Dropshipping Launchpad",
-    description: "Start selling with zero inventory. Access Portmetals Africa's complete catalog and sell to your network.",
-    fullDescription: "Our Dropshipping Launchpad removes the biggest barrier to entry: upfront inventory costs. You get access to our entire catalog of 22+ professionally sorted fashion categories, real-time stock levels, and automated order fulfillment. We handle warehousing, packing, and shipping while you focus on sales and customer relationships. Includes a free onboarding session and marketing toolkit.",
+    description: "Start selling with zero inventory. Access the BirichiNex supplier network and sell to your network.",
+    fullDescription: "Our Dropshipping Launchpad removes the biggest barrier to entry: upfront inventory costs. You get access to supplier-published products with real-time stock levels and automated order fulfillment, while BirichiNex handles the platform plumbing so you can focus on sales and customer relationships. Includes a free onboarding session and marketing toolkit.",
     category: "Zero Inventory",
     potential: "Up to 40% commission per sale",
     icon: Rocket,
@@ -42,7 +42,7 @@ const OPPORTUNITIES = [
     id: "3",
     title: "Fashion Boutique Starter",
     description: "Access curated starter packs, business training, and mentorship to launch your boutique.",
-    fullDescription: "The Fashion Boutique Starter program is designed for aspiring retail entrepreneurs. You receive a curated starter pack (200+ pieces across trending categories), a 4-week business training course covering inventory management, pricing strategy, and visual merchandising, plus 3 months of 1-on-1 mentorship from an experienced boutique owner. Break-even typically occurs within 30 days.",
+    fullDescription: "The Fashion Boutique Starter program is designed for aspiring retail entrepreneurs. You receive a curated starter pack of retailable pieces, a 4-week business training course covering inventory management, pricing strategy, and visual merchandising, plus 3 months of 1-on-1 mentorship from an experienced boutique owner. Break-even typically occurs within 30 days.",
     category: "Retail",
     potential: "Break-even in 30 days",
     icon: Star,
@@ -60,16 +60,17 @@ const OPPORTUNITIES = [
   },
 ];
 
-const MENTORS = [
-  { name: "Grace Mwangi", expertise: "Fashion Retail", location: "Nairobi", rating: 4.9 },
-  { name: "David Ochieng", expertise: "Supply Chain", location: "Mombasa", rating: 4.8 },
-  { name: "Amina Hassan", expertise: "Digital Marketing", location: "Dar es Salaam", rating: 4.7 },
-];
+interface Mentor {
+  name: string;
+  expertise: string;
+  location: string;
+  rating: number;
+}
 
 export default function EntrepreneurHubPage({ onNavigate }: EntrepreneurHubPageProps) {
   const { settings } = useStore();
   const [selectedOpportunity, setSelectedOpportunity] = useState<typeof OPPORTUNITIES[number] | null>(null);
-  const [connectingMentor, setConnectingMentor] = useState<typeof MENTORS[number] | null>(null);
+  const [connectingMentor, setConnectingMentor] = useState<Mentor | null>(null);
   const [connectMessage, setConnectMessage] = useState("");
   const [connectSent, setConnectSent] = useState(false);
   const opportunitiesRef = useRef<HTMLDivElement>(null);
@@ -182,30 +183,14 @@ export default function EntrepreneurHubPage({ onNavigate }: EntrepreneurHubPageP
           Mentor Network
         </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {MENTORS.map((mentor, i) => (
-            <motion.div
-              key={mentor.name}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.35 + i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <GlassCard padding="md" hover className="text-center">
-                <div className="h-14 w-14 rounded-full bg-night mx-auto mb-3 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{mentor.name.charAt(0)}</span>
-                </div>
-                <h3 className="text-subhead font-bold text-ink">{mentor.name}</h3>
-                <p className="text-caption text-ink-tertiary">{mentor.expertise}</p>
-                <div className="flex items-center justify-center gap-1.5 mt-2">
-                  <Star className="h-3 w-3 text-brand fill-brand" strokeWidth={1.5} />
-                  <span className="text-caption font-bold text-ink">{mentor.rating}</span>
-                  <span className="text-caption text-ink-quaternary">· {mentor.location}</span>
-                </div>
-                <Button variant="secondary" size="sm" fullWidth className="mt-4" onClick={() => { setConnectingMentor(mentor); setConnectMessage(`Hi ${mentor.name.split(" ")[0]}, I'm ${settings.profile.name} from ${settings.profile.company}. I'd love to connect and learn from your expertise in ${mentor.expertise}.`); }}>
-                  Connect
-                </Button>
-              </GlassCard>
-            </motion.div>
-          ))}
+          <GlassCard padding="md" className="text-center md:col-span-3">
+            <Users2 className="h-8 w-8 text-ink-quaternary/60 mx-auto mb-2" strokeWidth={1.25} />
+            <p className="text-subhead font-bold text-ink">Mentors join the network soon</p>
+            <p className="text-caption text-ink-tertiary mt-1 max-w-md mx-auto">
+              When vetted founders and experts go live, their profiles will appear here so you can
+              connect for advice, market insight, and mentorship.
+            </p>
+          </GlassCard>
         </div>
       </div>
 

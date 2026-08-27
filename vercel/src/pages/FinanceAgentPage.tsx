@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Landmark, Shield, ShieldCheck, Check, X, RefreshCw, Globe,
@@ -16,7 +16,6 @@ import {
   isDatasetStale,
   localFinanceReply,
   localFinanceResearch,
-  proposeFinanceActions,
   FinanceAction,
 } from "../../ai/src/finance-agent";
 
@@ -81,15 +80,14 @@ export default function FinanceAgentPage() {
   const [expandedAction, setExpandedAction] = useState<string | null>(null);
   const [autoTopUp, setAutoTopUp] = useState(true);
   const [flash, setFlash] = useState<string | null>(null);
-  const seededRef = useRef(false);
 
   // Dataset meta form
   const [meta, setMeta] = useState({
     businessName: "",
-    sector: "Fashion & Apparel",
-    country: "Tanzania",
+    sector: "",
+    country: "",
     monthlyBudget: 0,
-    goals: "Grow monthly profit, build a 3-month cash buffer",
+    goals: "",
   });
 
   const snapshot = useMemo(
@@ -124,26 +122,6 @@ export default function FinanceAgentPage() {
       .then((r) => r.json())
       .then((d) => setConnection(d?.live ? "live" : "simulated"))
       .catch(() => setConnection("simulated"));
-  }, []);
-
-  // ── Seed proposed actions once ───────────────────────────────────────────
-  useEffect(() => {
-    if (seededRef.current) return;
-    seededRef.current = true;
-    if (agentActions.length === 0) {
-      proposeFinanceActions(snapshot).forEach((a) =>
-        proposeAgentAction({
-          type: a.type,
-          title: a.title,
-          description: a.description,
-          amount: a.amount,
-          targetId: a.targetId,
-          targetLabel: a.targetLabel,
-          requiresApproval: a.requiresApproval,
-        }),
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Dataset sync: never older than 24h ──────────────────────────────────

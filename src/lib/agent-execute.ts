@@ -28,7 +28,7 @@ import {
   TranscriptLine,
 } from "../types";
 import { captureExecutionOutcome } from "../../ai/src/core";
-import { DROPSHIP_CATALOG, formatPrice } from "../data/platform";
+import { formatPrice } from "../data/platform";
 
 export type UndoKind =
   | "contact"
@@ -65,7 +65,7 @@ export function buildAgentContext(): AgentContext {
     currentView: s.currentView,
     knownContacts: s.contacts.map((c) => c.name),
     knownInventory: s.inventoryItems.map((i) => i.name),
-    knownProducts: DROPSHIP_CATALOG.map((p) => p.name),
+    knownProducts: s.inventoryItems.map((i) => i.name),
   };
 }
 
@@ -124,9 +124,8 @@ export function resolveInventoryItem(
   return item ? { id: item.id, name: item.name, stock: item.stock, minStock: item.minStock } : null;
 }
 
-function catalogProduct(name?: string) {
-  const matched = fuzzyMatch(name, DROPSHIP_CATALOG.map((p) => p.name));
-  return DROPSHIP_CATALOG.find((p) => p.name === matched);
+function catalogProduct(_name?: string) {
+  return null;
 }
 
 function money(amount: number, currency: Currency): string {
@@ -438,15 +437,15 @@ function runPlaceDropshipOrder(cmd: AgentCommand): ExecutionResult {
   if (!product) {
     return {
       ok: false,
-      title: "Product not found",
-      detail: "I couldn't find that product in the dropship catalog. Say the product name you see in the Dropshipping hub.",
+      title: "No dropship products yet",
+      detail: "No supplier-published products are available to buy at the moment. When suppliers list products in the Dropshipping hub, I'll be able to order them for you.",
     };
   }
   const qty = cmd.fields.quantity ?? 1;
   const unit = product.dropshipPrice.amount;
   const currency = product.dropshipPrice.currency;
   const total = unit * qty;
-  const buyer = s.settings.profile.name ?? s.user?.name ?? "Frank";
+  const buyer = s.settings.profile.name ?? s.user?.name ?? "Business Owner";
   s.placeDropshipOrder({
     productId: product.id,
     productName: product.name,
@@ -456,7 +455,7 @@ function runPlaceDropshipOrder(cmd: AgentCommand): ExecutionResult {
     status: "placed",
     fulfillmentType: "deliver",
     customerName: buyer,
-    customerAddress: "Dar es Salaam, Tanzania",
+    customerAddress: s.settings.profile.city ? `${s.settings.profile.city}, ${s.settings.profile.country ?? ""}`.trim() : "To be confirmed",
     estimatedDelivery: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
     notes: `Placed via BNX agent — ${cmd.label}`,
   });

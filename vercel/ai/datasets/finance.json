@@ -1,0 +1,218 @@
+[
+  {
+    "id": "ds-fin-cash-flow",
+    "topic": "Finance — Cash flow & working capital",
+    "subtopic": "Know the money coming in and going out",
+    "keywords": ["finance", "cash flow", "working capital", "income", "expenses", "money in", "money out", "survive"],
+    "content": "Cash flow is timing: money in (sales, payments) versus money out (stock, shipping, fees) and when each happens. A business can be profitable and still die on cash flow if stock eats money faster than sales return it. BirichiNex makes it visible: the Finance hub logs every sale and expense, Payments collects money fast in the buyer's currency, and the dashboard revenue + Analytics show real income vs costs. Integrate: log all expenses in Finance → watch the dashboard cash picture → use Payments (M-Pesa/cards) to compress the gap between sale and cash in hand → ask the AI Advisor to review your cash position before restocking.",
+    "tips": [
+      "Count cash, not just profit — you pay suppliers with cash, not margins",
+      "Time purchases: restock right after collections, not before",
+      "Sell slow stock to free trapped cash",
+      "Compress the cash gap: invoice immediately, collect fast"
+    ],
+    "examples": [
+      "A seller with TZS 900,000 of stock in a month avoids a crisis by holding back a restock for one week until M-Pesa collections land — the Finance dashboard made the timing obvious."
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-payments", "ds-f-analytics", "ds-fin-margins"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-costing",
+    "topic": "Finance — Landed cost",
+    "subtopic": "Know your true cost before you price",
+    "keywords": ["finance", "cost", "landed cost", "pricing", "shipping", "customs", "fees", "markup", "buy price"],
+    "content": "Landed cost = purchase price + shipping + customs/duty + transaction fees + any losses. Most sellers price off the purchase price alone and quietly lose the rest. BirichiNex supports the full chain: Deals/Bales/Procurement for the buy price, Logistics for shipping with customs status, Payments for the fees. Integrate: capture every cost component in Inventory so each product carries its real landed cost → post to Storefront priced on top of it → Analytics then reports genuine margin, not guesswork.",
+    "tips": [
+      "Add a 5-8% buffer for losses and unplanned fees",
+      "Include the bale's sorting time if you resell bales",
+      "Recompute landed cost when shipping rates or duty change",
+      "Landed cost is your floor — never price below it"
+    ],
+    "examples": [
+      "A phone worth KES 20,000 costs KES 4,300 more once shipping, duty and fees are added — the seller who priced at 25,000 was making 2.8%, not 25%."
+    ],
+    "relatedTopics": ["ds-f-inventory", "ds-f-procurement", "ds-f-logistics", "ds-fin-margins"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-margins",
+    "topic": "Finance — Gross & net margin",
+    "subtopic": "The number that separates winners from broke sellers",
+    "keywords": ["finance", "gross margin", "net margin", "profit", "percentage", "revenue", "cost"],
+    "content": "Gross margin = (selling price − landed cost) ÷ selling price. Net margin = what's left after ALL costs including your time, marketing and overhead. A product can look profitable at 40% gross and still be a net loser once you account for everything. BirichiNex computes this for you: log revenue and expenses in Finance, and Analytics shows which products truly earn. Integrate: keep product costs in Inventory → review per-product margin in Analytics → kill or reprice anything below your target net margin → let the AI Advisor run the numbers.",
+    "tips": [
+      "Aim for 30%+ gross on most goods to survive fees and overhead",
+      "Use net margin to decide — gross margins can lie",
+      "Cut bottom 20% of products by margin every quarter",
+      "Track margin trends, not just this week's number"
+    ],
+    "examples": [
+      "Analytics reveals a 'fast seller' is only netting 6% after delivery fees and returns — the owner drops it and redirects space to a 34% net margin line."
+    ],
+    "relatedTopics": ["ds-f-analytics", "ds-f-money-finance", "ds-fin-costing", "ds-m-retail-margin"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-mpesa",
+    "topic": "Finance — M-Pesa & mobile money",
+    "subtopic": "Collect fast in the currency your buyers actually use",
+    "keywords": ["finance", "mpesa", "mobile money", "payments", "collect", "till", "mtn", "airtel", "momo"],
+    "content": "East Africa runs on mobile money. M-Pesa (Tanzania/Kenya), MTN MoMo, Airtel Money and Tigo Pesa are how real customers pay, and getting paid in the buyer's currency removes a barrier to checkout. BirichiNex Payments supports mobile money and cards, with the buyer paying in their own currency while you reconcile in yours. Integrate: enable Payments → set your till/mobile-money number → customers check out with a payment prompt → the transaction lands in Finance → Analytics counts the collected revenue.",
+    "tips": [
+      "Publish your mobile-money till prominently — trust converts to orders",
+      "Confirm payments before dispatch to avoid ghost orders",
+      "Watch transaction fees — they are part of landed cost",
+      "Keep payment notifications turned on so nothing slips"
+    ],
+    "examples": [
+      "A seller in Arusha switches checkout to M-Pesa-first and conversions rise 28% — customers no longer need a card they don't have."
+    ],
+    "relatedTopics": ["ds-f-payments", "ds-f-money-finance", "ds-f-currency", "ds-fin-reconciliation"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-reconciliation",
+    "topic": "Finance — Reconciliation",
+    "subtopic": "Make your books match your money",
+    "keywords": ["finance", "reconcile", "books", "payments", "sales", "bank", "match", "variance"],
+    "content": "Reconciliation is matching what the platform says you sold against what actually hit your M-Pesa or bank account. Variances hide lost payments, double-charges, or unrecorded refunds. The discipline: record every transaction in Finance as it happens, then compare the Finance totals with your mobile-money statement weekly. Integrate: Finance logs sales from Payments automatically → run your weekly statement → reconcile any difference → Documents keep receipts and invoices side by side → Analytics stays honest.",
+    "tips": [
+      "Reconcile weekly, not monthly — small gaps become big ones",
+      "Investigate every variance, even TZS 500",
+      "Keep one business account and reconcile to it only",
+      "Use the Documents tab as your paper trail for disputes"
+    ],
+    "examples": [
+      "A weekly reconcile surfaces a payment prompt that never completed — the customer is re-invited to pay and a KES 18,000 order is recovered."
+    ],
+    "relatedTopics": ["ds-f-payments", "ds-f-money-finance", "ds-f-orders-documents", "ds-fin-cash-flow"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-expenses",
+    "topic": "Finance — Expense tracking",
+    "subtopic": "You can't control what you don't count",
+    "keywords": ["finance", "expenses", "costs", "overhead", "tracking", "records", "reduce"],
+    "content": "Every shilling that leaves your pocket is either an investment (stock that turns) or a cost (overhead). Recording them all in Finance turns 'I wonder where it went' into a clear ledger you can act on. The goal is not minimal spending — it's knowing which costs earn their keep. Integrate: log every expense in the Finance hub with a category → review monthly totals per category → cut or renegotiate what isn't earning → show the AI Advisor the pattern for advice.",
+    "tips": [
+      "Categorise expenses so patterns are visible (stock, transport, fees, marketing)",
+      "Review your biggest expense line monthly — that's where the money is",
+      "A cost is fine if it returns more than it costs",
+      "Log expenses the day they happen, not the day you remember"
+    ],
+    "examples": [
+      "A seller discovers delivery fees are 14% of revenue, renegotiates a rider rate, and saves KES 11,000 a month — found in the Finance ledger."
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-analytics", "ds-fin-budgeting", "ds-m-profit-cash"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-budgeting",
+    "topic": "Finance — Budgeting & forecasting",
+    "subtopic": "Decide your money's job before it arrives",
+    "keywords": ["finance", "budget", "forecast", "plan", "allocate", "save", "reinvest", "projection"],
+    "content": "A budget assigns future money a job before it arrives: restock, expenses, savings, growth. A forecast uses your past numbers to predict the next month. Together they stop reactive spending — you decide, the money obeys. BirichiNex gives you the data: Finance history and Analytics trends become the input. Integrate: pull last month's revenue and cost splits from Finance/Analytics → set next month's buckets (e.g. 50% restock, 20% expenses, 15% savings, 15% growth) → track actuals against the plan in Finance → adjust monthly.",
+    "tips": [
+      "Base the budget on last month's real numbers, not hopes",
+      "Pay yourself and your savings first, not last",
+      "Forecast a worst case — then survive it",
+      "Review the budget monthly; plans are living documents"
+    ],
+    "examples": [
+      "A seller allocates 15% of each collection to savings; after 8 months it funds a bigger bale order without any loan interest."
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-analytics", "ds-fin-cash-flow", "ds-fin-bookkeeping"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-bookkeeping",
+    "topic": "Finance — Simple books & profit",
+    "subtopic": "A P&L you can read in a minute",
+    "keywords": ["finance", "books", "profit and loss", "pnl", "records", "accounting", "ledger", "records"],
+    "content": "A profit & loss is one statement: revenue minus expenses = profit. You don't need an accountant to keep clean records — you need discipline. Every sale and every cost logged in Finance produces the P&L automatically, which also becomes the evidence banks and tax authorities want later. Integrate: keep Finance current daily → the dashboard revenue and expense views become your P&L → Documents stores invoices and receipts as supporting evidence → export or share them when needed.",
+    "tips": [
+      "Daily logging takes 2 minutes and saves you from month-end chaos",
+      "Separate personal and business money from day one",
+      "Your P&L is your proof — for loans, partners, and tax",
+      "Review the P&L weekly; small businesses win on rhythm"
+    ],
+    "examples": [
+      "An accountant asks a seller for last year's records — she exports a clean P&L from Finance in seconds and qualifies for a business loan."
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-orders-documents", "ds-fin-tax", "ds-m-profit-cash"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-loans-credit",
+    "topic": "Finance — Accessing credit",
+    "subtopic": "Borrow smart or self-finance smart",
+    "keywords": ["finance", "loans", "credit", "borrow", "working capital", "supplier credit", "microfinance", "interest"],
+    "content": "Credit is a tool: right used, it accelerates growth; wrong used, it accelerates ruin. Best to grow through reinvested profit first, then supplier credit (paying after you sell), then loans for stock that demonstrably turns. Lenders want evidence — a clean P&L and payment history. BirichiNex builds that evidence as you trade: Finance records your revenue and profit, Payments your collection history, Procurement your supplier relationships. Integrate: keep clean Finance records → build procurement history → present the numbers to a lender with confidence → borrow only for stock that turns fast.",
+    "tips": [
+      "Supplier credit is often cheaper than a loan — negotiate 7-30 day terms",
+      "Borrow for stock you've already proven sells, not experiments",
+      "Loan payment must fit inside your net margin, not your hopes",
+      "Your clean books are the cheapest interest-rate cut available"
+    ],
+    "examples": [
+      "A seller negotiates 14-day supplier credit after 9 on-time orders via Procurement, doubling turnover without taking a single loan."
+    ],
+    "relatedTopics": ["ds-f-procurement", "ds-f-money-finance", "ds-fin-bookkeeping", "ds-m-procure-margin"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-tax",
+    "topic": "Finance — Tax basics",
+    "subtopic": "Kept tax is cheap; late tax is expensive",
+    "keywords": ["finance", "tax", "vat", "income tax", "tra", "kra", "ura", "registration", "compliance", "duty"],
+    "content": "Each market has its own rules — KRA in Kenya, TRA in Tanzania, URA in Uganda. Obligations usually include business registration, VAT once you cross a turnover threshold, income tax on profit, and import duty on goods you bring in. Compliance is a business cost to plan for, not an afterthought. BirichiNex supports you with evidence: Finance gives clean revenue/profit figures, Documents stores invoices and customs papers, Logistics customs status tracks your imports. Integrate: set aside a fixed % of every collection for tax → keep Finance and Documents current → register early and pay on time → ask the AI Advisor for guidance on your specific case.",
+    "tips": [
+      "Set aside tax money before you spend it — 10-20% is a safe habit",
+      "Keep import invoices and customs documents; duty is based on proof",
+      "Register early — fines dwarf the fees",
+      "Ask a professional when you cross VAT thresholds"
+    ],
+    "examples": [
+      "A seller who set aside 12% of collections into a tax bucket through a strong quarter pays her VAT in full with no scramble."
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-orders-documents", "ds-f-logistics", "ds-fin-bookkeeping"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-invoicing",
+    "topic": "Finance — Getting paid on time",
+    "subtopic": "Invoice fast, chase politely, collect always",
+    "keywords": ["finance", "invoice", "payment", "chase", "overdue", "debtors", "collect", "b2b"],
+    "content": "For B2B and bulk sales, your profit only exists when the money clears. The pattern that works: invoice immediately, state terms clearly, chase on the agreed day, escalate politely. BirichiNex automates the boring parts: Documents stores and shares invoices, Amani the AI sales agent can follow up on unpaid invoices and pending orders, and Payments gives buyers a fast way to settle. Integrate: create and share the invoice in Documents the moment the order ships → set Amani to follow up on overdue invoices → log payment in Finance when it lands → reconcile.",
+    "tips": [
+      "Shorten terms: 7 days beats 30 days every time",
+      "A gentle reminder on the due date is professional, not rude",
+      "Offer mobile-money payment links to remove friction",
+      "Stop supplying chronic late payers — they are costing you"
+    ],
+    "examples": [
+      "A supplier's invoice was 3 weeks overdue; Amani's follow-up call recovers payment in 2 days with a loyal customer kept."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-f-ai-agent", "ds-f-payments", "ds-fin-reconciliation"],
+    "category": "finance"
+  },
+  {
+    "id": "ds-fin-fx",
+    "topic": "Finance — Currency & cross-border money",
+    "subtopic": "Trade across borders without losing to the rate",
+    "keywords": ["finance", "currency", "fx", "exchange rate", "kes", "tzs", "ugx", "rwf", "cross border", "convert"],
+    "content": "Selling across East Africa means pricing and getting paid in multiple currencies. Your real result is in your home currency after conversion, so the exchange rate is part of your margin. BirichiNex handles it cleanly: the Currency system lets you list and check out in the buyer's currency while you track your numbers in your own, and Payments collects accordingly. Integrate: quote in the buyer's currency to reduce hesitation → confirm the conversion before you dispatch → log the home-currency value in Finance → let Analytics report your true margin after FX.",
+    "tips": [
+      "Check the rate before pricing — never price on a stale rate",
+      "Build 2-3% of buffer for FX movement on cross-border orders",
+      "Collect in the buyer's currency; convert only when favourable or needed",
+      "Recompute margins on cross-border lines monthly"
+    ],
+    "examples": [
+      "A Nairobi seller prices KES for a Kampala buyer; when UGX is strong, the conversion bonus adds 4% to his real margin."
+    ],
+    "relatedTopics": ["ds-f-currency", "ds-f-payments", "ds-fin-costing", "ds-m-cross-border"],
+    "category": "finance"
+  }
+]

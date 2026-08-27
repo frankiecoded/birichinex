@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
-import { PRODUCTS, TECH_PRODUCTS, formatPrice } from "../../data/platform";
+import { formatPrice } from "../../data/platform";
 import { Currency, Product, BirichiNexView } from "../../types";
 import { useStore } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
@@ -55,39 +55,36 @@ const BUSINESS_PERKS = [
   { icon: Rocket, text: "Switch freely between your shop profile and business dashboard" },
 ];
 
-const AI_CALL_MOCK = [
-  { speaker: "customer" as const, text: "Hi! I ordered the leather messenger bag on Monday — is it on its way?" },
-  { speaker: "agent" as const, text: "Hi Grace! This is Amani from BirichiNex. Yes — I can see your order #BNX-2041 just cleared customs. It arrives Thursday." },
-  { speaker: "customer" as const, text: "Amazing. Can I also re-order the same watch for my husband?" },
-  { speaker: "agent" as const, text: "Done — same product, express delivery, loyalty points applied to your wallet. Anything else?" },
-];
-
 // Stock hero video (Wikimedia Commons, 720p VP9 — verified hotlinkable)
 const HERO_VIDEO_URL =
   "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/cd/City_at_night.webm/City_at_night.webm.720p.vp9.webm";
 
-const FEATURED_CATEGORIES = [
-  { id: "fashion", label: "Fashion", subtitle: "European-sorted premium fashion", color: "#FF6482", count: "200+ items", gradient: "from-[#FF6482]/8 to-[#FF6482]/2" },
-  { id: "technology", label: "Technology", subtitle: "Certified refurbished tech", color: "#007AFF", count: "80+ items", gradient: "from-[#007AFF]/8 to-[#007AFF]/2" },
-];
+function getFeaturedCategories(items: { id: string; category: string; stock: number }[]) {
+  const counts = new Map<string, number>();
+  for (const item of items) counts.set(item.category, (counts.get(item.category) ?? 0) + item.stock);
+  const palette = ["#FF6482", "#007AFF", "#30D158", "#AF52DE", "#FF9500", "#00C7BE", "#5856D6", "#FF2D55"];
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([label, count], i) => ({
+      id: label,
+      label,
+      subtitle: `${count} units in stock`,
+      color: palette[i % palette.length],
+      count: `${count} units`,
+      gradient: "from-[#FF6482]/8 to-[#FF6482]/2",
+    }));
+}
 
 function getTrustFeatures(selectedCurrency: Currency) {
   return [
     { icon: Truck, title: "Free Shipping", subtitle: `On orders over ${formatPrice(500000, selectedCurrency)}`, color: "#30D158" },
-    { icon: Shield, title: "Verified Suppliers", subtitle: "EU-sourced quality", color: "#007AFF" },
+    { icon: Shield, title: "Own Catalog", subtitle: "Your inventory, your pricing", color: "#007AFF" },
     { icon: RotateCcw, title: "Easy Returns", subtitle: "30-day return policy", color: "#FF9500" },
     { icon: Sparkles, title: "AI-Powered", subtitle: "Smart sourcing advice", color: "#AF52DE" },
   ];
 }
 
-const STATS = [
-  { label: "Products", value: "2,400+", icon: ShoppingBag },
-  { label: "Suppliers", value: "180+", icon: Shield },
-  { label: "Countries", value: "12", icon: TrendingUp },
-  { label: "Orders Fulfilled", value: "50K+", icon: Award },
-];
-
-// Interactive Product Card with 3D tilt
 function ProductCard({ product, selectedCurrency, onNavigate, onAddToCart, index }: {
   product: Product;
   selectedCurrency: Currency;
@@ -225,11 +222,21 @@ function ProductCard({ product, selectedCurrency, onNavigate, onAddToCart, index
 }
 
 export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart, onOpenAiSetup, onNavigateBusiness }: ShopHomePageProps) {
-  const featuredProducts = PRODUCTS.slice(0, 4);
-  const techProducts = TECH_PRODUCTS.slice(0, 4);
   const accountType = useStore((s) => s.user?.accountType ?? "shopper");
   const inventoryItems = useStore((s) => s.inventoryItems);
+  const contacts = useStore((s) => s.contacts);
+  const orders = useStore((s) => s.orders);
+  const profile = useStore((s) => s.settings.profile);
   const liveListings = postedInventoryToProducts(inventoryItems);
+  const featuredProducts = liveListings.slice(0, 4);
+  const heroStats = [
+    { label: "Products", value: String(liveListings.length), icon: ShoppingBag },
+    { label: "Customers", value: String(contacts.length), icon: Shield },
+    { label: "Orders", value: String(orders.length), icon: TrendingUp },
+    { label: "Stock Units", value: inventoryItems.reduce((n, i) => n + i.stock, 0).toLocaleString(), icon: Award },
+  ];
+  const shopName = profile.company || profile.name || "Your Shop";
+  const emptyInventory = inventoryItems.length === 0;
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
@@ -412,7 +419,7 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
               transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8 mt-10 lg:mt-14 pt-8 border-t border-white/[0.06]"
             >
-              {STATS.map((stat, i) => (
+              {heroStats.map((stat, i) => (
                 <motion.div
                   key={stat.label}
                   initial={{ opacity: 0, y: 10 }}
@@ -514,12 +521,13 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
       </section>
 
       {/* ═══════════════════════════════════════════
-          CATEGORY SECTIONS — Parallax
+          CATEGORY SECTIONS — Parallax (from your inventory)
           ═══════════════════════════════════════════ */}
-      <section className="max-w-7xl mx-auto px-4 lg:px-8">
-        <ParallaxSection offset={30} speed={0.3}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {FEATURED_CATEGORIES.map((cat, i) => (
+      {getFeaturedCategories(inventoryItems).length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 lg:px-8">
+          <ParallaxSection offset={30} speed={0.3}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {getFeaturedCategories(inventoryItems).map((cat, i) => (
               <motion.div
                 key={cat.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -565,6 +573,7 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
           </div>
         </ParallaxSection>
       </section>
+      )}
 
       {/* ═══════════════════════════════════════════
           YOUR LIVE LISTINGS (posted from Inventory)
@@ -611,52 +620,53 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
       )}
 
       {/* ═══════════════════════════════════════════
-          FEATURED FASHION PRODUCTS
+          SHOP CATALOG — your own inventory, live
           ═══════════════════════════════════════════ */}
-      <section className="max-w-7xl mx-auto px-4 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <motion.h2
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-headline text-ink tracking-tight"
-            >
-              Featured Fashion
-            </motion.h2>
-            <p className="text-callout text-ink-tertiary mt-1.5">Hand-picked by our sourcing team</p>
-          </div>
-          <MagneticButton strength={0.15}>
-            <button
-              onClick={() => onNavigate("category:fashion")}
-              className="flex items-center gap-1.5 text-subhead font-semibold text-brand-dark hover:text-brand transition-colors duration-200 group"
-            >
-              View All
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform duration-200" />
-            </button>
-          </MagneticButton>
-        </div>
+      {emptyInventory && (
+        <section className="max-w-7xl mx-auto px-4 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="relative rounded-[24px] overflow-hidden glow-brand">
+              <div className="glass-brand rounded-[24px] p-8 md:p-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.12)_0%,transparent_70%)] blur-[60px]" />
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <ShoppingBag className="h-5 w-5 text-brand" strokeWidth={1.5} />
+                      <Badge variant="brand" size="sm">Your Catalog</Badge>
+                    </div>
+                    <h2 className="text-headline text-ink tracking-tight mb-2">Let's build {shopName}'s catalog</h2>
+                    <p className="text-callout text-ink-secondary max-w-lg leading-relaxed">
+                      Every listing here comes from your own inventory. Add your first product, post it to
+                      the marketplace, and it appears live on your storefront — no dummy stock, ever.
+                    </p>
+                  </div>
+                  <MagneticButton strength={0.2}>
+                    <Button
+                      variant="brand"
+                      size="lg"
+                      icon={<ArrowRight className="h-4 w-4" />}
+                      iconPosition="right"
+                      onClick={() => onNavigateBusiness("inventory")}
+                      className="shadow-[0_4px_20px_rgba(212,175,55,0.3)]"
+                    >
+                      Add your first product
+                    </Button>
+                  </MagneticButton>
+                </div>
+                <div className="absolute inset-0 rounded-[24px] pointer-events-none animated-gradient-border" style={{ padding: 0 }} />
+              </div>
+            </div>
+          </motion.div>
+        </section>
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {featuredProducts.map((product, i) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              selectedCurrency={selectedCurrency}
-              onNavigate={onNavigate}
-              onAddToCart={onAddToCart}
-              index={i}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════
-          FEATURED TECHNOLOGY PRODUCTS
-          ═══════════════════════════════════════════ */}
-      <section className="max-w-7xl mx-auto px-4 lg:px-8">
-        <CursorSpotlight spotlightSize={600} spotlightColor="rgba(0,122,255,0.03)">
+      {!emptyInventory && featuredProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
               <motion.h2
@@ -666,23 +676,14 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
                 transition={{ duration: 0.6 }}
                 className="text-headline text-ink tracking-tight"
               >
-                Certified Refurbished Tech
+                Featured Products
               </motion.h2>
-              <p className="text-callout text-ink-tertiary mt-1.5">EU-quality certified, warranty included</p>
+              <p className="text-callout text-ink-tertiary mt-1.5">Straight from {shopName}'s inventory</p>
             </div>
-            <MagneticButton strength={0.15}>
-              <button
-                onClick={() => onNavigate("category:technology")}
-                className="flex items-center gap-1.5 text-subhead font-semibold text-brand-dark hover:text-brand transition-colors duration-200 group"
-              >
-                View All
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform duration-200" />
-              </button>
-            </MagneticButton>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {techProducts.map((product, i) => (
+            {featuredProducts.map((product, i) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -693,8 +694,8 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
               />
             ))}
           </div>
-        </CursorSpotlight>
-      </section>
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════
           WHOLESALE BALES CTA — Parallax + Glow
@@ -919,53 +920,21 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
                 </div>
               </div>
 
-              {/* Mock live call */}
+              {/* Call insights panel */}
               <div className="flex items-center justify-center">
-                <div className="w-full max-w-md glass-material rounded-[22px] border border-white/10 bg-white/[0.03] overflow-hidden">
-                  {/* Call header */}
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="relative h-10 w-10 rounded-full bg-[#30D158]/15 flex items-center justify-center">
-                        <Headset className="h-5 w-5 text-[#30D158]" strokeWidth={1.5} />
-                        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#30D158] animate-pulse" />
-                      </div>
-                      <div>
-                        <p className="text-subhead font-bold text-white leading-tight">Amani · Inbound call</p>
-                        <p className="text-caption text-[#30D158] font-semibold">LIVE · 00:42</p>
-                      </div>
-                    </div>
-                    <Badge variant="brand" size="sm">Order placed</Badge>
+                <div className="w-full max-w-md text-center px-6">
+                  <div className="w-20 h-20 mx-auto rounded-[24px] bg-[#30D158]/10 border border-[#30D158]/20 flex items-center justify-center mb-5">
+                    <Headset className="h-9 w-9 text-[#30D158]" strokeWidth={1.5} />
                   </div>
-                  {/* Transcript */}
-                  <div className="p-5 space-y-3 max-h-[280px] overflow-hidden">
-                    {AI_CALL_MOCK.map((line, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: line.speaker === "agent" ? -10 : 10 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.4, delay: i * 0.25 }}
-                        className={`flex ${line.speaker === "agent" ? "justify-start" : "justify-end"}`}
-                      >
-                        <div
-                          className={`max-w-[85%] rounded-[16px] px-4 py-2.5 text-callout leading-relaxed ${
-                            line.speaker === "agent"
-                              ? "bg-white/[0.06] text-zinc-300 border border-white/10"
-                              : "bg-brand/15 text-zinc-200 border border-brand/20"
-                          }`}
-                        >
-                          {line.text}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  {/* Footer */}
-                  <div className="flex items-center justify-between px-5 py-4 border-t border-white/10">
-                    <p className="text-caption text-zinc-500">Recording saved · Transcript ready</p>
-                    <div className="flex items-center gap-2 text-caption text-[#30D158] font-semibold">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#30D158]" /> CRM synced
-                    </div>
-                  </div>
+                  <p className="text-headline text-white font-bold tracking-tight mb-2">Every call, recorded.</p>
+                  <p className="text-callout text-zinc-400 leading-relaxed mb-6">
+                    When a customer calls you, Amani answers in your voice — places the order, updates your
+                    CRM, and sends you the recording and transcript. Real calls, straight from your business.
+                  </p>
+                  <Badge variant="brand" size="sm">
+                    <PhoneCall className="h-3 w-3 mr-1.5 inline" />
+                    Go live in Settings → Call center
+                  </Badge>
                 </div>
               </div>
             </div>

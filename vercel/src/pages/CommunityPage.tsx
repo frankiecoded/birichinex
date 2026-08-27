@@ -116,364 +116,6 @@ interface ConnectionRequest {
 
 // ── Seed Data ────────────────────────────────────────────────────────────────
 
-const SEED_POSTS: CommunityPost[] = [
-  {
-    id: "post-1",
-    title: "Best practices for importing textile bales from Europe",
-    content:
-      "I've been importing European-sorted fashion bales for 3 years now. Here are some key lessons: always verify the sorting grade before shipping, negotiate FOB terms when possible, and build relationships with at least 3 suppliers to avoid supply disruptions. Happy to share more details with anyone interested.",
-    category: "Imports & Trade",
-    tags: ["import", "textiles", "europe", "supply-chain"],
-    author: "Grace Mwangi",
-    authorCompany: "Mwangi Fashion House",
-    likes: 24,
-    likedByUser: false,
-    bookmarkedByUser: false,
-    comments: [
-      {
-        id: "cmt-1",
-        content: "Very helpful! What sorting grade do you typically go for?",
-        author: "David Ochieng",
-        authorCompany: "Ochieng Logistics",
-        likes: 5,
-        likedByUser: false,
-        createdAt: "2026-07-18T10:30:00Z",
-      },
-      {
-        id: "cmt-2",
-        content:
-          "Grade A and B are the most profitable in our market. C grade needs more sorting but has good margins too.",
-        author: "Grace Mwangi",
-        authorCompany: "Mwangi Fashion House",
-        likes: 8,
-        likedByUser: true,
-        createdAt: "2026-07-18T11:15:00Z",
-      },
-    ],
-    createdAt: "2026-07-17T09:00:00Z",
-  },
-  {
-    id: "post-2",
-    title: "Looking for distribution partners in Dar es Salaam",
-    content:
-      "We're expanding our tech refurbished products line and seeking reliable distribution partners in Dar es Salaam. We offer competitive margins, marketing support, and exclusive territories. If you have retail connections and warehouse space, let's talk.",
-    category: "Partnerships",
-    tags: ["partnership", "tech", "distribution", "dar-es-salaam"],
-    author: "Amina Hassan",
-    authorCompany: "TechRevive Africa",
-    likes: 18,
-    likedByUser: true,
-    bookmarkedByUser: false,
-    comments: [
-      {
-        id: "cmt-3",
-        content:
-          "We have 2 retail outlets in Kariakoo and a small warehouse. Very interested!",
-        author: "Juma Ali",
-        authorCompany: "Ali Electronics",
-        likes: 3,
-        likedByUser: false,
-        createdAt: "2026-07-16T14:00:00Z",
-      },
-    ],
-    createdAt: "2026-07-15T08:00:00Z",
-  },
-  {
-    id: "post-3",
-    title: "New customs regulations update — what you need to know",
-    content:
-      "Tanzania Revenue Authority has updated import duty rates for second-hand clothing effective August 2026. Key changes: Grade A bales now attract 25% duty (up from 20%), while Grade B remains at 20%. Commercial invoices must now include detailed item-level descriptions. I recommend consulting your clearing agent before your next shipment.",
-    category: "Regulations",
-    tags: ["regulations", "customs", "tariffs", "tanzania"],
-    author: "Frank Musau",
-    authorCompany: "Portmetals Africa Ltd.",
-    likes: 42,
-    likedByUser: false,
-    bookmarkedByUser: true,
-    comments: [],
-    createdAt: "2026-07-14T07:00:00Z",
-  },
-  {
-    id: "post-4",
-    title: "Workshop: Digital marketing for small retailers",
-    content:
-      "Hosting a free workshop next Saturday on how small retailers can leverage Instagram, TikTok, and WhatsApp Business to grow sales. We'll cover product photography, content strategy, and running ads on a shoestring budget. Limited to 30 attendees. Reserve your spot below!",
-    category: "Events & Workshops",
-    tags: ["workshop", "marketing", "social-media", "free"],
-    author: "Nina Okonkwo",
-    authorCompany: "Digital Spark Agency",
-    likes: 31,
-    likedByUser: false,
-    bookmarkedByUser: false,
-    comments: [
-      {
-        id: "cmt-4",
-        content: "Registered! Will there be a recording available afterwards?",
-        author: "Peter Kimaro",
-        authorCompany: "Kimaro Boutique",
-        likes: 2,
-        likedByUser: false,
-        createdAt: "2026-07-13T16:45:00Z",
-      },
-    ],
-    createdAt: "2026-07-12T10:00:00Z",
-  },
-];
-
-const SEED_PARTNERSHIPS: Partnership[] = [
-  {
-    id: "pt-1",
-    title: "Joint Distribution Agreement",
-    description:
-      "Partner to distribute European-sorted fashion bales across Arusha and Moshi regions.",
-    proposer: "Grace Mwangi",
-    proposerCompany: "Mwangi Fashion House",
-    target: "David Ochieng",
-    targetCompany: "Ochieng Logistics",
-    category: "Distribution",
-    status: "active",
-    createdAt: "2026-06-01T00:00:00Z",
-  },
-  {
-    id: "pt-2",
-    title: "Tech Retail Collaboration",
-    description:
-      "Supply certified refurbished MacBooks and iPads for retail sale at Ali Electronics outlets.",
-    proposer: "Amina Hassan",
-    proposerCompany: "TechRevive Africa",
-    target: "Juma Ali",
-    targetCompany: "Ali Electronics",
-    category: "Technology",
-    status: "proposed",
-    createdAt: "2026-07-10T00:00:00Z",
-  },
-  {
-    id: "pt-3",
-    title: "Marketing Services Exchange",
-    description:
-      "Provide digital marketing services in exchange for fashion product supply for events.",
-    proposer: "Nina Okonkwo",
-    proposerCompany: "Digital Spark Agency",
-    target: "Grace Mwangi",
-    targetCompany: "Mwangi Fashion House",
-    category: "Services",
-    status: "proposed",
-    createdAt: "2026-07-14T00:00:00Z",
-  },
-  {
-    id: "pt-4",
-    title: "Warehouse Sharing Agreement",
-    description:
-      "Share warehouse space in Kariakoo for mutual inventory management cost reduction.",
-    proposer: "Peter Kimaro",
-    proposerCompany: "Kimaro Boutique",
-    target: "Juma Ali",
-    targetCompany: "Ali Electronics",
-    category: "Logistics",
-    status: "expired",
-    createdAt: "2026-03-15T00:00:00Z",
-  },
-];
-
-const SEED_EVENTS: CommunityEvent[] = [
-  {
-    id: "evt-1",
-    title: "East Africa Fashion Trade Summit 2026",
-    description:
-      "Annual gathering of fashion importers, distributors, and retailers. Keynotes, networking, and live product showcases.",
-    category: "Conference",
-    date: "2026-08-15",
-    time: "09:00",
-    location: "Dar es Salaam Marriott Hotel",
-    organizer: "Frank Musau",
-    organizerCompany: "Portmetals Africa Ltd.",
-    status: "upcoming",
-    rsvpCount: 87,
-    rsvpByUser: false,
-    maxAttendees: 200,
-    createdAt: "2026-07-01T00:00:00Z",
-  },
-  {
-    id: "evt-2",
-    title: "Digital Marketing for Small Retailers",
-    description:
-      "Free workshop on leveraging social media platforms to grow your retail business.",
-    category: "Workshop",
-    date: "2026-07-26",
-    time: "14:00",
-    location: "Virtual (Zoom)",
-    organizer: "Nina Okonkwo",
-    organizerCompany: "Digital Spark Agency",
-    status: "upcoming",
-    rsvpCount: 22,
-    rsvpByUser: true,
-    maxAttendees: 30,
-    createdAt: "2026-07-12T10:00:00Z",
-  },
-  {
-    id: "evt-3",
-    title: "Import Regulations Briefing",
-    description:
-      "Session with customs experts to discuss the new TRA duty rates and compliance requirements.",
-    category: "Webinar",
-    date: "2026-07-20",
-    time: "10:00",
-    location: "Virtual (Google Meet)",
-    organizer: "Frank Musau",
-    organizerCompany: "Portmetals Africa Ltd.",
-    status: "completed",
-    rsvpCount: 45,
-    rsvpByUser: true,
-    maxAttendees: 100,
-    createdAt: "2026-07-05T00:00:00Z",
-  },
-  {
-    id: "evt-4",
-    title: "BirichiNex Product Demo Day",
-    description:
-      "Live walkthrough of new platform features including dropshipping, loyalty, and AI assistant.",
-    category: "Webinar",
-    date: "2026-07-10",
-    time: "16:00",
-    location: "Virtual (Zoom)",
-    organizer: "Frank Musau",
-    organizerCompany: "Portmetals Africa Ltd.",
-    status: "completed",
-    rsvpCount: 63,
-    rsvpByUser: false,
-    maxAttendees: 100,
-    createdAt: "2026-06-28T00:00:00Z",
-  },
-];
-
-const SEED_BUSINESSES: BusinessProfile[] = [
-  {
-    id: "biz-1",
-    name: "Portmetals Africa Ltd.",
-    category: "Importers",
-    description:
-      "Leading importer of European-sorted fashion bales and refurbished technology products across East Africa.",
-    location: "Dar es Salaam, Tanzania",
-    owner: "Frank Musau",
-    rating: 4.9,
-    memberSince: "2025-01-15",
-    specialties: ["Fashion Import", "Tech Products", "Wholesale"],
-    connected: true,
-  },
-  {
-    id: "biz-2",
-    name: "Mwangi Fashion House",
-    category: "Retailers",
-    description:
-      "Premium fashion retail chain with 5 outlets across Nairobi and Mombasa specializing in European-sorted clothing.",
-    location: "Nairobi, Kenya",
-    owner: "Grace Mwangi",
-    rating: 4.7,
-    memberSince: "2025-03-20",
-    specialties: ["Fashion Retail", "Boutique", "Wholesale"],
-    connected: true,
-  },
-  {
-    id: "biz-3",
-    name: "Ochieng Logistics",
-    category: "Logistics",
-    description:
-      "End-to-end logistics solutions for cross-border trade in East Africa. Warehousing, customs clearing, and last-mile delivery.",
-    location: "Mombasa, Kenya",
-    owner: "David Ochieng",
-    rating: 4.8,
-    memberSince: "2025-02-10",
-    specialties: ["Logistics", "Warehousing", "Customs Clearing"],
-    connected: false,
-  },
-  {
-    id: "biz-4",
-    name: "TechRevive Africa",
-    category: "Manufacturers",
-    description:
-      "Certified refurbished technology products. MacBooks, iPads, iPhones with 6-month warranty. EU-standard quality.",
-    location: "Dar es Salaam, Tanzania",
-    owner: "Amina Hassan",
-    rating: 4.6,
-    memberSince: "2025-06-01",
-    specialties: ["Refurbished Tech", "Quality Assurance", "Warranty"],
-    connected: false,
-  },
-  {
-    id: "biz-5",
-    name: "Ali Electronics",
-    category: "Retailers",
-    description:
-      "Consumer electronics retailer with 2 flagship stores in Kariakoo. Specializing in smartphones and accessories.",
-    location: "Dar es Salaam, Tanzania",
-    owner: "Juma Ali",
-    rating: 4.3,
-    memberSince: "2025-04-18",
-    specialties: ["Electronics", "Smartphones", "Accessories"],
-    connected: false,
-  },
-  {
-    id: "biz-6",
-    name: "Digital Spark Agency",
-    category: "Tech",
-    description:
-      "Digital marketing agency serving SMEs across East Africa. Social media, content creation, and performance marketing.",
-    location: "Dar es Salaam, Tanzania",
-    owner: "Nina Okonkwo",
-    rating: 4.5,
-    memberSince: "2025-07-01",
-    specialties: ["Digital Marketing", "Social Media", "Content"],
-    connected: false,
-  },
-  {
-    id: "biz-7",
-    name: "Kimaro Boutique",
-    category: "Retailers",
-    description:
-      "Boutique fashion retailer specializing in curated women's wear. Online and in-store presence.",
-    location: "Arusha, Tanzania",
-    owner: "Peter Kimaro",
-    rating: 4.4,
-    memberSince: "2025-05-12",
-    specialties: ["Fashion Retail", "Women's Wear", "E-Commerce"],
-    connected: false,
-  },
-  {
-    id: "biz-8",
-    name: "East Africa Exports Co.",
-    category: "Exporters",
-    description:
-      "Exporting African fashion, crafts, and agricultural products to European and North American markets.",
-    location: "Nairobi, Kenya",
-    owner: "Samuel Otieno",
-    rating: 4.6,
-    memberSince: "2025-08-20",
-    specialties: ["Export", "African Fashion", "Agriculture"],
-    connected: false,
-  },
-];
-
-const SEED_CONNECTIONS: ConnectionRequest[] = [
-  {
-    id: "conn-1",
-    from: "David Ochieng",
-    fromCompany: "Ochieng Logistics",
-    message:
-      "Hi Frank, I'd love to connect and discuss potential logistics partnerships for Portmetals Africa.",
-    status: "pending",
-    createdAt: "2026-07-19T08:00:00Z",
-  },
-  {
-    id: "conn-2",
-    from: "Samuel Otieno",
-    fromCompany: "East Africa Exports Co.",
-    message:
-      "Hey! I've seen your platform and I'm interested in listing our export catalog. Can we chat?",
-    status: "pending",
-    createdAt: "2026-07-20T14:00:00Z",
-  },
-];
-
 const POST_CATEGORIES = [
   "General",
   "Imports & Trade",
@@ -570,7 +212,7 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("forums");
 
   // ── Forum State ──────────────────────────────────────────────────────────
-  const [posts, setPosts] = useState<CommunityPost[]>(SEED_POSTS);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [postSearch, setPostSearch] = useState("");
   const [postCategoryFilter, setPostCategoryFilter] = useState("All");
   const [showNewPostModal, setShowNewPostModal] = useState(false);
@@ -584,7 +226,7 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // ── Partnership State ────────────────────────────────────────────────────
-  const [partnerships, setPartnerships] = useState<Partnership[]>(SEED_PARTNERSHIPS);
+  const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [partnershipSearch, setPartnershipSearch] = useState("");
   const [partnershipStatusFilter, setPartnershipStatusFilter] = useState("all");
   const [showNewPartnershipModal, setShowNewPartnershipModal] = useState(false);
@@ -597,7 +239,7 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   });
 
   // ── Event State ──────────────────────────────────────────────────────────
-  const [events, setEvents] = useState<CommunityEvent[]>(SEED_EVENTS);
+  const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [eventSearch, setEventSearch] = useState("");
   const [eventStatusFilter, setEventStatusFilter] = useState("all");
   const [showNewEventModal, setShowNewEventModal] = useState(false);
@@ -612,13 +254,13 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   });
 
   // ── Directory State ──────────────────────────────────────────────────────
-  const [businesses, setBusinesses] = useState<BusinessProfile[]>(SEED_BUSINESSES);
+  const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
   const [businessSearch, setBusinessSearch] = useState("");
   const [businessCategoryFilter, setBusinessCategoryFilter] = useState("All");
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessProfile | null>(null);
 
   // ── Networking State ─────────────────────────────────────────────────────
-  const [connections, setConnections] = useState<ConnectionRequest[]>(SEED_CONNECTIONS);
+  const [connections, setConnections] = useState<ConnectionRequest[]>([]);
   const [sharedPostId, setSharedPostId] = useState<string | null>(null);
   const [messageTarget, setMessageTarget] = useState<BusinessProfile | null>(null);
   const [messageText, setMessageText] = useState("");

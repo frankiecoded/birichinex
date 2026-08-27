@@ -37,9 +37,8 @@ import type {
   UserBusinessDataset,
 } from '../../ai/src/finance-agent';
 import type { BusinessRecommendation, RecommendationOutcome, RecommendationStatus } from '../types';
-import { PRODUCTS, TECH_PRODUCTS, COURSES, DROPSHIP_CATALOG, DROPSHIP_TIERS, calculateLoyaltyPoints, MEMBERSHIP_TIERS, convertPrice } from '../data/platform';
+import { COURSES, DROPSHIP_TIERS, calculateLoyaltyPoints, MEMBERSHIP_TIERS, convertPrice } from '../data/platform';
 import type { TrackedOrder, TrackedShipment, TrackingStatus } from '../data/delivery';
-import { SEED_TRACKED_ORDERS, SEED_TRACKED_SHIPMENTS } from '../data/delivery';
 import type { DailyReflection, WeeklyReview } from '../data/routines';
 
 // ── Document Types ───────────────────────────────────────────────────────────
@@ -79,128 +78,7 @@ export interface DocumentTemplate {
   icon: string;
 }
 
-// ── Seed data ────────────────────────────────────────────────────────────────
-const ALL_PRODUCTS = [...PRODUCTS, ...TECH_PRODUCTS];
-
-const SEED_DOCUMENTS: AppDocument[] = [
-  {
-    id: 'doc-001',
-    title: 'Q3 Supply Agreement — Portmetals Africa',
-    type: 'contract',
-    category: 'Legal',
-    content: 'This Supply Agreement is entered into between Portmetals Africa Ltd. and the undersigned buyer for the supply of minerals and metals per agreed terms.',
-    status: 'signed',
-    size: '245 KB',
-    createdAt: '2026-06-15T10:00:00.000Z',
-    updatedAt: '2026-06-20T14:30:00.000Z',
-    signatures: [
-      { id: 'sig-001', signerName: 'Frank Musau', signedAt: '2026-06-20T14:30:00.000Z', method: 'type' },
-    ],
-    attachments: ['terms_and_conditions.pdf'],
-    templateId: 'tpl-service-agreement',
-  },
-  {
-    id: 'doc-002',
-    title: 'Invoice #INV-2026-0412',
-    type: 'invoice',
-    category: 'Financial',
-    content: 'Invoice for 500 units of Copper Cathode (Grade A) delivered to Dar es Salaam port. Total: TZS 12,500,000.',
-    status: 'review',
-    size: '89 KB',
-    createdAt: '2026-07-01T09:00:00.000Z',
-    updatedAt: '2026-07-01T09:00:00.000Z',
-    signatures: [],
-    attachments: [],
-    templateId: 'tpl-invoice',
-  },
-  {
-    id: 'doc-003',
-    title: 'Non-Disclosure Agreement — TechPartner Ltd.',
-    type: 'contract',
-    category: 'Legal',
-    content: 'Mutual NDA between Portmetals Africa Ltd. and TechPartner Ltd. for the purpose of evaluating a technology partnership.',
-    status: 'draft',
-    size: '128 KB',
-    createdAt: '2026-07-10T11:00:00.000Z',
-    updatedAt: '2026-07-10T11:00:00.000Z',
-    signatures: [],
-    attachments: [],
-    templateId: 'tpl-nda',
-  },
-  {
-    id: 'doc-004',
-    title: 'Business License — 2026 Renewal',
-    type: 'license',
-    category: 'Compliance',
-    content: 'Annual business operating license for Portmetals Africa Ltd. issued by the Tanzania Business Licensing Authority. Valid: Jan 2026 – Dec 2026.',
-    status: 'signed',
-    size: '340 KB',
-    createdAt: '2026-01-05T08:00:00.000Z',
-    updatedAt: '2026-01-10T16:00:00.000Z',
-    signatures: [
-      { id: 'sig-002', signerName: 'Licensing Authority', signedAt: '2026-01-10T16:00:00.000Z', method: 'type' },
-    ],
-    attachments: ['license_certificate.pdf', 'renewal_receipt.pdf'],
-  },
-  {
-    id: 'doc-005',
-    title: 'Employee Contract — Juma Mwakasege',
-    type: 'contract',
-    category: 'HR',
-    content: 'Employment contract for Juma Mwakasege as Operations Manager. Start date: August 1, 2026. Salary: TZS 3,500,000/month.',
-    status: 'draft',
-    size: '156 KB',
-    createdAt: '2026-07-15T13:00:00.000Z',
-    updatedAt: '2026-07-15T13:00:00.000Z',
-    signatures: [],
-    attachments: [],
-    templateId: 'tpl-employment',
-  },
-  {
-    id: 'doc-006',
-    title: 'Service Proposal — Logistics Integration',
-    type: 'proposal',
-    category: 'Operations',
-    content: 'Proposal for integration of automated logistics tracking system. Project timeline: 3 months. Budget: TZS 15,000,000.',
-    status: 'review',
-    size: '210 KB',
-    createdAt: '2026-07-08T10:30:00.000Z',
-    updatedAt: '2026-07-12T15:00:00.000Z',
-    signatures: [],
-    attachments: ['project_scope.pdf', 'budget_breakdown.xlsx'],
-  },
-  {
-    id: 'doc-007',
-    title: 'ISO 9001 Quality Certificate',
-    type: 'certificate',
-    category: 'Compliance',
-    content: 'ISO 9001:2015 Quality Management System certification for Portmetals Africa Ltd. Issued by TÜV Rheinland. Valid until March 2028.',
-    status: 'archived',
-    size: '520 KB',
-    createdAt: '2025-03-15T09:00:00.000Z',
-    updatedAt: '2025-04-01T12:00:00.000Z',
-    signatures: [
-      { id: 'sig-003', signerName: 'TÜV Auditor', signedAt: '2025-04-01T12:00:00.000Z', method: 'type' },
-    ],
-    attachments: ['iso_certificate.pdf'],
-  },
-  {
-    id: 'doc-008',
-    title: 'Purchase Order — Mining Equipment',
-    type: 'invoice',
-    category: 'Financial',
-    content: 'PO for 2x excavators, 5x conveyor belts from CME Mining Equipment. Total: TZS 85,000,000. Delivery: August 2026.',
-    status: 'signed',
-    size: '95 KB',
-    createdAt: '2026-06-28T14:00:00.000Z',
-    updatedAt: '2026-07-02T10:00:00.000Z',
-    signatures: [
-      { id: 'sig-004', signerName: 'Frank Musau', signedAt: '2026-07-02T10:00:00.000Z', method: 'draw' },
-    ],
-    attachments: ['quotation_cme.pdf'],
-    templateId: 'tpl-purchase-order',
-  },
-];
+// ── Seed data (empty state — every shop starts clean and records its own) ────
 
 const SEED_COURSES = COURSES.reduce<
   Record<string, { started: boolean; completedLessons: string[]; completed: boolean; startedAt: string }>
@@ -280,7 +158,7 @@ interface TransactionItem {
 }
 
 interface AppSettings {
-  profile: { name: string; email: string; phone: string; company: string; language?: string };
+  profile: { name: string; email: string; phone: string; company: string; language?: string; city?: string; country?: string };
   notifications: { email: boolean; push: boolean; sms: boolean };
   theme: 'light' | 'dark' | 'system';
   payoutBank: BankAccountDetails | null;
@@ -578,17 +456,12 @@ function friendlyDeviceName(ua: string): string {
   return "Web Browser";
 }
 
-const DEMO_LOCATIONS = [
-  "Dar es Salaam, Tanzania",
-  "Nairobi, Kenya",
-  "Kampala, Uganda",
-  "Dodoma, Tanzania",
-  "Mombasa, Kenya",
-  "Arusha, Tanzania",
-];
-
-function demoLocation(): string {
-  return DEMO_LOCATIONS[Math.floor(Math.random() * DEMO_LOCATIONS.length)];
+function timezoneLabel(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "—";
+  } catch {
+    return "—";
+  }
 }
 
 function randomCode(prefix: string, len: number): string {
@@ -602,7 +475,7 @@ function makeSession(email: string): ActiveSession {
   return {
     id: crypto.randomUUID(),
     device: friendlyDeviceName(typeof navigator !== "undefined" ? navigator.userAgent : ""),
-    location: demoLocation(),
+    location: timezoneLabel(),
     lastActive: new Date().toISOString(),
     current: true,
   };
@@ -613,7 +486,7 @@ function makeLoginEvent(email: string, status: "success" | "failed"): LoginHisto
     id: crypto.randomUUID(),
     email,
     device: friendlyDeviceName(typeof navigator !== "undefined" ? navigator.userAgent : ""),
-    location: demoLocation(),
+    location: timezoneLabel(),
     time: new Date().toISOString(),
     status,
   };
@@ -952,7 +825,7 @@ export const useStore = create<StoreState>()(
       clearCartRedeem: () => set({ cartRedeem: null }),
 
       // ── Orders ──────────────────────────────────────────────────────────────
-      orders: SEED_TRACKED_ORDERS,
+      orders: [],
 
       addOrder: (order) =>
         set((state) => ({
@@ -979,7 +852,7 @@ export const useStore = create<StoreState>()(
         })),
 
       // ── Shipments ───────────────────────────────────────────────────────────
-      shipments: SEED_TRACKED_SHIPMENTS,
+      shipments: [],
 
       addShipment: (shipment) =>
         set((state) => ({
@@ -1018,29 +891,7 @@ export const useStore = create<StoreState>()(
         })),
 
       // ── CRM ───────────────────────────────────────────────────────────────
-      contacts: [
-        { id: 'cnt-001', name: 'Aisha Nakamya', email: 'aisha@nakamya.co.ug', phone: '+256789123456', company: 'Nakamya Trading', role: 'Owner', status: 'active', tags: ['wholesale', 'uganda'], notes: 'Bulk buyer - 45kg bales monthly', createdAt: '2026-06-01T10:00:00Z', lastContactAt: '2026-07-19T14:30:00Z' },
-        { id: 'cnt-002', name: 'Jabali Enterprises', email: 'info@jabali.co.ke', phone: '+254722345678', company: 'Jabali Enterprises Ltd', role: 'Procurement Manager', status: 'active', tags: ['wholesale', 'kenya', 'corporate'], notes: 'Large volume orders - Nairobi CBD', createdAt: '2026-05-15T08:00:00Z', lastContactAt: '2026-07-21T06:00:00Z' },
-        { id: 'cnt-003', name: 'Neema Electronics', email: 'sales@neema-electronics.co.tz', phone: '+255712345678', company: 'Neema Electronics', role: 'Sales Director', status: 'active', tags: ['electronics', 'tanzania', 'arusha'], notes: 'Regular iPhone/laptop buyer', createdAt: '2026-06-10T09:00:00Z', lastContactAt: '2026-07-21T07:30:00Z' },
-        { id: 'cnt-004', name: 'Mama Zawadi Boutique', email: 'mama.zawadi@boutique.co.tz', phone: '+255754321098', company: 'Mama Zawadi Boutique', role: 'Owner', status: 'active', tags: ['fashion', 'tanzania', 'dar-es-salaam'], notes: 'Handbags and fashion accessories buyer', createdAt: '2026-06-20T11:00:00Z', lastContactAt: '2026-07-21T08:00:00Z' },
-        { id: 'cnt-005', name: 'TechHub Rwanda', email: 'orders@techhub.rw', phone: '+250789123456', company: 'TechHub Rwanda Ltd', role: 'Purchasing Manager', status: 'active', tags: ['electronics', 'rwanda', 'kigali'], notes: 'Premium electronics distributor', createdAt: '2026-06-25T14:00:00Z', lastContactAt: '2026-07-21T09:00:00Z' },
-        { id: 'cnt-006', name: 'Rehema Nkwabi', email: 'rehema.nkwabi@gmail.com', phone: '+255754111222', company: 'Nkwabi Home Decor', role: 'Owner', status: 'active', tags: ['home', 'tanzania', 'mwanza'], notes: 'Bedsheets and home goods buyer', createdAt: '2026-05-20T10:00:00Z', lastContactAt: '2026-07-14T11:20:00Z' },
-        { id: 'cnt-007', name: 'Peter Okello', email: 'pokello@outlook.com', phone: '+256771234567', company: 'Okello Tech Store', role: 'Owner', status: 'active', tags: ['electronics', 'uganda', 'jinja'], notes: 'Laptop specialist - small business', createdAt: '2026-06-15T08:30:00Z', lastContactAt: '2026-07-21T12:00:00Z' },
-        { id: 'cnt-008', name: 'Sarah Wanjiku', email: 'sarah@wanjiku.co.ke', phone: '+254733444555', company: 'Wanjiku Coffee Traders', role: 'Director', status: 'active', tags: ['food', 'kenya', 'nairobi'], notes: 'Premium coffee buyer - Karen area', createdAt: '2026-06-05T09:00:00Z', lastContactAt: '2026-07-21T10:00:00Z' },
-        { id: 'cnt-009', name: 'David Mwangi', email: 'david@mwangi.co.tz', phone: '+255766777888', company: 'Mwangi Fashion House', role: 'Buyer', status: 'active', tags: ['fashion', 'tanzania', 'dar-es-salaam'], notes: 'Leather goods specialist', createdAt: '2026-06-12T14:00:00Z', lastContactAt: '2026-07-19T10:00:00Z' },
-        { id: 'cnt-010', name: 'Grace Auma', email: 'grace.auma@yahoo.com', phone: '+256781222333', company: 'Auma Accessories', role: 'Owner', status: 'active', tags: ['electronics', 'uganda', 'kampala'], notes: 'Audio equipment buyer', createdAt: '2026-05-25T11:00:00Z', lastContactAt: '2026-07-14T09:45:00Z' },
-        { id: 'cnt-011', name: 'Fatma Ali', email: 'fatma.ali@gmail.com', phone: '+254711999888', company: 'Fatma Beauty Spa', role: 'Owner', status: 'lead', tags: ['beauty', 'kenya', 'mombasa'], notes: 'Interested in skincare sets', createdAt: '2026-07-15T10:00:00Z', lastContactAt: '2026-07-21T10:30:00Z' },
-        { id: 'cnt-012', name: 'Patrick Habimana', email: 'patrick@habimana.rw', phone: '+250788111222', company: 'Habimana Schools', role: 'Procurement Officer', status: 'active', tags: ['wholesale', 'rwanda', 'kigali'], notes: 'School uniform buyer - bulk orders', createdAt: '2026-06-08T08:00:00Z', lastContactAt: '2026-07-18T10:00:00Z' },
-        { id: 'cnt-013', name: 'Hassan Mwinyi', email: 'hassan@mwinyi.co.tz', phone: '+255777333444', company: 'Mwinyi Wholesale', role: 'Director', status: 'active', tags: ['wholesale', 'tanzania', 'dodoma'], notes: 'Shirt and fashion wholesale buyer', createdAt: '2026-04-10T10:00:00Z', lastContactAt: '2026-07-11T16:00:00Z' },
-        { id: 'cnt-014', name: 'Immaculate Nyirahabimana', email: 'immaculate@nyira.rw', phone: '+250799444555', company: 'Nyira Home Collection', role: 'Owner', status: 'lead', tags: ['home', 'rwanda', 'kigali'], notes: 'Bamboo towel and linen buyer', createdAt: '2026-07-10T08:00:00Z', lastContactAt: '2026-07-21T08:45:00Z' },
-        { id: 'cnt-015', name: 'Brian Kiprop', email: 'brian@kiprop.co.ke', phone: '+254722666777', company: 'Kiprop Sports', role: 'Owner', status: 'active', tags: ['sports', 'kenya', 'eldoret'], notes: 'GPS watches and fitness gear buyer', createdAt: '2026-06-30T09:00:00Z', lastContactAt: '2026-07-21T09:00:00Z' },
-        { id: 'cnt-016', name: 'Claire Mugisha', email: 'claire@mugisha.co.ug', phone: '+256788333444', company: 'Mugisha Gifts', role: 'Owner', status: 'active', tags: ['home', 'uganda', 'entebbe'], notes: 'Gift items and candles buyer', createdAt: '2026-05-18T11:00:00Z', lastContactAt: '2026-07-13T14:30:00Z' },
-        { id: 'cnt-017', name: 'Diane Uwimana', email: 'diane@uwimana.rw', phone: '+250785666777', company: 'Uwimana Beauty Salon', role: 'Owner', status: 'active', tags: ['beauty', 'rwanda', 'huye'], notes: 'Hair extensions and beauty products', createdAt: '2026-06-22T10:00:00Z', lastContactAt: '2026-07-20T14:00:00Z' },
-        { id: 'cnt-018', name: 'Joan Nabukera', email: 'joan.nabukera@gmail.com', phone: '+256771555666', company: 'Nabukera Fashion', role: 'Buyer', status: 'inactive', tags: ['fashion', 'uganda', 'kampala'], notes: 'Had a return - silk scarf color issue', createdAt: '2026-06-01T14:00:00Z', lastContactAt: '2026-07-08T14:00:00Z' },
-        { id: 'cnt-019', name: 'John Shirima', email: 'john@shirima.co.tz', phone: '+255789444555', company: 'Shirima Kitchen Store', role: 'Owner', status: 'lead', tags: ['home', 'tanzania', 'arusha'], notes: 'Kitchen utensils and cookware buyer', createdAt: '2026-07-18T11:00:00Z', lastContactAt: '2026-07-21T11:00:00Z' },
-        { id: 'cnt-020', name: 'James Ochieng', email: 'james@ochieng.co.ke', phone: '+254733888999', company: 'Ochieng IT Solutions', role: 'Director', status: 'active', tags: ['electronics', 'kenya', 'nakuru'], notes: 'USB-C hubs and tech accessories', createdAt: '2026-06-18T14:00:00Z', lastContactAt: '2026-07-21T07:30:00Z' },
-        { id: 'cnt-021', name: 'Alice Njeri', email: 'alice@njeri.co.ke', phone: '+254711222333', company: 'Njeri Coffee House', role: 'Owner', status: 'active', tags: ['food', 'kenya', 'nairobi'], notes: 'Tanzanian coffee bean buyer - premium roaster', createdAt: '2026-06-28T09:00:00Z', lastContactAt: '2026-07-21T09:00:00Z' },
-      ],
+      contacts: [],
       contactSearchQuery: '',
       contactFilter: 'all',
 
@@ -1068,27 +919,7 @@ export const useStore = create<StoreState>()(
       setContactFilter: (f) => set({ contactFilter: f }),
 
       // ── Inventory ─────────────────────────────────────────────────────────
-      inventoryItems: [
-        ...ALL_PRODUCTS.map((p) => ({
-          id: p.id,
-          name: p.name,
-          sku: p.id.toUpperCase(),
-          category: p.category,
-          stock: p.stock,
-          minStock: Math.floor(p.stock * 0.1),
-          price: p.price,
-          unit: 'pcs',
-          status: (p.stock > 50
-            ? 'in-stock'
-            : p.stock > 0
-              ? 'low-stock'
-              : 'out-of-stock') as 'in-stock' | 'low-stock' | 'out-of-stock',
-          supplier: p.supplier.name,
-          lastRestocked: p.createdAt,
-          source: 'manual' as const,
-          postedToMarketplace: false,
-        })),
-      ],
+      inventoryItems: [],
       inventorySearchQuery: '',
 
       addInventoryItem: (item) =>
@@ -1167,188 +998,7 @@ export const useStore = create<StoreState>()(
       setInventorySearchQuery: (q) => set({ inventorySearchQuery: q }),
 
       // ── Finance ───────────────────────────────────────────────────────────
-      transactions: [
-        {
-          id: 'tx-001',
-          type: 'income',
-          amount: { amount: 2700000, currency: 'TZS' },
-          description: 'Wholesale order — Men Cotton Shirts (100 pcs)',
-          category: 'Sales',
-          date: '2026-07-10',
-          status: 'completed',
-        },
-        {
-          id: 'tx-002',
-          type: 'expense',
-          amount: { amount: 450000, currency: 'TZS' },
-          description: 'Warehouse rent — July 2026',
-          category: 'Rent',
-          date: '2026-07-01',
-          status: 'completed',
-        },
-        {
-          id: 'tx-003',
-          type: 'income',
-          amount: { amount: 850000, currency: 'TZS' },
-          description: 'MacBook Air M2 sale (1 unit)',
-          category: 'Sales',
-          date: '2026-07-15',
-          status: 'completed',
-        },
-        {
-          id: 'tx-004',
-          type: 'expense',
-          amount: { amount: 120000, currency: 'TZS' },
-          description: 'BirichiNex subscription — Gold plan',
-          category: 'Subscriptions',
-          date: '2026-07-05',
-          status: 'completed',
-        },
-        {
-          id: 'tx-005',
-          type: 'transfer',
-          amount: { amount: 500000, currency: 'TZS' },
-          description: 'Transfer to savings account',
-          category: 'Transfer',
-          date: '2026-07-18',
-          status: 'pending',
-        },
-        {
-          id: 'tx-006',
-          type: 'income',
-          amount: { amount: 1350000, currency: 'TZS' },
-          description: 'Retail sale — Women Handbags (25 units)',
-          category: 'Sales',
-          date: '2026-06-12',
-          status: 'completed',
-        },
-        {
-          id: 'tx-007',
-          type: 'income',
-          amount: { amount: 4200000, currency: 'TZS' },
-          description: 'Wholesale bale — Grade A European Fashion Mix (5 bales)',
-          category: 'Sales',
-          date: '2026-06-18',
-          status: 'completed',
-        },
-        {
-          id: 'tx-008',
-          type: 'expense',
-          amount: { amount: 380000, currency: 'TZS' },
-          description: 'International shipping — supplier order from Dubai',
-          category: 'Shipping',
-          date: '2026-06-22',
-          status: 'completed',
-        },
-        {
-          id: 'tx-009',
-          type: 'income',
-          amount: { amount: 675000, currency: 'TZS' },
-          description: 'Electronics sale — Samsung Galaxy A15 (5 units)',
-          category: 'Sales',
-          date: '2026-06-25',
-          status: 'completed',
-        },
-        {
-          id: 'tx-010',
-          type: 'expense',
-          amount: { amount: 200000, currency: 'TZS' },
-          description: 'Social media advertising — Instagram & TikTok campaigns',
-          category: 'Marketing',
-          date: '2026-07-03',
-          status: 'completed',
-        },
-        {
-          id: 'tx-011',
-          type: 'income',
-          amount: { amount: 1800000, currency: 'TZS' },
-          description: 'Bulk sale — Women Polyester Dresses (60 pcs)',
-          category: 'Sales',
-          date: '2026-07-08',
-          status: 'completed',
-        },
-        {
-          id: 'tx-012',
-          type: 'expense',
-          amount: { amount: 95000, currency: 'TZS' },
-          description: 'Electricity & water bill — July 2026',
-          category: 'Utilities',
-          date: '2026-07-05',
-          status: 'completed',
-        },
-        {
-          id: 'tx-013',
-          type: 'income',
-          amount: { amount: 520000, currency: 'TZS' },
-          description: 'Retail sale — Children Clothing Bundle (15 sets)',
-          category: 'Sales',
-          date: '2026-06-28',
-          status: 'completed',
-        },
-        {
-          id: 'tx-014',
-          type: 'expense',
-          amount: { amount: 75000, currency: 'TZS' },
-          description: 'Packaging materials — poly bags, tissue paper, boxes',
-          category: 'Packaging',
-          date: '2026-07-12',
-          status: 'completed',
-        },
-        {
-          id: 'tx-015',
-          type: 'income',
-          amount: { amount: 3150000, currency: 'TZS' },
-          description: 'Wholesale order — Grade B Denim Bales (3 bales)',
-          category: 'Sales',
-          date: '2026-07-02',
-          status: 'completed',
-        },
-        {
-          id: 'tx-016',
-          type: 'transfer',
-          amount: { amount: 1200000, currency: 'TZS' },
-          description: 'Investment — BirichiNex Gold Tier Partnership',
-          category: 'Investment',
-          date: '2026-06-30',
-          status: 'completed',
-        },
-        {
-          id: 'tx-017',
-          type: 'expense',
-          amount: { amount: 150000, currency: 'TZS' },
-          description: 'Business insurance premium — Q3 2026',
-          category: 'Insurance',
-          date: '2026-07-01',
-          status: 'completed',
-        },
-        {
-          id: 'tx-018',
-          type: 'income',
-          amount: { amount: 2400000, currency: 'TZS' },
-          description: 'Wholesale order — Men Polo Shirts (80 pcs)',
-          category: 'Sales',
-          date: '2026-07-16',
-          status: 'pending',
-        },
-        {
-          id: 'tx-019',
-          type: 'expense',
-          amount: { amount: 250000, currency: 'TZS' },
-          description: 'Domestic courier delivery — Dar es Salaam to Arusha',
-          category: 'Shipping',
-          date: '2026-07-14',
-          status: 'pending',
-        },
-        {
-          id: 'tx-020',
-          type: 'transfer',
-          amount: { amount: 300000, currency: 'TZS' },
-          description: 'Petty cash replenishment — office supplies & small purchases',
-          category: 'Transfer',
-          date: '2026-07-19',
-          status: 'completed',
-        },
-      ],
+      transactions: [],
       transactionsFilter: 'all',
 
       addTransaction: (tx) =>
@@ -1700,11 +1350,13 @@ export const useStore = create<StoreState>()(
       // ── Settings ──────────────────────────────────────────────────────────
       settings: {
         profile: {
-          name: 'Frank Musau',
-          email: 'frank@portmetals.co.tz',
-          phone: '+255 700 000 000',
-          company: 'Portmetals Africa Ltd.',
+          name: '',
+          email: '',
+          phone: '',
+          company: '',
           language: 'en',
+          city: '',
+          country: '',
         },
         notifications: {
           email: true,
@@ -1846,7 +1498,7 @@ export const useStore = create<StoreState>()(
       },
 
       // ── Documents ──────────────────────────────────────────────────────────
-      documents: SEED_DOCUMENTS,
+      documents: [],
       documentSearchQuery: '',
       documentCategoryFilter: 'all',
       documentStatusFilter: 'all',
@@ -2346,18 +1998,38 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 8,
+      version: 9,
+      // v9: production launch — wipe all demo/seed content left over from
+      // pre-launch builds so every shop starts genuinely empty. Business data
+      // from this point on comes only from real usage (manual entry + events).
       migrate: (persisted: any) => {
         const base = typeof persisted === 'object' && persisted !== null ? persisted : {};
         return {
           ...base,
+          contacts: [],
+          transactions: [],
+          orders: [],
+          shipments: [],
+          inventoryItems: [],
+          documents: [],
+          agentCalls: [],
+          cart: [],
+          cartRedeem: null,
           businessWallet: base.businessWallet ?? { balance: 0, totalEarned: 0, totalWithdrawn: 0, transactions: [] },
           withdrawals: base.withdrawals ?? [],
-          recommendations: base.recommendations ?? [],
-          outcomes: base.outcomes ?? [],
+          recommendations: [],
+          outcomes: [],
           settings: {
             ...(base.settings ?? {}),
-            profile: { ...(base.settings?.profile ?? {}), language: base.settings?.profile?.language ?? 'en' },
+            profile: {
+              name: '',
+              email: '',
+              phone: '',
+              company: '',
+              language: base.settings?.profile?.language ?? 'en',
+              city: '',
+              country: '',
+            },
           },
           upgradeReminderDismissed: base.upgradeReminderDismissed ?? false,
           subscription: {

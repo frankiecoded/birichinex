@@ -1333,19 +1333,16 @@ function SupportSection() {
           <p className="text-caption text-ink-tertiary">Browse documentation and FAQs at docs.birichinex.com</p>
         </a>
         <a
-          href="mailto:support@portmetals.co.tz"
+          href="mailto:support@birichinex.com"
           className="block p-3 rounded-[12px] bg-surface/50 hover:bg-surface-secondary/60 transition-colors"
         >
           <p className="text-subhead font-semibold text-ink">Email Support</p>
-          <p className="text-caption text-ink-tertiary">support@portmetals.co.tz</p>
+          <p className="text-caption text-ink-tertiary">support@birichinex.com</p>
         </a>
-        <a
-          href="tel:+255700000000"
-          className="block p-3 rounded-[12px] bg-surface/50 hover:bg-surface-secondary/60 transition-colors"
-        >
+        <div className="block p-3 rounded-[12px] bg-surface/50">
           <p className="text-subhead font-semibold text-ink">Phone</p>
-          <p className="text-caption text-ink-tertiary">+255 700 000 000</p>
-        </a>
+          <p className="text-caption text-ink-tertiary">Your BirichiNex account manager — set once a contact line is published</p>
+        </div>
       </div>
     </>
   );

@@ -14,7 +14,6 @@ import {
   buildCallEmail,
   buildFollowUpReminderEmail,
   buildCallScript,
-  seedAgentCalls,
   SimContact,
   SimOrder,
   CustomerContext,
@@ -125,7 +124,6 @@ export default function AISalesAgentPage() {
   const [inboxTab, setInboxTab] = useState<"notifications" | "emails">("notifications");
   const [connection, setConnection] = useState<"conversational" | "live" | "simulated" | "checking">("checking");
   const [fromNumber, setFromNumber] = useState<string | null>(null);
-  const seededRef = useRef(false);
 
   const ownerEmail = user?.email ?? "owner@birichinex.com";
   const ownerName = user?.name ?? "Business Owner";
@@ -141,21 +139,6 @@ export default function AISalesAgentPage() {
       })
       .catch(() => setConnection("simulated"));
   }, []);
-
-  // ── Seed a believable first-history once ───────────────────────────────────
-  useEffect(() => {
-    if (seededRef.current) return;
-    seededRef.current = true;
-    if (agentCalls.length === 0) {
-      const seeds = seedAgentCalls(aiAgent);
-      seeds.forEach((c) => {
-        const { id: _id, createdAt: _ts, ...rest } = c;
-        logAgentCall(rest);
-        addNotification(buildCallNotification(c));
-        if (aiAgent.sendOwnerEmails) logEmail(buildCallEmail(c, ownerEmail, aiAgent.name));
-      });
-    }
-  }, [agentCalls.length, aiAgent, logAgentCall, addNotification, logEmail, ownerEmail]);
 
   // ── Playback animation ─────────────────────────────────────────────────────
   const playingCall = playingId ? agentCalls.find((c) => c.id === playingId) : null;

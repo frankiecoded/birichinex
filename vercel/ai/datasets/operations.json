@@ -1,0 +1,236 @@
+[
+  {
+    "id": "ds-ops-inventory",
+    "topic": "Operations — Inventory control",
+    "subtopic": "Know what you have, where it is, and what it's worth",
+    "keywords": ["operations", "inventory", "stock", "products", "track", "items", "stockout", "overstock"],
+    "content": "Inventory is your business stored as goods — and untracked stock is invisible money. The fundamentals: every item logged with its cost and quantity, stock deducted when sold, alerts when it runs low. BirichiNex Inventory does this from real orders: products enter via Procurement/Deals/Bales, sell on the Storefront, and balances update automatically. Integrate: log everything you stock (cost, quantity, location) → link products to Storefront listings → watch low-stock alerts → review stock value in Analytics → never guess what you have again.",
+    "tips": [
+      "If it's not in Inventory, it doesn't exist for selling",
+      "Every sale must deduct stock — manual edits cause drift",
+      "Count physical stock monthly and correct the system",
+      "Slow stock is a cost; fast stock is an asset"
+    ],
+    "examples": [
+      "A seller's monthly count reveals 14 units lost to miscounting — logged in the system, leakage stops the next month."
+    ],
+    "relatedTopics": ["ds-f-inventory", "ds-f-marketplace-list", "ds-fin-costing", "ds-ops-stock-levels"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-stock-levels",
+    "topic": "Operations — Reordering discipline",
+    "subtopic": "Never run dry, never drown in stock",
+    "keywords": ["operations", "reorder", "low stock", "stockout", "levels", "alerts", "restock", "quantity"],
+    "content": "Two failures kill sellers: stockouts (empty shelf, lost sales and trust) and overstock (cash trapped in slow goods). The fix is reorder discipline: set a minimum level per product, reorder before you hit zero, and base quantities on actual sell-through. BirichiNex inventory alerts tell you when to reorder, and Deals/Procurement give you the restock path. Integrate: set low-stock thresholds per product → act on alerts immediately → reorder using Deals (cheap) or Procurement (reliable) → keep sell-through data from Analytics to size the next order.",
+    "tips": [
+      "Reorder at the low-stock alert, not at zero",
+      "Size orders by recent sell-through, not last month's peak",
+      "Best sellers earn the biggest restock; experiments get small batches",
+      "A 1-week buffer beats a 1-day scramble"
+    ],
+    "examples": [
+      "Low-stock alerts fire on two best sellers; the seller reorders in the same day via Procurement and never breaks the sales streak."
+    ],
+    "relatedTopics": ["ds-f-inventory", "ds-f-shopping-deals", "ds-f-procurement", "ds-f-analytics"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-bales",
+    "topic": "Operations — Bale buying workflow",
+    "subtopic": "From sealed bale to sorted sellable stock",
+    "keywords": ["operations", "bales", "mitumba", "sort", "grade", "secondhand", "workflow", "45kg"],
+    "content": "Bale buying is an operation with a repeatable workflow: choose the grade (A+/A/B/C), buy at the right weight, sort by condition and style, value each piece, and move sellable items into Inventory. The discipline is valuing honestly — most bales have a mix of easy sellers, slow movers and waste. BirichiNex supports it: buy in Shopping → Bales, log the bale's pieces into Inventory at their per-piece cost, list the good ones, and clear the rest cheap. Integrate: buy → log pieces + costs → list best pieces on the Storefront → track which grades actually sell in Analytics.",
+    "tips": [
+      "Grade A+ is a premium; grade C suits budget buyers — know your market",
+      "Sort immediately; bales degrade in a corner",
+      "Price off real per-piece cost, not bale-price intuition",
+      "Track per-grade results and buy more of what your market actually clears"
+    ],
+    "examples": [
+      "A seller logs every piece of a 45kg bale, finds grade A pieces fly at premium while grade C clogs, and shifts future buys to A/A+ only."
+    ],
+    "relatedTopics": ["ds-f-shopping-bales", "ds-f-inventory", "ds-fin-costing", "ds-m-resell-bales"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-procurement",
+    "topic": "Operations — Sourcing & suppliers",
+    "subtopic": "A reliable supplier is worth more than a cheap one",
+    "keywords": ["operations", "procurement", "suppliers", "sourcing", "purchase order", "verified", "ratings", "stock"],
+    "content": "Sourcing is a recurring operation: find verified suppliers, compare ratings and price, issue purchase orders, receive stock, and manage reorders. Consistency beats luck — a 4.9-rated supplier who delivers on time is worth more than a mystery source with a lower price. BirichiNex Procurement centralises it: verified suppliers with ratings, purchase orders, and a history that builds your negotiating leverage. Integrate: review supplier ratings before first orders → issue purchase orders for repeat buys → receive stock into Inventory → reorder in one tap → negotiate better terms as history grows.",
+    "tips": [
+      "First order small, even with a good rating",
+      "Prefer suppliers with history — track your reorders to them",
+      "One reliable supplier beats three flaky ones",
+      "Ratings are earned — read the detail, not just the number"
+    ],
+    "examples": [
+      "A seller consolidates 80% of sourcing with one top-rated supplier; reliability improves and volume earns a 7% price cut."
+    ],
+    "relatedTopics": ["ds-f-procurement", "ds-f-inventory", "ds-ops-stock-levels", "ds-m-procure-margin"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-fulfillment",
+    "topic": "Operations — Order fulfillment",
+    "subtopic": "Pick, pack, ship, done — every time",
+    "keywords": ["operations", "fulfillment", "pick", "pack", "ship", "dispatch", "orders", "workflow", "accurate"],
+    "content": "Fulfillment is where reputation is made or broken: order comes in, confirm payment, pick the right item, pack it safely, hand to the carrier, share the tracking number. Errors here cost refunds and trust. BirichiNex gives each order a tracking number and status lifecycle, so nothing disappears between sale and delivery. Integrate: confirm payment before dispatch → create the tracking shipment in Orders/Logistics → pack with a checklist (item, size, address) → share the tracking number with the customer → mark delivered and collect the review.",
+    "tips": [
+      "Never dispatch before payment confirms — one policy, zero exceptions",
+      "Check the address twice; 'wrong place' is the most common error",
+      "Pack for the journey, not for your shelf",
+      "Share tracking proactively — it pre-empts 'where is it?' messages"
+    ],
+    "examples": [
+      "A seller adds a 3-point dispatch checklist (item, size, address); wrong-item incidents drop from 1 in 20 orders to zero in two months."
+    ],
+    "relatedTopics": ["ds-f-orders-track", "ds-f-orders-live", "ds-f-logistics", "ds-fin-invoicing"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-shipping",
+    "topic": "Operations — Shipping & costs",
+    "subtopic": "Delivery is a product feature — price and time it well",
+    "keywords": ["operations", "shipping", "delivery", "courier", "rider", "cost", "route", "time"],
+    "content": "Shipping has two levers: cost and speed. Both are part of what the buyer buys, so they belong in your pricing and promise. Smart sellers know delivery cost per route, offer the options that fit (same-day in town, 2-day regional, cross-border), and charge or absorb it deliberately — not accidentally. BirichiNex Logistics holds shipments and routes, and the Live Map shows the journey. Integrate: build your route + cost table → set shipping fees per route in checkout → create shipments in Logistics with carrier and status → track actual delivery time in Analytics and tune your promise.",
+    "tips": [
+      "Know your cost per route — town, regional, cross-border",
+      "Same-day in town is a positioning weapon",
+      "Charge shipping transparently; hidden fees kill conversions",
+      "Track promised vs actual delivery time and fix the gap"
+    ],
+    "examples": [
+      "A seller maps 3 delivery routes and their true costs, then prices shipping per route — margin improves and surprise losses stop."
+    ],
+    "relatedTopics": ["ds-f-logistics", "ds-f-orders-live", "ds-fin-costing", "ds-mkt-cross-border-growth"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-logistics-customs",
+    "topic": "Operations — Cross-border logistics & customs",
+    "subtopic": "The borders that other sellers fear are your moat",
+    "keywords": ["operations", "logistics", "customs", "import", "export", "border", "duty", "clearance", "document"],
+    "content": "Cross-border trade fails on paperwork and clearance, not demand. Importing needs duty calculations and customs documents; exporting needs the right forms per destination. Sellers who master this operate in a market most avoid. BirichiNex Logistics models it: shipments can be typed import/export with customs status, and Documents holds the clearance paperwork. Integrate: create the Logistics shipment with type import/export → attach customs documents in Documents → track clearance status through the Live Map → include duty in landed cost so margins stay true.",
+    "tips": [
+      "Duty is part of cost — calculate it before you price, not after",
+      "Keep every customs document; clearance is proof-based",
+      "Start with one route and master its paperwork",
+      "A cleared, tracked shipment is your cross-border trust signal"
+    ],
+    "examples": [
+      "A trader imports a container line via Logistics with customs tracked; buyers see the cleared status and pay premium for the reliability."
+    ],
+    "relatedTopics": ["ds-f-logistics", "ds-f-orders-documents", "ds-f-currency", "ds-fin-tax"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-tracking",
+    "topic": "Operations — Live tracking operations",
+    "subtopic": "Answer 'where is my order?' before they ask",
+    "keywords": ["operations", "tracking", "live map", "shipment", "status", "eta", "carrier", "reassure"],
+    "content": "The number-one support question in e-commerce is 'where is my order?'. Sellers who answer it proactively — with a tracking number, status and ETA — reduce support load and build trust. BirichiNex does it visually: every order and shipment appears on the Live Map with carrier, route and status, and the copilot can answer tracking-number queries instantly. Integrate: generate a tracking number for every order → share it at dispatch → check the Live Map during delivery → resolve exceptions (delayed, stuck) fast → let the copilot answer 'where is PM-XXX…?' automatically.",
+    "tips": [
+      "Proactive tracking updates pre-empt the anxious message",
+      "Exceptions killed in 24 hours save refunds and trust",
+      "Use the Live Map to spot stuck shipments before customers do",
+      "Tracking is trust you can show"
+    ],
+    "examples": [
+      "A seller spots a delayed shipment on the Live Map, calls the carrier, and resolves it before the buyer even asks — no refund, no complaint."
+    ],
+    "relatedTopics": ["ds-f-orders-live", "ds-f-orders-track", "ds-f-logistics", "ds-ops-fulfillment"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-documents",
+    "topic": "Operations — Paperwork & documents",
+    "subtopic": "The receipts that keep money and legal trouble away",
+    "keywords": ["operations", "documents", "invoices", "receipts", "records", "paperwork", "contracts", "organise"],
+    "content": "Orders generate paperwork — invoices, receipts, customs forms, contracts — and organised paperwork is what keeps disputes cheap, tax simple and cross-border smooth. The habit: create documents at the moment of the event and file them where they belong. BirichiNex Documents stores order invoices and business papers in one place, searchable when needed. Integrate: generate the invoice the moment an order ships → attach customs/contract papers to the right shipment → keep the tax-year folder current → pull any document in seconds when asked.",
+    "tips": [
+      "Create the document when the event happens, not later",
+      "One place for everything beats a drawer of scattered papers",
+      "Invoices now = clean tax returns later",
+      "For B2B, the invoice is the collection tool — send it fast"
+    ],
+    "examples": [
+      "A customs officer asks for an import document mid-delivery; the seller produces it from Documents in seconds and avoids a hold."
+    ],
+    "relatedTopics": ["ds-f-orders-documents", "ds-fin-invoicing", "ds-ops-logistics-customs", "ds-fin-bookkeeping"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-warehouse",
+    "topic": "Operations — Space & storage",
+    "subtopic": "Every square metre is working capital",
+    "keywords": ["operations", "warehouse", "storage", "space", "stock room", "shelf", "organise", "layout"],
+    "content": "Storage is where stock turns into money or dies. The discipline: organisation by velocity (fast sellers within reach), a count system you trust, and stock that rotates instead of rotting. A small, organised space beats a big, messy one. BirichiNex supports the logic side: Inventory tracks what's where, Analytics shows what's moving, and low-stock alerts prevent hidden stockouts. Integrate: label zones in Inventory (fast / slow / bulk) → store by velocity → count monthly → let alerts flag what needs reordering — not the back of your shelf.",
+    "tips": [
+      "Fast movers first; bulk and slow stock further back",
+      "Label everything — memory is not inventory control",
+      "Monthly counts catch the drift before it costs",
+      "If it hasn't sold in 90 days, it's costing you space and cash"
+    ],
+    "examples": [
+      "A seller reorganises by velocity, cuts picking time in half, and flags a 90-day slow pile that becomes a discount bundle — cash freed."
+    ],
+    "relatedTopics": ["ds-f-inventory", "ds-f-analytics", "ds-ops-stock-levels", "ds-m-speed-stock"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-automation-ops",
+    "topic": "Operations — Automate the operational loop",
+    "subtopic": "Systemise the repetitive so you scale",
+    "keywords": ["operations", "automation", "routines", "systemise", "templates", "repeatable", "scale", "workflow"],
+    "content": "Every repeatable task is a candidate for a routine: daily order check, weekly reconcile, monthly stock count, restock triggers. Operations that run on routines scale; operations that run on memory don't. BirichiNex Automation and Routines codify the loop — recurring checks, follow-ups and tasks — so nothing falls through the cracks. Integrate: turn recurring checks into Routines (daily orders, weekly Finance review, low-stock actions) → use Automation for repeat workflows → delegate follow-ups to Amani → review the routine list monthly and add what keeps breaking.",
+    "tips": [
+      "If you did it twice this week, write it into a routine",
+      "Automate the check, not the judgement",
+      "A routine you don't review is a routine that drifts",
+      "Consistent small operations compound into serious scale"
+    ],
+    "examples": [
+      "A seller builds a 5-routine weekly loop (orders, reconcile, stock, marketing, review) and cuts admin from 3 hours a day to 45 minutes."
+    ],
+    "relatedTopics": ["ds-f-automation", "ds-f-routines", "ds-f-ai-agent", "ds-mkt-automation"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-returns",
+    "topic": "Operations — Returns & complaints",
+    "subtopic": "A handled complaint is a kept customer",
+    "keywords": ["operations", "returns", "complaints", "refund", "dispute", "problem", "damaged", "wrong item"],
+    "content": "Returns and complaints are not losses — they are opportunities to keep a customer. The operational rules: respond fast, take the issue seriously, verify with evidence, and resolve within an agreed window. A well-handled complaint converts the complainant into your most loyal advocate. BirichiNex supports resolution with records: the order's tracking and delivery proof in Orders/Live Map, correspondence in CRM, and the financial side in Finance. Integrate: reply within 24h → check the tracking/evidence → agree a resolution (replace, refund, credit) → log the outcome → review complaint patterns in Analytics and fix the root cause.",
+    "tips": [
+      "Speed of first response decides the customer's mood",
+      "Evidence (tracking, photos) resolves disputes without arguing",
+      "A replacement often costs less than a refund plus a lost customer",
+      "Three complaints of the same kind = a system problem, fix it"
+    ],
+    "examples": [
+      "A damaged item complaint is resolved in 12 hours with a replacement; the customer reorders twice and posts a 5-star review."
+    ],
+    "relatedTopics": ["ds-f-orders-track", "ds-f-orders-live", "ds-f-crm", "ds-fin-margins"],
+    "category": "operations"
+  },
+  {
+    "id": "ds-ops-dropship-ops",
+    "topic": "Operations — Dropshipping operations",
+    "subtopic": "Selling stock you never hold — done right",
+    "keywords": ["operations", "dropship", "no stock", "supplier ships", "gold", "tier", "margin", "fulfilment"],
+    "content": "Dropshipping removes the warehouse but adds a new operation: order routing. You list products you don't hold; when a customer buys, the supplier fulfils, and you track the shipment to keep your promise. The risks are supplier reliability and thin margins — so choose proven products and tracked fulfilment. BirichiNex tiers (Gold unlocks more suppliers and order values) and Live Map keep it manageable. Integrate: list dropship items with your margin → route customer orders to the supplier → track the shipment on the Live Map → keep the loyalty points flowing so repeat buyers stick.",
+    "tips": [
+      "Dropship proven demand, not guesses",
+      "Your reputation rides on the supplier — vet delivery reliability",
+      "Track every supplier shipment; silent suppliers cost you customers",
+      "Gold tier's bigger order values make the margin worth it"
+    ],
+    "examples": [
+      "A Gold-tier seller lists 20 dropship gadgets, routes orders to suppliers, and tracks everything live — 40 sales a month, zero warehouse."
+    ],
+    "relatedTopics": ["ds-f-dropship", "ds-f-membership", "ds-f-orders-live", "ds-m-dropship-margin"],
+    "category": "operations"
+  }
+]

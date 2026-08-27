@@ -1,0 +1,218 @@
+[
+  {
+    "id": "ds-mkt-brand",
+    "topic": "Marketing — Your storefront brand",
+    "subtopic": "Look like a business people trust",
+    "keywords": ["marketing", "brand", "storefront", "identity", "trust", "logo", "name", "image", "premium"],
+    "content": "In a marketplace full of sellers, presentation is the first filter. A clear business name, logo, product images and descriptions turn a listing into a brand — and brands command higher prices and repeat buyers. BirichiNex gives you a Storefront where this lives. Integrate: set your business name and branding on the Storefront → use quality images and descriptions on every product → keep consistency across Marketplace and Orders pages → let Community reviews and Live Map trust reinforce the brand.",
+    "tips": [
+      "A real photo of your product beats a stock image every time",
+      "Answer in your customer's words — plain and specific beats fancy",
+      "Consistency (same name, same look) builds recognition",
+      "Trust signals: clear prices, honest descriptions, on-time delivery"
+    ],
+    "examples": [
+      "A seller renames her store, adds a logo and real photos; conversions rise and buyers start returning by name."
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-f-community", "ds-mkt-listing-optimization", "ds-mkt-targeting"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-targeting",
+    "topic": "Marketing — Know your buyer",
+    "subtopic": "Who buys what, and why",
+    "keywords": ["marketing", "target", "audience", "buyer", "customer", "segment", "demand", "who buys"],
+    "content": "You cannot market to everyone. The sellers who win know exactly who buys (students, young professionals, resellers, gift buyers), what they value (price, quality, speed), and when they buy. BirichiNex data tells you who your buyers actually are: Analytics shows best sellers, order patterns, and repeat customers, while CRM holds customer details and history. Integrate: review Analytics for your top products and repeat rates → segment customers in CRM (resellers vs retail, region) → tailor Storefront listings and promotions per segment → test one segment at a time.",
+    "tips": [
+      "One clear buyer is worth more than ten vague ones",
+      "Watch what repeats — repeat purchases reveal your real demand",
+      "Price and message to your top segment, not everyone",
+      "Resellers care about margin; retail cares about price and trust"
+    ],
+    "examples": [
+      "Analytics shows 70% of a seller's revenue comes from resellers buying bales — she adds wholesale pricing and doubles that line."
+    ],
+    "relatedTopics": ["ds-f-analytics", "ds-f-crm", "ds-mkt-listing-optimization", "ds-m-franchise"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-listing-optimization",
+    "topic": "Marketing — Listings that sell",
+    "subtopic": "Photos, titles and descriptions that convert",
+    "keywords": ["marketing", "listing", "photos", "description", "title", "convert", "product", "keywords", "sell"],
+    "content": "A great listing answers the buyer's questions before they ask: what it is, what it's worth, why buy it, and how fast they'll get it. Clear photos (3+ angles), a title with the product + key detail, and a description with size/colour/condition/care win orders. BirichiNex Storefront and Marketplace reward well-described products with more views. Integrate: post with multiple photos and full descriptions → include the specifics buyers search for (size, material, condition) → price transparently → monitor which listings convert in Analytics and improve the laggards.",
+    "tips": [
+      "First photo is your shop window — make it the best angle",
+      "Include size, colour, material and condition in every description",
+      "Mention delivery time and payment options — buyers want to know",
+      "Refresh stale listings; new visibility brings new buyers"
+    ],
+    "examples": [
+      "Adding 3 photos and a size chart to a clothing line lifts its conversion rate from 1.4% to 3.1%."
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-f-analytics", "ds-mkt-brand", "ds-m-retail-margin"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-positioning",
+    "topic": "Marketing — Positioning & value",
+    "subtopic": "Compete on value, not just price",
+    "keywords": ["marketing", "positioning", "value", "premium", "price", "differentiate", "unique", "why you"],
+    "content": "Price wars destroy margins. Positioning is deciding WHY a buyer chooses you: speed, curation, quality grades, aftercare, trust. Sellers who articulate their difference stop being compared on price alone. BirichiNex gives you tools that become your positioning: verified tracking and Live Map for 'we never lose your package', loyalty for 'buying with us pays', AI Advisor guidance for pricing strategy. Integrate: define your one-line difference → repeat it across Storefront, listings and Community → back it with platform proof (Live Map, loyalty, reviews) → price with the AI Advisor's frameworks rather than matching the cheapest.",
+    "tips": [
+      "Pick one thing to be famous for, not three",
+      "'Fast, tracked, never lost' beats 'cheap' if you can prove it",
+      "Premium positioning needs premium proof — images, tracking, reviews",
+      "If you compete on price alone, someone else will always be cheaper"
+    ],
+    "examples": [
+      "A seller positions on 2-day tracked delivery; buyers accept 12% higher prices because the promise is proven on the Live Map."
+    ],
+    "relatedTopics": ["ds-f-ai-advisor", "ds-f-frameworks", "ds-f-orders-live", "ds-m-pricing-margin"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-social",
+    "topic": "Marketing — Social & chat selling",
+    "subtopic": "Instagram, WhatsApp and TikTok into orders",
+    "keywords": ["marketing", "social media", "whatsapp", "instagram", "tiktok", "facebook", "content", "followers"],
+    "content": "Your customers live on Instagram, WhatsApp, TikTok and Facebook. The play: post proof (products, unboxing, restocks, delivery), drive followers to your Storefront, and take orders via chat when they engage. BirichiNex makes the destination frictionless — every link leads to a real checkout with tracking and payment. Integrate: post product photos/status regularly → send followers to your Storefront link → handle chats fast → orders created become trackable → Amani can even follow up on engaged leads you log in CRM.",
+    "tips": [
+      "Post proof, not just products — stock counts, orders shipped, happy customers",
+      "Post on a rhythm (3-5x/week) — consistency beats one viral post",
+      "Save every interested chat contact into CRM",
+      "Reply fast — on chat, speed sells"
+    ],
+    "examples": [
+      "A seller posts a restock video on TikTok Friday night; 60 store visits and 9 orders by Monday — all tracked and delivered."
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-f-crm", "ds-f-ai-agent", "ds-mkt-community"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-community",
+    "topic": "Marketing — Community & word of mouth",
+    "subtopic": "Your customers are your sales force",
+    "keywords": ["marketing", "community", "word of mouth", "referral", "repeat", "reviews", "trust", "loyal"],
+    "content": "In East African commerce, trust travels by mouth — a recommendation from a friend outsells any advert. Community compounds this: happy customers bring their networks, and reviews give new buyers permission to trust you. BirichiNex hosts the Community and gives every order tracking + loyalty proof that customers naturally talk about. Integrate: deliver so well people mention it → invite reviews and share them → reward referrals (loyalty points for referring friends) → keep the community thread alive with restock news → watch repeat and referral share in Analytics.",
+    "tips": [
+      "One delighted customer is worth ten advertisements",
+      "Make referring easy: one link, one message",
+      "Show reviews and delivery proof prominently",
+      "Thank customers publicly — recognition breeds loyalty"
+    ],
+    "examples": [
+      "A seller's referral loop grows: every 4th order now comes from an existing customer's recommendation, cutting acquisition cost to near zero."
+    ],
+    "relatedTopics": ["ds-f-community", "ds-f-loyalty", "ds-f-crm", "ds-mkt-retention-marketing"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-loyalty",
+    "topic": "Marketing — Loyalty that compounds",
+    "subtopic": "Turn buyers into members",
+    "keywords": ["marketing", "loyalty", "points", "tiers", "membership", "rewards", "repeat", "redeem"],
+    "content": "Loyalty is the cheapest growth engine: a returning customer costs nothing to acquire and spends more over time. Points (earn on spend) plus tiers (better rewards at higher levels) give customers a reason to consolidate their buying with you. BirichiNex automates it: customers earn points on orders, rise through tiers, and redeem for rewards — which you can tie to your own stock. Integrate: enable Loyalty in settings → set earn and redeem rules → announce tier milestones so customers chase the next level → watch repeat rate in Analytics.",
+    "tips": [
+      "Reward in a currency you control — points on your own stock keeps margin",
+      "Make the next tier visible and desirable",
+      "Remind customers of their points balance before they check out elsewhere",
+      "A loyalty program is a promise — honour it consistently"
+    ],
+    "examples": [
+      "After enabling points, a seller's repeat purchase rate climbs from 22% to 38% in two months."
+    ],
+    "relatedTopics": ["ds-f-loyalty", "ds-f-membership", "ds-f-analytics", "ds-m-retention"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-retention-marketing",
+    "topic": "Marketing — Retention & win-back",
+    "subtopic": "Recover the customers you already paid for",
+    "keywords": ["marketing", "retention", "win back", "lapsed", "abandoned", "cart", "follow up", "reorder"],
+    "content": "Every lapsed customer, abandoned cart and unpaid invoice is money you already earned the right to. Winning them back is far cheaper than finding a new one. BirichiNex automates it: Amani the AI sales agent calls customers with abandoned or awaiting-payment orders and follows up for reorders, and the CRM keeps their history. Integrate: set Amani to follow up on pending/abandoned orders → review her transcripts for real objections → run a monthly reorder nudge to lapsed customers → track recovered revenue in Finance and Analytics.",
+    "tips": [
+      "Call within 24 hours of an abandoned cart while intent is warm",
+      "Use transcripts to learn the real objection, then fix it",
+      "Re-engage lapsed buyers with what they bought before",
+      "Track win-back rate — it is pure recovered profit"
+    ],
+    "examples": [
+      "Amani's daily follow-ups recover 6 pending orders in week one — KES 190,000 that would have quietly died."
+    ],
+    "relatedTopics": ["ds-f-ai-agent", "ds-f-crm", "ds-f-analytics", "ds-m-retention"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-promotions",
+    "topic": "Marketing — Promotions & bundles",
+    "subtopic": "Use offers to move stock and attention",
+    "keywords": ["marketing", "promotion", "bundle", "discount", "flash sale", "offer", "attention", "move stock"],
+    "content": "Promotions have two jobs: move stock and win attention. A well-built bundle or limited offer creates urgency and gives the Marketplace a reason to show your products. The trap is discounting so deep you trade margin for movement — so promote strategically: bundle slow movers with winners, time offers to buying patterns, and always know the floor price. Integrate: build bundles from Deals/Inventory → run offers on the Storefront → announce them in Community → let Analytics show which promotions actually profit.",
+    "tips": [
+      "Bundles protect margin — you sell more items at a controlled discount",
+      "Promote what you need to move, not everything",
+      "Limited-time offers beat permanent discounts",
+      "Verify the promotion made net profit in Analytics before repeating it"
+    ],
+    "examples": [
+      "A seller bundles a slow-selling charger with a best-selling phone case; the bundle outsells both alone and clears the slow stock at 31% margin."
+    ],
+    "relatedTopics": ["ds-f-shopping-deals", "ds-f-marketplace-list", "ds-f-analytics", "ds-m-arbitrage-deals"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-data-driven",
+    "topic": "Marketing — Decide with data",
+    "subtopic": "Analytics beats opinion",
+    "keywords": ["marketing", "analytics", "data", "metrics", "decide", "measure", "aov", "repeat rate", "best sellers"],
+    "content": "Your gut is a hypothesis; your Analytics is the verdict. The metrics that matter: best sellers, conversion by listing, average order value, repeat purchase rate, and which products/regions carry margin. Sellers who review numbers weekly reallocate to what works and kill what doesn't. BirichiNex Analytics surfaces all of it from real orders. Integrate: review Analytics weekly → invest restock in proven best sellers → fix or drop weak listings → test one change at a time and measure → ask the AI Advisor to interpret the trends.",
+    "tips": [
+      "Track 3 metrics, not ten: revenue, margin, repeat rate",
+      "A/B test one variable at a time — offers, photos, price",
+      "Best sellers deserve more stock; laggards deserve discount or deletion",
+      "Weekly 15-minute review beats monthly 3-hour panic"
+    ],
+    "examples": [
+      "Weekly reviews show a region buying 2x faster — the seller redirects marketing and stock there and revenue jumps 40%."
+    ],
+    "relatedTopics": ["ds-f-analytics", "ds-f-ai-advisor", "ds-mkt-targeting", "ds-m-pricing-margin"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-cross-border-growth",
+    "topic": "Marketing — Grow across borders",
+    "subtopic": "One business, three markets",
+    "keywords": ["marketing", "cross border", "expand", "kenya", "tanzania", "uganda", "rwanda", "new market", "currency"],
+    "content": "East Africa is one region with three-plus markets. Expanding means listing in the buyer's currency, pricing for that market's buying power and shipping reality, and building trust with tracked delivery. BirichiNex is built for it: Currency handles multi-market pricing, Logistics customs status handles the borders, and the Live Map proves delivery. Integrate: list key products in a second currency → confirm shipping cost and duty fit your landed cost → communicate delivery time honestly → start small, measure, then scale the winning market.",
+    "tips": [
+      "Enter one new market at a time and learn it",
+      "Price for local buying power, not your home market habit",
+      "Honest delivery times build the trust cross-border needs",
+      "Watch FX — your real margin is in your home currency"
+    ],
+    "examples": [
+      "A Kenyan seller lists in UGX for Kampala, ships via Logistics with customs cleared, and builds a second revenue stream at 34% margin."
+    ],
+    "relatedTopics": ["ds-f-currency", "ds-f-logistics", "ds-f-orders-live", "ds-m-cross-border"],
+    "category": "marketing"
+  },
+  {
+    "id": "ds-mkt-automation",
+    "topic": "Marketing — Automate the follow-up",
+    "subtopic": "Let the system run the boring sales work",
+    "keywords": ["marketing", "automation", "follow up", "amani", "routines", "system", "save time", "consistent"],
+    "content": "Most sellers lose sales to inconsistent follow-up — they mean to call back, then don't. Automation fixes the consistency gap: Amani follows up on pending orders and reorders, Routines schedule the regular marketing moves, and templates make your outreach repeatable. The result: you do the thinking, the platform does the chasing. Integrate: turn on Amani follow-ups → set marketing Routines (weekly restock post, monthly win-back) → review what she recovers in Analytics → spend your time on product and service, not reminders.",
+    "tips": [
+      "Automate the repetitive; personalise the important",
+      "Follow-up within 24h converts; 4 days later, it's cold",
+      "Review automated results weekly — automation needs steering",
+      "Your consistency is your competitive advantage"
+    ],
+    "examples": [
+      "A solo seller runs 3 automated follow-up routines plus Amani; his follow-through rate goes from 30% to 95% without more hours."
+    ],
+    "relatedTopics": ["ds-f-automation", "ds-f-routines", "ds-f-ai-agent", "ds-mkt-retention-marketing"],
+    "category": "marketing"
+  }
+]

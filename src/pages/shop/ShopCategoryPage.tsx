@@ -4,10 +4,12 @@ import {
   Search, ShoppingBag, Star, MapPin, Shield, X, Grid3X3, List, ChevronRight
 } from "lucide-react";
 import Badge from "../../components/ui/Badge";
-import { PRODUCTS, TECH_PRODUCTS, formatPrice } from "../../data/platform";
+import { formatPrice } from "../../data/platform";
 import { Currency, Product } from "../../types";
 import TiltCard from "../../components/three/TiltCard";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
+import { useStore } from "../../store/useStore";
+import { postedInventoryToProducts } from "../../lib/inventoryListings";
 
 interface ShopCategoryPageProps {
   categoryPath: string;
@@ -177,11 +179,12 @@ export default function ShopCategoryPage({ categoryPath, selectedCurrency, onNav
   const [view, setView] = useState<"grid" | "list">("grid");
 
   const parts = categoryPath.split(":");
-  const ecosystemId = parts[1];
-  const subcategory = parts[2];
+  const ecosystemId = decodeURIComponent(parts[1] ?? "");
+  const subcategory = parts[2] ? decodeURIComponent(parts[2]) : undefined;
 
-  const allProducts = ecosystemId === "technology" ? TECH_PRODUCTS : PRODUCTS;
-  const ecosystemLabel = ecosystemId === "technology" ? "Technology" : "Fashion";
+  const inventoryItems = useStore((s) => s.inventoryItems);
+  const allProducts = postedInventoryToProducts(inventoryItems);
+  const ecosystemLabel = subcategory || ecosystemId || "Catalog";
 
   const filtered = allProducts.filter((p) => {
     const matchesSub = !subcategory || p.category === subcategory;
@@ -221,7 +224,7 @@ export default function ShopCategoryPage({ categoryPath, selectedCurrency, onNav
           {subcategory || ecosystemLabel}
         </h1>
         <p className="text-callout text-ink-tertiary mt-1.5">
-          {filtered.length} products · Premium European-grade quality
+          {filtered.length} products from this shop
         </p>
       </motion.div>
 

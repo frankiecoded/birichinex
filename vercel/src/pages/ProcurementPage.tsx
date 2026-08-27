@@ -94,115 +94,6 @@ interface Approval {
   reason: string;
 }
 
-// ============================================
-// Sample Data
-// ============================================
-
-const INITIAL_SUPPLIERS: Supplier[] = [
-  { id: "s1", name: "Tanzania Minerals Ltd", category: "Raw Materials", rating: 4.8, location: "Dar es Salaam, TZ", contact: "+255 712 345 678", email: "sales@tzminerals.co.tz", activeOrders: 12, totalSpend: 45200000 },
-  { id: "s2", name: "Nairobi Steel Works", category: "Raw Materials", rating: 4.5, location: "Nairobi, KE", contact: "+254 722 987 654", email: "info@nairobisteel.co.ke", activeOrders: 8, totalSpend: 32100000 },
-  { id: "s3", name: "Shenzhen Tech Supply", category: "Electronics", rating: 4.9, location: "Shenzhen, CN", contact: "+86 138 0013 8000", email: "orders@sztech.cn", activeOrders: 5, totalSpend: 18700000 },
-  { id: "s4", name: "Berg Packaging Co", category: "Packaging", rating: 4.3, location: "Johannesburg, ZA", contact: "+27 11 234 5678", email: "quotes@bergpack.co.za", activeOrders: 3, totalSpend: 8900000 },
-  { id: "s5", name: "SwiftCargo Logistics", category: "Logistics", rating: 4.6, location: "Mombasa, KE", contact: "+254 41 222 3333", email: "ops@swiftcargo.co.ke", activeOrders: 15, totalSpend: 12500000 },
-  { id: "s6", name: "CloudBase Software", category: "Software", rating: 4.7, location: "Lagos, NG", contact: "+234 801 234 5678", email: "enterprise@cloudbase.ng", activeOrders: 2, totalSpend: 5400000 },
-];
-
-const INITIAL_POs: PurchaseOrder[] = [
-  {
-    id: "po1", supplierId: "s1", supplierName: "Tanzania Minerals Ltd",
-    items: [
-      { name: "Copper Cathodes (Grade A)", quantity: 50, unitPrice: 420000, total: 21000000 },
-      { name: "Aluminium Ingots", quantity: 30, unitPrice: 180000, total: 5400000 },
-    ],
-    total: 26400000, status: "approved", createdAt: "2026-07-10", expectedDelivery: "2026-07-25",
-    notes: "Priority shipment for Q3 production", requiresApproval: true, approved: true,
-  },
-  {
-    id: "po2", supplierId: "s2", supplierName: "Nairobi Steel Works",
-    items: [
-      { name: "Hot Rolled Steel Coils", quantity: 100, unitPrice: 95000, total: 9500000 },
-      { name: "Galvanised Sheets", quantity: 200, unitPrice: 42000, total: 8400000 },
-    ],
-    total: 17900000, status: "pending", createdAt: "2026-07-14", expectedDelivery: "2026-08-01",
-    notes: "Monthly restock order", requiresApproval: true, approved: false,
-  },
-  {
-    id: "po3", supplierId: "s3", supplierName: "Shenzhen Tech Supply",
-    items: [
-      { name: "IoT Sensors (Batch)", quantity: 500, unitPrice: 12000, total: 6000000 },
-    ],
-    total: 6000000, status: "draft", createdAt: "2026-07-18", expectedDelivery: "2026-08-15",
-    notes: "For new product line", requiresApproval: false, approved: false,
-  },
-  {
-    id: "po4", supplierId: "s4", supplierName: "Berg Packaging Co",
-    items: [
-      { name: "Corrugated Boxes (1000ct)", quantity: 10, unitPrice: 350000, total: 3500000 },
-      { name: "Bubble Wrap Rolls", quantity: 20, unitPrice: 85000, total: 1700000 },
-    ],
-    total: 5200000, status: "received", createdAt: "2026-06-28", expectedDelivery: "2026-07-12",
-    notes: "Warehouse packaging supplies", requiresApproval: false, approved: false,
-  },
-  {
-    id: "po5", supplierId: "s5", supplierName: "SwiftCargo Logistics",
-    items: [
-      { name: "Freight Service - Mombasa Route", quantity: 1, unitPrice: 2800000, total: 2800000 },
-    ],
-    total: 2800000, status: "cancelled", createdAt: "2026-06-15", expectedDelivery: "2026-06-30",
-    notes: "Cancelled due to route change", requiresApproval: true, approved: false,
-  },
-];
-
-const INITIAL_QUOTES: Quotation[] = [
-  {
-    id: "q1", supplierId: "s1", supplierName: "Tanzania Minerals Ltd",
-    description: "Bulk Copper Cathodes - 100 metric tonnes", requestedAmount: 42000000,
-    quotedAmount: 40500000, status: "accepted", requestedAt: "2026-07-01", validUntil: "2026-07-31",
-    notes: "5% discount on volume above 80t",
-  },
-  {
-    id: "q2", supplierId: "s3", supplierName: "Shenzhen Tech Supply",
-    description: "Custom PCB Assembly - 2000 units", requestedAmount: 8000000,
-    quotedAmount: 7200000, status: "received", requestedAt: "2026-07-10", validUntil: "2026-08-10",
-    notes: "Includes soldering and testing",
-  },
-  {
-    id: "q3", supplierId: "s4", supplierName: "Berg Packaging Co",
-    description: "Annual Packaging Contract Renewal", requestedAmount: 15000000,
-    quotedAmount: 0, status: "requested", requestedAt: "2026-07-16", validUntil: "2026-08-16",
-    notes: "Awaiting supplier response",
-  },
-  {
-    id: "q4", supplierId: "s6", supplierName: "CloudBase Software",
-    description: "ERP Module License - 50 seats", requestedAmount: 6000000,
-    quotedAmount: 5800000, status: "expired", requestedAt: "2026-06-01", validUntil: "2026-06-30",
-    notes: "Quote expired - need to re-request",
-  },
-];
-
-const INITIAL_CONTRACTS: Contract[] = [
-  {
-    id: "c1", supplierId: "s1", supplierName: "Tanzania Minerals Ltd",
-    title: "Annual Raw Materials Supply Agreement", value: 120000000,
-    startDate: "2026-01-01", endDate: "2026-12-31", status: "active", autoRenew: true,
-  },
-  {
-    id: "c2", supplierId: "s5", supplierName: "SwiftCargo Logistics",
-    title: "Logistics & Freight Partnership", value: 36000000,
-    startDate: "2026-03-01", endDate: "2027-02-28", status: "active", autoRenew: false,
-  },
-  {
-    id: "c3", supplierId: "s4", supplierName: "Berg Packaging Co",
-    title: "Packaging Supply Contract", value: 18000000,
-    startDate: "2025-07-01", endDate: "2026-06-30", status: "expired", autoRenew: true,
-  },
-  {
-    id: "c4", supplierId: "s6", supplierName: "CloudBase Software",
-    title: "Software Licensing & Support", value: 12000000,
-    startDate: "2026-04-01", endDate: "2026-09-30", status: "expiring", autoRenew: false,
-  },
-];
-
 const APPROVAL_THRESHOLD = 10000000;
 
 // ============================================
@@ -256,28 +147,28 @@ export default function ProcurementPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
 
   // Supplier state
-  const [suppliers, setSuppliers] = useState<Supplier[]>(INITIAL_SUPPLIERS);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierSearch, setSupplierSearch] = useState("");
   const [supplierModal, setSupplierModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [supplierForm, setSupplierForm] = useState({ name: "", category: "Raw Materials" as SupplierCategory, location: "", contact: "", email: "" });
 
   // PO state
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(INITIAL_POs);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [poSearch, setPoSearch] = useState("");
   const [poFilter, setPoFilter] = useState<POStatus | "all">("all");
   const [poModal, setPoModal] = useState(false);
   const [poForm, setPoForm] = useState({ supplierId: "", items: [{ name: "", quantity: "", unitPrice: "" }], notes: "", expectedDelivery: "" });
 
   // Quote state
-  const [quotations, setQuotations] = useState<Quotation[]>(INITIAL_QUOTES);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [quoteSearch, setQuoteSearch] = useState("");
   const [quoteFilter, setQuoteFilter] = useState<QuoteStatus | "all">("all");
   const [quoteModal, setQuoteModal] = useState(false);
   const [quoteForm, setQuoteForm] = useState({ supplierId: "", description: "", requestedAmount: "", notes: "", validUntil: "" });
 
   // Contract state
-  const [contracts, setContracts] = useState<Contract[]>(INITIAL_CONTRACTS);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [contractModal, setContractModal] = useState(false);
   const [contractForm, setContractForm] = useState({ supplierId: "", title: "", value: "", startDate: "", endDate: "", autoRenew: false });
 

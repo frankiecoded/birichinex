@@ -7,7 +7,7 @@ import {
 import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
-import { PRODUCTS, BALES, formatPrice } from "../data/platform";
+import { formatPrice } from "../data/platform";
 import { getCityPricing, resolveCityCoords, getCitiesByCountry, COUNTRIES } from "../data/delivery";
 import type { TrackedOrder } from "../data/delivery";
 import { Product, Currency, BirichiNexView } from "../types";
@@ -15,11 +15,7 @@ import CursorSpotlight from "../components/three/CursorSpotlight";
 import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
 import { useStore } from "../store/useStore";
-
-const CATEGORIES = [
-  "All", "Men's Fashion", "Women's Fashion", "Kids", "Sportswear",
-  "Leather", "Accessories", "Jackets"
-];
+import { postedInventoryToProducts } from "../lib/inventoryListings";
 
 interface MarketplacePageProps {
   onNavigate?: (view: BirichiNexView) => void;
@@ -27,13 +23,12 @@ interface MarketplacePageProps {
 
 export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
   const { selectedCurrency, addToCart, cart, removeFromCart, clearCart, addOrder, earnPointsFromPurchase, addNotification, user, wallet, spendWalletFunds } = useStore();
+  const inventoryItems = useStore((s) => s.inventoryItems);
+  const profile = useStore((s) => s.settings.profile);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [sourcingBale, setSourcingBale] = useState<typeof BALES[number] | null>(null);
-  const [sourcingForm, setSourcingForm] = useState({ quantity: "1", name: "", phone: "", notes: "" });
-  const [sourcingSent, setSourcingSent] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [destCountry, setDestCountry] = useState("Kenya");
   const [destCity, setDestCity] = useState("Nairobi");
@@ -42,7 +37,10 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
   const [checkoutError, setCheckoutError] = useState("");
   const [placing, setPlacing] = useState(false);
 
-  const filtered = PRODUCTS.filter((p) => {
+  const CATEGORIES = ["All", ...new Set(inventoryItems.map((i) => i.category))];
+  const catalogProducts = postedInventoryToProducts(inventoryItems);
+
+  const filtered = catalogProducts.filter((p) => {
     const matchesCategory = category === "All" || p.category === category;
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -89,7 +87,7 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
       const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
       const seq = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
       const trackingNumber = `PM-TRK-${ymd}-${seq}`;
-      const originCity = "Dar es Salaam";
+      const originCity = profile.city || "Market HQ";
       const originCountry = "Tanzania";
       const originCoords = resolveCityCoords(originCity, originCountry);
       const destCoords = destPricing
@@ -125,7 +123,7 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
         currentLat: originCoords.lat,
         currentLng: originCoords.lng,
         trackingNumber,
-        carrier: "PortMetrics Express",
+        carrier: "BirichiNex Logistics",
         createdAt: now.toISOString(),
         estimatedDelivery: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         events: [
@@ -150,21 +148,6 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
     }, 600);
   };
 
-  const handleSourcingSubmit = () => {
-    setSourcingSent(true);
-    addNotification({
-      title: "Sourcing request sent",
-      body: `${sourcingBale?.name} × ${sourcingForm.quantity} — our team will confirm within 24 hours.`,
-      type: "lead",
-      actionView: "orders",
-    });
-    setTimeout(() => {
-      setSourcingBale(null);
-      setSourcingForm({ quantity: "1", name: "", phone: "", notes: "" });
-      setSourcingSent(false);
-    }, 2500);
-  };
-
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8 relative">
       {/* Ambient Orbs */}
@@ -183,7 +166,7 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
         <div>
           <h1 className="text-headline text-gradient-brand tracking-tight">Marketplace</h1>
           <p className="text-callout text-ink-tertiary mt-1">
-            22 professionally sorted fashion categories with European-grade pricing.
+            Live products from this shop's inventory — posted items appear here instantly.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -385,49 +368,6 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
       </div>
       </CursorSpotlight>
 
-      {/* Bales Section */}
-      <div className="pt-6">
-        <div className="glass-divider mb-6" />
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="mb-6">
-            <h2 className="text-title font-bold text-ink tracking-tight">Premium Compressed Bales</h2>
-            <p className="text-callout text-ink-tertiary mt-1">Perfect for retail scaling, market stalls, and county wholesalers.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {BALES.map((bale, i) => (
-              <motion.div
-                key={bale.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.35 + i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <GlassCard padding="md" hover className="h-full flex flex-col">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-subhead font-bold text-ink">{bale.name}</h3>
-                    {bale.badge && <Badge variant="brand" size="sm">{bale.badge}</Badge>}
-                  </div>
-                  <div className="bg-surface-secondary/60 rounded-[12px] p-3 text-center mb-4">
-                    <p className="text-title font-bold text-ink tracking-tight">{formatPrice(bale.priceTZS, selectedCurrency)}</p>
-                    <p className="text-caption text-ink-quaternary mt-0.5">~{bale.estimatedPieces} pieces</p>
-                  </div>
-                  <div className="space-y-2 text-caption text-ink-secondary mb-4 flex-1">
-                    <p><span className="font-semibold text-ink">Weight:</span> {bale.weight}</p>
-                    <p><span className="font-semibold text-ink">Ideal For:</span> {bale.idealCustomer}</p>
-                  </div>
-                  <Button variant="primary" size="sm" fullWidth onClick={() => setSourcingBale(bale)}>
-                    Source Bale
-                  </Button>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
       {/* Product Detail Modal */}
       <AnimatePresence>
         {selectedProduct && (
@@ -480,93 +420,6 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
         )}
       </AnimatePresence>
 
-      {/* Sourcing Request Modal */}
-      <AnimatePresence>
-        {sourcingBale && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-scrim backdrop-blur-md" onClick={() => { if (!sourcingSent) { setSourcingBale(null); setSourcingForm({ quantity: "1", name: "", phone: "", notes: "" }); } }} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="relative glass-material-lg specular-sheen rounded-[24px] max-w-md w-full overflow-hidden"
-            >
-              <div className="p-7">
-                {sourcingSent ? (
-                  <div className="text-center py-6">
-                    <div className="h-14 w-14 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
-                      <Package className="h-7 w-7 text-success" strokeWidth={1.5} />
-                    </div>
-                    <p className="text-subhead font-bold text-ink">Sourcing Request Submitted!</p>
-                    <p className="text-caption text-ink-tertiary mt-1">Our team will contact you within 24 hours to confirm your order.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <Badge variant="brand" size="sm" className="mb-2">Sourcing Request</Badge>
-                        <h2 className="text-title font-bold text-ink tracking-tight">{sourcingBale.name}</h2>
-                        <p className="text-caption text-ink-tertiary mt-0.5">{sourcingBale.weight} · ~{sourcingBale.estimatedPieces} pieces</p>
-                      </div>
-                      <button onClick={() => { setSourcingBale(null); setSourcingForm({ quantity: "1", name: "", phone: "", notes: "" }); }} className="h-8 w-8 rounded-full bg-surface-secondary/80 backdrop-blur-sm flex items-center justify-center text-ink-secondary hover:text-ink transition-colors">
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-caption font-semibold text-ink-secondary block mb-1.5">Quantity (bales)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={sourcingForm.quantity}
-                          onChange={(e) => setSourcingForm((f) => ({ ...f, quantity: e.target.value }))}
-                          className="w-full h-10 px-4 bg-surface-secondary/60 backdrop-blur-sm rounded-[10px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/20 border border-glass-border"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-caption font-semibold text-ink-secondary block mb-1.5">Your name</label>
-                        <input
-                          type="text"
-                          value={sourcingForm.name}
-                          onChange={(e) => setSourcingForm((f) => ({ ...f, name: e.target.value }))}
-                          placeholder="e.g. Frank Musau"
-                          className="w-full h-10 px-4 bg-surface-secondary/60 backdrop-blur-sm rounded-[10px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/20 border border-glass-border"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-caption font-semibold text-ink-secondary block mb-1.5">Phone number</label>
-                        <input
-                          type="tel"
-                          value={sourcingForm.phone}
-                          onChange={(e) => setSourcingForm((f) => ({ ...f, phone: e.target.value }))}
-                          placeholder="+255 700 000 000"
-                          className="w-full h-10 px-4 bg-surface-secondary/60 backdrop-blur-sm rounded-[10px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/20 border border-glass-border"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-caption font-semibold text-ink-secondary block mb-1.5">Notes (optional)</label>
-                        <textarea
-                          value={sourcingForm.notes}
-                          onChange={(e) => setSourcingForm((f) => ({ ...f, notes: e.target.value }))}
-                          rows={2}
-                          placeholder="Preferred delivery date, special requirements..."
-                          className="w-full px-4 py-2.5 bg-surface-secondary/60 backdrop-blur-sm rounded-[10px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/20 border border-glass-border resize-none"
-                        />
-                      </div>
-                    </div>
-
-                    <Button variant="primary" size="lg" fullWidth className="mt-5" onClick={handleSourcingSubmit} disabled={!sourcingForm.name.trim() || !sourcingForm.phone.trim()}>
-                      Submit Sourcing Request
-                    </Button>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Cart Drawer */}
       <AnimatePresence>

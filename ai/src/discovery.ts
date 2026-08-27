@@ -73,7 +73,7 @@ export const DISCOVERY_QUESTIONS: DiscoveryQuestion[] = [
     prompt: "Let's start with the essentials. What is your business called?",
     hint: "Your business name will appear on your Verified Business ID and Founder Dashboard.",
     kind: "text",
-    placeholder: "e.g., Portmetals Africa Ltd.",
+    placeholder: "e.g., Acme Traders Ltd.",
   },
   {
     id: "role",

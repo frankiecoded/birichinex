@@ -1,0 +1,570 @@
+[
+  {
+    "id": "ds-f-shopping-home",
+    "topic": "Feature — Shopping: Home",
+    "subtopic": "Storefront home & browsing",
+    "keywords": ["shopping home", "storefront", "browse", "shop", "home page", "fashion", "technology", "categories"],
+    "content": "Where: Shopping mode → Home (bottom floating pill nav). The storefront is a premium 3D e-commerce experience with Fashion and Technology categories, wholesale bales, a Deals/flash-sale section, and product cards showing grade (A+ to C), supplier, and multi-currency price. Use the floating frosted-glass pill nav at the bottom centre (Home, Fashion, Tech, Deals, Orders, Cart, Account) to move around the shop.",
+    "tips": [
+      "Switch currency from the account area or cart — prices render live in TZS, KES, UGX, USD and more",
+      "Bales are the money-maker: wholesale bales start from ~25kg and are priced for reselling",
+      "Deals section runs flash sales with countdowns — perfect for stocking up cheap",
+      "Product cards show the supplier grade (A+ best, C lowest) so you can buy with confidence"
+    ],
+    "examples": [
+      "A reseller opens Home, taps Technology, finds a laptop, checks its grade A rating, and adds it to the cart in KES."
+    ],
+    "relatedTopics": ["ds-f-shopping-product", "ds-f-shopping-deals", "ds-f-shopping-bales", "ds-m-resell-bales"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-shopping-categories",
+    "topic": "Feature — Shopping: Categories",
+    "subtopic": "Fashion & Technology category pages",
+    "keywords": ["fashion", "technology", "category", "clothes", "electronics", "gadgets", "apparel"],
+    "content": "Where: Shopping mode → Fashion or Tech in the floating pill nav. Each category page filters the catalog into one vertical. Categories include Fashion (clothing, apparel, wholesale bales) and Technology (phones, laptops, wearables, accessories). Products list with image, name, price, grade, supplier and stock. Tap any product for full details and specifications.",
+    "tips": [
+      "Use the category nav to move fast between Fashion and Tech — the pill nav follows you everywhere",
+      "Grade filters help you find A+ stock for premium retail or C-grade for budget markets",
+      "Technology items are high-ticket with thinner margins; Fashion bales have fatter resale margins"
+    ],
+    "examples": [
+      "A boutique owner watches the Fashion category for new bale arrivals and the Tech category for seasonal gadgets."
+    ],
+    "relatedTopics": ["ds-f-shopping-home", "ds-f-shopping-product", "ds-f-shopping-bales"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-shopping-product",
+    "topic": "Feature — Shopping: Product details",
+    "subtopic": "Product page, specs & add to cart",
+    "keywords": ["product page", "product details", "specifications", "add to cart", "grade", "supplier", "stock"],
+    "content": "Where: Shopping mode → any product card → product detail page. Shows the product image, name, description, specifications, price in your selected currency, supplier (with rating and location), grade (A+ to C), stock level and minimum order. Add to cart with one tap. This page is your buying research desk — read the grade and specs before committing.",
+    "tips": [
+      "Cross-border sellers: verify origin and supplier location — it affects shipping time and duty",
+      "Check minimum order — wholesale items often require several units",
+      "The price shown follows your currency setting; recheck before checking out",
+      "Compare specs side-by-side before ordering electronics"
+    ],
+    "examples": [
+      "A reseller opens a 45kg bale product page, sees grade A from a verified UK supplier, and adds 1 to cart."
+    ],
+    "relatedTopics": ["ds-f-shopping-categories", "ds-f-cart-checkout", "ds-m-resell-bales"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-shopping-deals",
+    "topic": "Feature — Shopping: Deals & flash sales",
+    "subtopic": "Discounted stock & bundles",
+    "keywords": ["deals", "flash sale", "discount", "bundle", "offer", "sale", "bargain"],
+    "content": "Where: Shopping mode → Deals in the floating pill nav. A section of discounted products, bundle offers, and flash sales with countdown timers. The fastest way to build margin — buy discounted, sell at market price. Bundles combine related products at a lower combined price.",
+    "tips": [
+      "Check Deals before restocking — flash sales are the cheapest entry price",
+      "Bundle offers are ideal for building gift sets or starter kits to resell",
+      "Countdown timers are real — decide before the sale expires",
+      "Pair deal-purchased stock with your storefront markup for instant margin"
+    ],
+    "examples": [
+      "A phone seller picks up 3 bundles on a flash sale and lists them on the Marketplace at standard retail."
+    ],
+    "relatedTopics": ["ds-f-shopping-home", "ds-f-shopping-bales", "ds-m-resell-bales", "ds-f-marketplace-list"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-shopping-bales",
+    "topic": "Feature — Shopping: Wholesale bales",
+    "subtopic": "Bulk clothing bales for reselling",
+    "keywords": ["bales", "wholesale bale", "bundle bale", "second hand", "mitumba", "bulk clothing", "25kg", "45kg", "resell"],
+    "content": "Where: Shopping mode → Bales. Wholesale clothing bales (second-hand/premium stock from ~25kg up) sold per bale. Bales are the classic East African reselling play: buy a bale at wholesale, sort the pieces, sell individually or in mini-lots. Grade matters — higher grades mean better-condition, more-sellable pieces.",
+    "tips": [
+      "Rule of thumb: a 45kg bale at TZS 700,000 can return 2–3× when sold piece-by-piece",
+      "Higher grade = higher buy price but faster sell-through and better retail price",
+      "Buy smaller bales first if you are new — less capital at risk while you learn sorting",
+      "Combine bales with your Marketplace storefront to sell the good pieces online"
+    ],
+    "examples": [
+      "A Dar es Salaam reseller buys a grade-A 45kg bale, sorts ~60 wearable pieces, and retails them at TZS 15,000–45,000 each."
+    ],
+    "relatedTopics": ["ds-f-shopping-deals", "ds-m-resell-bales", "ds-m-cross-border", "ds-f-inventory"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-cart-checkout",
+    "topic": "Feature — Cart & Checkout",
+    "subtopic": "Cart, 3-step checkout, payment & tracking",
+    "keywords": ["cart", "checkout", "pay", "payment", "mpesa", "airtel", "card", "bank", "cash on delivery", "order placed", "tracking number"],
+    "content": "Where: Shopping mode → Cart → Checkout. Cart holds your items; Checkout is a 3-step flow: Shipping (address + delivery zone) → Payment (method selection) → Confirmation (order ID + ETA). Payment methods: M-Pesa, Airtel Money, Bank Transfer, Card, Cash on Delivery. Placing an order generates a real tracking number (format PM-TRK-YYYYMMDD-NNN), a store-persisted tracked order, and automatically earns loyalty points. From the confirmation screen tap 'Track My Order' to open live tracking.",
+    "tips": [
+      "M-Pesa is the default in Kenya/Tanzania; customers can switch to card or COD at checkout",
+      "Delivery zone selection changes price and ETA — pick the right zone",
+      "Every order is live-tracked; share the tracking number so customers trust you",
+      "The order instantly appears in your business Orders hub on the Live Map"
+    ],
+    "examples": [
+      "A buyer in Nairobi checks out with M-Pesa, gets tracking PM-TRK-20260811-042, and watches the package move on the Live Map."
+    ],
+    "relatedTopics": ["ds-f-orders-track", "ds-f-loyalty", "ds-f-payments", "ds-f-orders-live"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-orders-track",
+    "topic": "Feature — Shopping: Track orders",
+    "subtopic": "Live order tracking for shoppers",
+    "keywords": ["track order", "tracking", "where is my order", "delivery status", "tracking number", "ETA"],
+    "content": "Where: Shopping mode → Orders (pill nav) → Live Tracking. Every order is shown on a live Leaflet map with its route, current position, status timeline (placed → confirmed → processing → picked up → in transit → out for delivery → delivered), carrier, ETA and a copyable tracking number. Enter any tracking number in the search box to jump to it. Also accessible from the checkout confirmation via 'Track My Order'.",
+    "tips": [
+      "The map animates to the package — tap a package in the sidebar to fly to it",
+      "Copy the tracking number and paste it into the search box for fast lookup",
+      "Status colours on the map match the timeline so you always know where it is",
+      "Delivery Pricing tab in the same screen estimates cost for any route before you commit"
+    ],
+    "examples": [
+      "A customer sees her bale is out for delivery in Nairobi and checks the driver's ETA before clearing her day."
+    ],
+    "relatedTopics": ["ds-f-cart-checkout", "ds-f-orders-live", "ds-f-logistics"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-orders-live",
+    "topic": "Feature — Orders: Live Map",
+    "subtopic": "Every order & shipment on one live map",
+    "keywords": ["live map", "tracking map", "shipment map", "locate packages", "all shipments", "orders hub"],
+    "content": "Where: Business Shell → Orders hub → Live Map tab. A unified map of BOTH customer orders (blue Order badges) and your business shipments (purple Shipment badges). Filter by searching a tracking number or customer name, click a package for its full timeline, and fly between packages. This is your logistics command centre.",
+    "tips": [
+      "Purple = business shipments, blue = customer orders — colour-coded on the list and map",
+      "Use the search box to find a specific package by tracking number instantly",
+      "Advance a shipment's status in Logistics and its pin moves on this map",
+      "Great for answering 'where is my order?' with a screenshot"
+    ],
+    "relatedTopics": ["ds-f-orders-track", "ds-f-logistics", "ds-f-cart-checkout", "ds-f-orders-documents"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-logistics",
+    "topic": "Feature — Orders: Logistics",
+    "subtopic": "Shipments, tracking, carriers & supply chain",
+    "keywords": ["logistics", "shipping", "shipment", "carriers", "import", "export", "customs", "supply chain", "freight"],
+    "content": "Where: Business Shell → Orders hub → Shipping tab. Full logistics command: create shipments (origin, destination, carrier, weight, cost, type import/export), track status, manage carriers, view import/export with customs status, and a supply-chain pipeline. Every shipment you create appears on the Live Map. Advance a shipment's status to move its map pin along the route.",
+    "tips": [
+      "Create a shipment and it instantly joins the Live Map as a purple Shipment badge",
+      "Use the Tracking tab to look up any shipment by number and see its full timeline",
+      "Import/Export tab shows customs status (pending, cleared, held, processing)",
+      "The supply-chain pipeline visualises Source → Factory → Warehouse → Customs → Transport → Customer"
+    ],
+    "examples": [
+      "A trader ships 30 bales from Dar to Nairobi, advances the status in Logistics, and watches the purple pin move on the Live Map."
+    ],
+    "relatedTopics": ["ds-f-orders-live", "ds-f-orders-documents", "ds-m-cross-border", "ds-f-orders-track"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-orders-documents",
+    "topic": "Feature — Orders: Documents",
+    "subtopic": "Invoices, quotes, contracts & e-signatures",
+    "keywords": ["documents", "invoice", "quote", "contract", "e-signature", "papers", "paperwork"],
+    "content": "Where: Business Shell → Orders hub → Documents tab. Create and manage the paperwork that goes with orders: invoices, quotes, contracts and e-signatures. Keep every deal documented — African buyers and suppliers trust written terms, and documents protect your cash flow.",
+    "tips": [
+      "Send an invoice immediately after delivery — documented money gets paid faster",
+      "Use quotes to lock pricing before a customer commits",
+      "Contracts with e-signatures protect cross-border deals",
+      "Link documents to an order so all paperwork lives with the shipment"
+    ],
+    "relatedTopics": ["ds-f-logistics", "ds-f-money-finance", "ds-m-saas-biz"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-marketplace-list",
+    "topic": "Feature — Sell: Storefront",
+    "subtopic": "List & sell products on the Marketplace",
+    "keywords": ["marketplace", "storefront", "list product", "sell", "post product", "catalog", "add product"],
+    "content": "Where: Business Shell → Sell hub → Storefront tab. This is your shop window. List what you sell, set your price in the customer's currency, and let BirichiNex put you in front of buyers across the region. Post items straight from inventory — no double-entry.",
+    "tips": [
+      "Post straight from Inventory to keep stock levels in sync automatically",
+      "Set prices in the buyer's currency (KES for Kenya, TZS for Tanzania) to boost conversions",
+      "Fresh, well-priced listings outrank stale ones — rotate regularly",
+      "Pair Storefront with Amani to recover shoppers who abandon carts"
+    ],
+    "examples": [
+      "A boutique lists 12 sorted bale pieces on the Storefront, priced in KES, and sells 9 within the week."
+    ],
+    "relatedTopics": ["ds-f-inventory", "ds-f-ai-agent", "ds-m-retail-margin", "ds-f-shopping-home"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-dropship",
+    "topic": "Feature — Sell: Dropshipping",
+    "subtopic": "Sell without holding stock",
+    "keywords": ["dropship", "dropshipping", "no stock", "supplier ships", "tier", "silver", "gold", "zero inventory"],
+    "content": "Where: Business Shell → Sell hub → Dropship tab. Subscribe to a dropshipping tier (Silver/Gold/Platinum) to sell products you never hold — the supplier ships directly to your customer. You keep the margin, BirichiNex handles sourcing and fulfilment visibility. Tiers unlock more suppliers, higher order values and better margins.",
+    "tips": [
+      "Dropship items are tracked separately — no warehouse needed",
+      "Higher tier = access to more suppliers and bigger order values",
+      "Use the Marketplace catalog to pick winning products, then dropship them",
+      "You earn loyalty points on every order regardless of who ships it"
+    ],
+    "examples": [
+      "A seller in Kampala dropships tech gadgets from a verified supplier and never touches the stock."
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-m-dropship-margin", "ds-f-inventory", "ds-f-membership"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-loyalty",
+    "topic": "Feature — Sell: Loyalty",
+    "subtopic": "Reward repeat customers & retain buyers",
+    "keywords": ["loyalty", "points", "reward", "redeem", "tier", "repeat customer", "1 per 150", "retention"],
+    "content": "Where: Business Shell → Sell hub → Loyalty tab. Customers automatically earn loyalty points (e.g. 1 point per 150 KES spent) and move through loyalty tiers. Points are redeemable for products, and tiers create status that keeps customers coming back. This is your retention engine.",
+    "tips": [
+      "Retention beats acquisition — repeat buyers are cheaper and more profitable",
+      "Announce tier milestones to customers so they chase the next level",
+      "Redeem points for your own products to keep margin in-house",
+      "Pair with Amani follow-ups to win back lapsed customers"
+    ],
+    "relatedTopics": ["ds-f-ai-agent", "ds-m-retention", "ds-f-marketplace-list", "ds-f-crm"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-ai-agent",
+    "topic": "Feature — Sell: Amani AI Sales Agent",
+    "subtopic": "24/7 AI sales calls & order follow-ups",
+    "keywords": ["amani", "ai agent", "sales agent", "calls", "follow up", "abandoned cart", "recover orders", "phone"],
+    "content": "Where: Business Shell → Sell hub → Amani tab. Amani is your 24/7 AI sales agent. She makes scripted sales calls, follows up on orders waiting for payment, and alerts you by notification and email with full call transcripts. She plugs into your CRM and order data so every call is tracked.",
+    "tips": [
+      "Turn Amani loose on abandoned/awaiting-payment orders — she converts them",
+      "Read the call transcripts to learn what objections your customers actually raise",
+      "Set her to call overdue invoices for faster cash flow",
+      "She logs every call to your Customers hub so your CRM grows automatically"
+    ],
+    "examples": [
+      "Three customers leave payment pending; Amani calls each, two pay within the hour, and you get a transcript."
+    ],
+    "relatedTopics": ["ds-f-crm", "ds-f-orders-documents", "ds-m-retention", "ds-f-loyalty"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-crm",
+    "topic": "Feature — Customers: CRM",
+    "subtopic": "Know every customer & manage relationships",
+    "keywords": ["crm", "customers", "contacts", "leads", "pipeline", "relationships", "clients", "follow up"],
+    "content": "Where: Business Shell → Customers hub. Your customer relationships in one place — contacts, leads, pipeline, and call history (including Amani's). Every person who buys from you should be here: names, phones, companies, and what they buy.",
+    "tips": [
+      "Log every customer — even small ones. Patterns become your edge",
+      "Amani adds contacts automatically as she makes calls",
+      "Use customer history to personalise offers (who buys bales? who buys tech?)",
+      "Segmented customers make loyalty and marketing far more effective"
+    ],
+    "relatedTopics": ["ds-f-ai-agent", "ds-f-loyalty", "ds-f-analytics", "ds-m-retention"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-inventory",
+    "topic": "Feature — Products: Inventory",
+    "subtopic": "Track what you sell & set alerts",
+    "keywords": ["inventory", "stock", "items", "reorder", "alert", "low stock", "track stock"],
+    "content": "Where: Business Shell → Products hub → Inventory tab. Track every item you sell: quantities, costs, categories, and low-stock alerts. Post inventory items straight to the Marketplace. Accurate inventory means you never over-promise or under-stock.",
+    "tips": [
+      "Post inventory straight to the Storefront — one record, two selling surfaces",
+      "Set low-stock alerts before you run out of best-sellers",
+      "Treat unsold bale pieces as inventory items to move them online",
+      "Know your cost per unit here — it feeds your margin decisions"
+    ],
+    "relatedTopics": ["ds-f-marketplace-list", "ds-f-procurement", "ds-f-analytics", "ds-m-resell-bales"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-procurement",
+    "topic": "Feature — Products: Procurement",
+    "subtopic": "Buy from trusted suppliers",
+    "keywords": ["procurement", "suppliers", "purchase order", "buy", "sourcing", "wholesale"],
+    "content": "Where: Business Shell → Products hub → Procurement tab. Source stock from verified suppliers with ratings and locations. Issue purchase orders, manage supplier relationships, and buy at wholesale prices. Your suppliers are listed here so buying is repeatable, not a hunt.",
+    "tips": [
+      "Verified suppliers (rating 4.9) are your safest entry into new categories",
+      "Buy via procurement to keep purchase history with each supplier",
+      "Procurement feeds inventory — items land ready to list",
+      "Cross-border: check supplier location against your import/export plan"
+    ],
+    "relatedTopics": ["ds-f-inventory", "ds-f-logistics", "ds-m-cross-border", "ds-f-marketplace-list"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-money-finance",
+    "topic": "Feature — Money: Finance",
+    "subtopic": "Income, expenses & profit",
+    "keywords": ["finance", "income", "expenses", "profit", "transactions", "cash flow", "budget", "records"],
+    "content": "Where: Business Shell → Money hub → Finance tab. Log income and expenses; revenue on your Home dashboard is calculated from completed income transactions. Track profit, cash flow and budgets. The honest story of your money lives here.",
+    "tips": [
+      "Log every payment, even small ones — patterns are power",
+      "Keep expenses separate so you know your true profit",
+      "Completed income rolls straight into your dashboard revenue",
+      "Export/read your numbers here before talking to the AI Advisor about pricing"
+    ],
+    "relatedTopics": ["ds-f-payments", "ds-f-analytics", "ds-f-orders-documents", "ds-m-profit-cash"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-payments",
+    "topic": "Feature — Money: Payments",
+    "subtopic": "Get paid in any currency",
+    "keywords": ["payments", "get paid", "mpesa", "stripe", "currency", "receive money", "mobile money"],
+    "content": "Where: Business Shell → Money hub → Payments tab. Choose how you receive money — M-Pesa, cards and more — and get paid in any currency (TZS, KES, UGX, USD, EUR, GBP, NGN, GHS, ZAR). Payment linking is the seam between your shop and your bank account.",
+    "tips": [
+      "Set up M-Pesa for domestic buyers and cards/Stripe for international orders",
+      "Accepting the buyer's currency removes the biggest checkout friction",
+      "Paid orders flow into Finance automatically as income",
+      "Follow-up emails (via Amani) nudge customers who chose COD to pay faster"
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-cart-checkout", "ds-m-cross-border", "ds-f-ai-agent"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-ai-advisor",
+    "topic": "Feature — Grow: AI Advisor",
+    "subtopic": "One AI that runs your whole business",
+    "keywords": ["ai advisor", "advisor", "business advice", "pricing", "strategy", "context toggle", "health score"],
+    "content": "Where: Business Shell → Grow hub → AI Advisor tab (also embedded in the Grow hub). A principal-level business advisor for East African commerce. It reads your live business data (inventory, transactions, contacts, health score) when Context is ON, coaches with the Five BirichiNex Laws and Framework Library, and answers in a structured format: bold summary → explanation → steps → tips → follow-ups.",
+    "tips": [
+      "Turn Context ON so answers use YOUR numbers, not generic advice",
+      "Ask about pricing, margins, cash flow, market entry — it's built for East Africa",
+      "Reference frameworks by name (e.g. pricing, negotiation) for deeper coaching",
+      "Combine with Discovery for a full audit and action plan"
+    ],
+    "relatedTopics": ["ds-f-discovery", "ds-f-frameworks", "ds-f-analytics", "ds-m-pricing-margin"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-frameworks",
+    "topic": "Feature — Grow: Frameworks",
+    "subtopic": "Battle-tested business playbooks",
+    "keywords": ["frameworks", "playbooks", "laws", "five laws", "library", "methodology", "strategy tools"],
+    "content": "Where: Business Shell → Grow hub → Frameworks tab. A library of proven frameworks and the Five BirichiNex Laws. These are the playbooks behind the AI Advisor — cite them when making decisions: pricing, negotiation, market entry, inventory and more.",
+    "tips": [
+      "Frame every decision with a law or framework before acting",
+      "The AI Advisor can apply any framework to your exact situation",
+      "Learn one framework deeply before adding another",
+      "Use frameworks to standardise how you handle suppliers and customers"
+    ],
+    "relatedTopics": ["ds-f-ai-advisor", "ds-f-routines", "ds-f-learning", "ds-m-pricing-margin"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-analytics",
+    "topic": "Feature — Grow: Analytics",
+    "subtopic": "See what's working",
+    "keywords": ["analytics", "reports", "dashboard", "kpis", "metrics", "insights", "what's working"],
+    "content": "Where: Business Shell → Grow hub → Analytics tab. Reports on revenue, sales, customers and operations. Check analytics weekly, not hourly — trends beat noise. Your Home dashboard also surfaces KPIs and your next move.",
+    "tips": [
+      "Review weekly to spot best-sellers and slow movers",
+      "Let data decide what to reorder, price up, or clear out",
+      "Pair with the AI Advisor: give it your analytics and get a growth plan",
+      "Revenue on the dashboard comes from completed income in Finance"
+    ],
+    "relatedTopics": ["ds-f-money-finance", "ds-f-ai-advisor", "ds-f-inventory", "ds-f-dashboard"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-automation",
+    "topic": "Feature — Grow: Automation",
+    "subtopic": "Put busywork on autopilot",
+    "keywords": ["automation", "workflows", "autopilot", "busywork", "auto", "templates"],
+    "content": "Where: Business Shell → Grow hub → Automation tab. Automate repetitive work — start with one automation and expand from there. Follow-up emails, status updates, alerts. Every hour automated is an hour back in your day.",
+    "tips": [
+      "Start small: automate one follow-up or notification you already do by hand",
+      "Link automations to orders and finance so nothing slips",
+      "Amani's follow-ups are automation already working for you",
+      "Expand once the first automation runs clean"
+    ],
+    "relatedTopics": ["ds-f-ai-agent", "ds-f-orders-documents", "ds-f-routines", "ds-m-saas-biz"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-dashboard",
+    "topic": "Feature — Home: Dashboard",
+    "subtopic": "Your business at a glance + next move",
+    "keywords": ["dashboard", "home", "kpi", "health", "score", "next move", "overview", "activity"],
+    "content": "Where: Business Shell → Home (first item in the sidebar). Your business at a glance: KPIs, revenue (from completed income), active shipments, inventory health, an activity feed, quick actions, and your next move. It's the daily cockpit — start here, act, log, grow.",
+    "tips": [
+      "Your Business Health score here is computed from your Discovery answers",
+      "Follow the 'next move' suggestion — it's personalised to your gaps",
+      "Quick actions save clicks: create a transaction, add stock, post a product",
+      "Watch revenue here move when you log completed income in Finance"
+    ],
+    "relatedTopics": ["ds-f-discovery", "ds-f-analytics", "ds-f-money-finance", "ds-f-ai-advisor"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-discovery",
+    "topic": "Feature — Discovery Conversation",
+    "subtopic": "Business audit & health score",
+    "keywords": ["discovery", "conversation", "audit", "health score", "assessment", "founder readiness", "onboarding", "action plan"],
+    "content": "Where: Shown during onboarding (and re-runnable from the AI/advisor flow). An interactive interview that scores your business across 5 dimensions: Founder Readiness, Business Maturity, Growth Readiness, Digital Readiness, Marketplace Readiness. It outputs a weighted Business Health score, strengths, gaps, and a prioritised action plan that the AI Advisor and dashboard use.",
+    "tips": [
+      "Answer honestly — the audit is only as good as your answers",
+      "Re-run it as your business changes to watch scores move",
+      "The action plan tells you the single highest-impact next step",
+      "Weakest score = your leverage point; the AI will focus there"
+    ],
+    "relatedTopics": ["ds-f-dashboard", "ds-f-ai-advisor", "ds-f-frameworks", "ds-f-routines"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-copilot",
+    "topic": "Feature — Copilot",
+    "subtopic": "Floating AI assistant that knows every page",
+    "keywords": ["copilot", "assistant", "help", "help me", "floating orb", "explain", "suggestions", "chips"],
+    "content": "Where: The floating orb at the bottom-right of the Business Shell. The Copilot knows every page, explains it, suggests next actions (chips), routes you anywhere, and can read your orders/shipments — ask it 'where is PM-TRK-...' and it reports live tracking. Tap the orb, type or tap a chip.",
+    "tips": [
+      "Tap a suggestion chip instead of typing for fast answers",
+      "Ask 'what should I do first?' for a personalised next step",
+      "Type a tracking number to get live status without leaving the page",
+      "It routes you — try 'open finance' or 'take me to inventory'"
+    ],
+    "relatedTopics": ["ds-f-command-palette", "ds-f-guide", "ds-f-ai-advisor", "ds-f-orders-live"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-command-palette",
+    "topic": "Feature — Command Palette",
+    "subtopic": "Jump anywhere with one shortcut",
+    "keywords": ["command palette", "shortcut", "cmd k", "ctrl k", "quick nav", "search views", "jump"],
+    "content": "Where: Press Cmd+K (Mac) or Ctrl+K anywhere in the Business Shell. A spotlight-style palette that searches every hub, tab and view. Type to filter and press Enter to jump. The fastest way to move around the platform once you know it.",
+    "tips": [
+      "Cmd+K then type 'pay' to reach Payments instantly",
+      "It searches hub labels AND tab names (e.g. 'aman', 'track', 'drop')",
+      "Power users live here — it replaces clicking through the sidebar",
+      "Esc closes it; arrows move through results"
+    ],
+    "relatedTopics": ["ds-f-copilot", "ds-f-guide", "ds-f-dashboard"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-guide",
+    "topic": "Feature — Guide Tour",
+    "subtopic": "Walkthrough of the whole platform",
+    "keywords": ["guide", "tour", "walkthrough", "onboarding", "getting started", "intro", "tutorial"],
+    "content": "Where: Triggered from onboarding or the guide button. An interactive step-by-step tour that walks you through navigation and the key hubs. Perfect for new users and for you to onboard team members.",
+    "tips": [
+      "Run the guide once to learn the shell, then use Cmd+K for speed",
+      "The tour highlights real click targets — follow along and try them",
+      "Re-run it after major updates so you never miss new features"
+    ],
+    "relatedTopics": ["ds-f-command-palette", "ds-f-copilot", "ds-f-dashboard"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-membership",
+    "topic": "Feature — Account: Membership",
+    "subtopic": "Plans, tiers & benefits",
+    "keywords": ["membership", "plan", "tier", "silver", "gold", "platinum", "subscribe", "upgrade", "benefits"],
+    "content": "Where: Business Shell → Account hub → Membership tab. Choose your plan: Silver — Start (free), Gold — Grow ($49/month), Platinum — Scale ($199/month), plus custom plans. Higher tiers unlock procurement, logistics, finance, advanced analytics, automation and more. Membership controls which modules you can use.",
+    "tips": [
+      "Start on Silver (free) and upgrade to Gold when you need logistics + finance",
+      "Platinum is for full operations: automation, analytics and priority support",
+      "Your tier gates module access — check it before expecting a feature to be visible",
+      "Gold unlocks the money-making stack: procurement, logistics, finance, automation"
+    ],
+    "relatedTopics": ["ds-f-dropship", "ds-f-logistics", "ds-f-money-finance", "ds-f-automation"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-currency",
+    "topic": "Feature — Currency System",
+    "subtopic": "Multi-currency pricing everywhere",
+    "keywords": ["currency", "exchange", "kes", "tzs", "ugx", "usd", "ngn", "ghs", "zar", "prices", "conversion"],
+    "content": "Where: Account → Settings (and the shop currency selector). BirichiNex supports TZS, KES, UGX, USD, EUR, GBP, NGN, GHS and ZAR. Prices convert live across the shop, checkout and business finance. Set your home currency once and everything respects it.",
+    "tips": [
+      "Set your home currency once in Settings — every price respects it",
+      "For cross-border sales, price in the buyer's currency to lift conversions",
+      "Loyalty points and finance track in your home currency",
+      "Watch currency when quoting cross-border — it affects your real margin"
+    ],
+    "relatedTopics": ["ds-f-payments", "ds-m-cross-border", "ds-f-cart-checkout", "ds-f-shopping-home"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-learning",
+    "topic": "Feature — Learn: Academy",
+    "subtopic": "Courses for African founders",
+    "keywords": ["academy", "courses", "learning", "lessons", "progress", "certificate", "train"],
+    "content": "Where: Business Shell → Learn hub → Academy tab. Courses built for East African founders: selling, pricing, logistics, finance, AI. Track progress lesson-by-lesson — your dashboard counts active courses. Finish one before starting ten.",
+    "tips": [
+      "One completed course beats ten started — finish before adding more",
+      "Apply each lesson to your real business the same week",
+      "Your dashboard tracks active courses; use it as your study plan",
+      "Courses pair with Frameworks — theory plus playbook"
+    ],
+    "relatedTopics": ["ds-f-frameworks", "ds-f-routines", "ds-f-entrepreneur-hub", "ds-f-dashboard"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-community",
+    "topic": "Feature — Learn: Community",
+    "subtopic": "Founders building like you",
+    "keywords": ["community", "founders", "network", "forums", "peer", "join", "members"],
+    "content": "Where: Business Shell → Learn hub → Community tab. A network of founders across the region building the same way you are. Share wins, ask questions, find people like you. Momentum is contagious.",
+    "tips": [
+      "Find people in your exact industry and country — their lessons transfer directly",
+      "Share your journey; founders who post get helped first",
+      "Use the community for supplier recommendations and market intel"
+    ],
+    "relatedTopics": ["ds-f-entrepreneur-hub", "ds-f-learning", "ds-f-crm", "ds-m-retention"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-entrepreneur-hub",
+    "topic": "Feature — Learn: Entrepreneur Hub",
+    "subtopic": "Grow from idea to institution",
+    "keywords": ["entrepreneur hub", "launchpad", "startup", "institution", "stages", "idea", "scale"],
+    "content": "Where: Business Shell → Learn hub → Hub tab. A guided path that grows your business from idea to institution — matching your Business Maturity score. Move through stages with clear next steps, frameworks and resources.",
+    "tips": [
+      "Let your Discovery score tell you which stage you're at",
+      "Work the Hub's next step before jumping to new shiny features",
+      "It connects to Frameworks and Academy so theory becomes action"
+    ],
+    "relatedTopics": ["ds-f-discovery", "ds-f-frameworks", "ds-f-routines", "ds-f-community"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-routines",
+    "topic": "Feature — Learn: Routines",
+    "subtopic": "Daily & weekly founder habits",
+    "keywords": ["routines", "habits", "daily", "weekly", "discipline", "founder journey", "checklist"],
+    "content": "Where: Business Shell → Learn hub → Routines tab. Pre-built daily and weekly routines that turn effort into momentum: check your dashboard, log money, follow up customers, post one product, review analytics. Your Founder Journey tracks these.",
+    "tips": [
+      "Tie routines to real money actions — log income, follow up, post product",
+      "Your dashboard tracks routine progress; don't break the chain",
+      "Use Amani to automate the follow-up part of your routine",
+      "Five consistent routines beat one perfect plan"
+    ],
+    "relatedTopics": ["ds-f-dashboard", "ds-f-ai-agent", "ds-f-automation", "ds-f-entrepreneur-hub"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-settings",
+    "topic": "Feature — Account: Settings",
+    "subtopic": "Profile, preferences & currency",
+    "keywords": ["settings", "profile", "preferences", "notifications", "currency", "home currency", "edit profile"],
+    "content": "Where: Business Shell → Account hub → Settings tab (and shop Account → Settings). Edit your profile, choose which notifications you actually want, and set your home currency once — everything respects it.",
+    "tips": [
+      "Set home currency here so finance and loyalty are consistent",
+      "Trim notifications to the ones that matter so you never miss a payment",
+      "Keep your business name and profile complete — it powers the AI's context"
+    ],
+    "relatedTopics": ["ds-f-currency", "ds-f-membership", "ds-f-copilot", "ds-f-dashboard"],
+    "category": "platform"
+  },
+  {
+    "id": "ds-f-modes",
+    "topic": "Feature — Shopping vs Business modes",
+    "subtopic": "Two shells, one platform",
+    "keywords": ["modes", "mode toggle", "shopping shell", "business shell", "switch mode", "customer view", "owner view"],
+    "content": "Where: The mode toggle in the navigation switches between the Shopping Shell (buy like a customer: Home, Fashion, Tech, Deals, Bales, Orders, Cart, Account) and the Business Shell (run your company: the 9 hubs in the sidebar). They share the same account and data.",
+    "tips": [
+      "Buying? Use Shopping mode. Running the business? Use Business mode",
+      "Test your own storefront in Shopping mode to see what customers see",
+      "The copilot and command palette live in the Business shell",
+      "Data is shared — orders you place as a buyer can appear in your business Orders hub"
+    ],
+    "relatedTopics": ["ds-f-shopping-home", "ds-f-dashboard", "ds-f-command-palette", "ds-f-orders-live"],
+    "category": "platform"
+  }
+]

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   User,
@@ -13,7 +13,6 @@ import {
   Bell,
   Globe,
   Clock,
-  Calendar,
   Award,
   Star,
   Edit3,
@@ -26,6 +25,7 @@ import {
   CreditCard,
   Activity,
   Save,
+  ShoppingBag,
 } from "lucide-react";
 import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
@@ -62,16 +62,6 @@ const LOYALTY_TIER_COLORS: Record<string, "default" | "success" | "warning" | "i
   platinum: "info",
 };
 
-const ACTIVITY_LOG = [
-  { id: "1", type: "login", text: "Signed in from Dar es Salaam, Tanzania", time: "2 hours ago", icon: LogOut, color: "text-info" },
-  { id: "2", type: "action", text: "Updated inventory — Copper Cathode (Grade A)", time: "5 hours ago", icon: Edit3, color: "text-ink-secondary" },
-  { id: "3", type: "points", text: "Earned 120 loyalty points from order #INV-2026-0412", time: "1 day ago", icon: Award, color: "text-brand-dark" },
-  { id: "4", type: "login", text: "Signed in from Nairobi, Kenya", time: "2 days ago", icon: LogOut, color: "text-info" },
-  { id: "5", type: "action", text: "Created new CRM contact — TechPartner Ltd.", time: "3 days ago", icon: User, color: "text-ink-secondary" },
-  { id: "6", type: "points", text: "Earned 85 loyalty points from MacBook Air M2 sale", time: "5 days ago", icon: Award, color: "text-brand-dark" },
-  { id: "7", type: "action", text: "Signed supply agreement with Portmetals Europe", time: "1 week ago", icon: Settings, color: "text-ink-secondary" },
-];
-
 const LANGUAGES = ["English", "Swahili", "French", "Arabic"];
 const TIMEZONES = ["Africa/Dar_es_Salaam", "Africa/Nairobi", "Africa/Kampala", "Africa/Lagos", "Africa/Accra", "Africa/Johannesburg", "UTC"];
 const DATE_FORMATS = ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "DD MMM YYYY"];
@@ -87,6 +77,38 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
   const users = useStore((s) => s.users);
   const sessions = useStore((s) => s.sessions);
   const revokeSession = useStore((s) => s.revokeSession);
+  const notifications = useStore((s) => s.notifications);
+
+  const activityFeed = useMemo(() => {
+    const iconFor = (type: string) =>
+      type === "payment"
+        ? CreditCard
+        : type === "order"
+        ? ShoppingBag
+        : type === "call"
+        ? Phone
+        : type === "lead"
+        ? User
+        : type === "system"
+        ? Settings
+        : Bell;
+    const colorFor = (type: string) =>
+      type === "payment"
+        ? "text-success"
+        : type === "call" || type === "lead"
+        ? "text-info"
+        : "text-ink-secondary";
+    return [...notifications]
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, 12)
+      .map((n) => ({
+        id: n.id,
+        icon: iconFor(n.type),
+        color: colorFor(n.type),
+        text: n.title,
+        time: new Date(n.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+      }));
+  }, [notifications]);
   const changePassword = useStore((s) => s.changePassword);
   const enableTwoFactor = useStore((s) => s.enableTwoFactor);
   const disableTwoFactor = useStore((s) => s.disableTwoFactor);
@@ -98,8 +120,8 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
     phone: settings.profile.phone,
     company: settings.profile.company,
     address: "",
-    city: "Dar es Salaam",
-    country: "Tanzania",
+    city: settings.profile.city ?? "",
+    country: settings.profile.country ?? "",
   });
   const [notifForm, setNotifForm] = useState({ ...settings.notifications });
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
@@ -110,7 +132,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
   const [twoFactorPinConfirm, setTwoFactorPinConfirm] = useState("");
   const [twoFactorMsg, setTwoFactorMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [language, setLanguage] = useState("English");
-  const [timezone, setTimezone] = useState("Africa/Dar_es_Salaam");
+  const [timezone, setTimezone] = useState("UTC");
   const [dateFormat, setDateFormat] = useState("DD/MM/YYYY");
   const [saved, setSaved] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
@@ -209,6 +231,8 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
         email: profileForm.email,
         phone: profileForm.phone,
         company: profileForm.company,
+        city: profileForm.city,
+        country: profileForm.country,
       },
     });
     flashSaved("Profile updated");
@@ -291,9 +315,6 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     <div className="flex items-center gap-4 mt-2 flex-wrap">
                       <span className="text-[13px] text-ink-tertiary flex items-center gap-1">
                         <Building2 className="h-3.5 w-3.5" /> {profileForm.company}
-                      </span>
-                      <span className="text-[13px] text-ink-tertiary flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" /> Member since Jan 2026
                       </span>
                     </div>
                   </div>
@@ -1037,7 +1058,12 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               </div>
 
               <div className="space-y-1">
-                {ACTIVITY_LOG.map((item, i) => (
+                {activityFeed.length === 0 ? (
+                  <div className="text-center py-8 text-ink-tertiary text-caption">
+                    No activity yet. Calls, orders, and payments will appear here.
+                  </div>
+                ) : (
+                activityFeed.map((item, i) => (
                   <motion.div
                     key={item.id}
                     initial={{ opacity: 0, x: -8 }}
@@ -1053,7 +1079,8 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                       <p className="text-[13px] text-ink-quaternary mt-0.5">{item.time}</p>
                     </div>
                   </motion.div>
-                ))}
+                ))
+                )}
               </div>
             </GlassCard>
           </motion.div>

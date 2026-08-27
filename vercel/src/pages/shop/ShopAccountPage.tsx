@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   User, Mail, Phone, MapPin, Star, Award, ChevronRight,
   Package, Settings, LogOut, Shield, Crown, Gift, ArrowRight,
-  Copy, Check, ShoppingBag, CreditCard, Clock, TrendingUp, Zap
+  Copy, Check, ShoppingBag, CreditCard, TrendingUp, Zap
 } from "lucide-react";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -114,9 +114,6 @@ export default function ShopAccountPage({ selectedCurrency, onNavigate }: ShopAc
                     <Crown className="h-3 w-3" />
                     {membershipConfig?.label ?? currentTier}
                   </Badge>
-                  <span className="text-[12px] text-ink-quaternary flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Member since Jan 2026
-                  </span>
                 </div>
               </div>
             </motion.div>

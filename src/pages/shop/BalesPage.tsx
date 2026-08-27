@@ -1,15 +1,12 @@
-import { useCallback, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
-  Package, Check, ArrowLeft, Truck, Shield, Scale, Layers, BadgeCheck, Award, Sparkles
+  Package, Truck, Shield, Award, Layers, ArrowLeft, Sparkles
 } from "lucide-react";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import GlassCard from "../../components/ui/GlassCard";
-import TiltCard from "../../components/three/TiltCard";
 import MagneticButton from "../../components/three/MagneticButton";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
-import { BALES, formatPrice } from "../../data/platform";
 import type { Currency, Product } from "../../types";
 
 interface BalesPageProps {
@@ -18,49 +15,7 @@ interface BalesPageProps {
   onAddToCart: (product: Product) => void;
 }
 
-const SUPPLIER = {
-  id: "sup-birichi",
-  name: "BirichiNex Wholesale",
-  verified: true,
-  rating: 4.9,
-  location: "Dar es Salaam, Tanzania",
-};
-
-function baleToProduct(bale: (typeof BALES)[number]): Product {
-  return {
-    id: bale.id,
-    name: bale.name,
-    description: `${bale.weight} compressed fashion bale — approx. ${bale.estimatedPieces} pieces. Ideal for ${bale.idealCustomer}.`,
-    category: "Wholesale Bales",
-    price: { amount: bale.priceTZS, currency: "TZS" },
-    images: [],
-    supplier: SUPPLIER,
-    grade: "A+",
-    origin: "Europe",
-    specifications: {
-      "Weight": bale.weight,
-      "Est. pieces": String(bale.estimatedPieces),
-      "Best for": bale.idealCustomer,
-      "Sourcing": "European fashion mix — Grade A+",
-    },
-    stock: 24,
-    minOrder: 1,
-    createdAt: new Date().toISOString(),
-  };
-}
-
-export default function BalesPage({ selectedCurrency, onNavigate, onAddToCart }: BalesPageProps) {
-  const [addedId, setAddedId] = useState<string | null>(null);
-
-  const handleAdd = useCallback(
-    (bale: (typeof BALES)[number]) => {
-      onAddToCart(baleToProduct(bale));
-      setAddedId(bale.id);
-      setTimeout(() => setAddedId(null), 1600);
-    },
-    [onAddToCart],
-  );
-
+export default function BalesPage({ selectedCurrency, onNavigate }: BalesPageProps) {
   return (
     <div className="min-h-screen">
       {/* ─── Hero ─────────────────────────────────────────────────────────── */}
@@ -77,102 +32,55 @@ export default function BalesPage({ selectedCurrency, onNavigate, onAddToCart }:
               <Package className="w-4 h-4" />
               Wholesale Bales — Volume Pricing
             </div>
-            <Badge variant="success" size="md" dot>
-              In Stock
-            </Badge>
           </motion.div>
 
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="max-w-2xl"
-            >
-              <h1 className="text-[28px] sm:text-[40px] font-bold text-ink leading-tight tracking-tight mb-3">
-                Premium Compressed Fashion Bales
-              </h1>
-              <p className="text-[15px] text-ink-secondary leading-relaxed mb-6">
-                Sourced European-grade fashion bales from 25kg to 70kg. Perfect for retailers, market
-                traders, and distributors looking for volume pricing with verified quality.
-              </p>
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px] text-ink-tertiary">
-                <span className="flex items-center gap-1.5"><BadgeCheck className="w-4 h-4 text-success" /> Verified quality — Grade A+</span>
-                <span className="flex items-center gap-1.5"><Scale className="w-4 h-4 text-brand" /> Weights 25–70kg</span>
-                <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-info" /> Door-to-door delivery</span>
-              </div>
-            </motion.div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-2xl"
+          >
+            <h1 className="text-[28px] sm:text-[40px] font-bold text-ink leading-tight tracking-tight mb-3">
+              Wholesale Bales
+            </h1>
+            <p className="text-[15px] text-ink-secondary leading-relaxed mb-6">
+              Once suppliers list bales on BirichiNex, they appear here — with full weight, piece
+              estimate, and volume pricing. Buy in bulk and earn loyalty points on every order.
+            </p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px] text-ink-tertiary">
+              <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-info" /> Door-to-door delivery</span>
+            </div>
+          </motion.div>
         </div>
       </CursorSpotlight>
 
       {/* ─── Bale Grid ─────────────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {BALES.map((bale, i) => {
-            const perKg = Math.round(bale.priceTZS / parseInt(bale.weight, 10));
-            const added = addedId === bale.id;
-            return (
-              <motion.div
-                key={bale.id}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: i * 0.06 }}
-              >
-                <TiltCard className="h-full">
-                  <GlassCard padding="lg" hover className="h-full">
-                    <div className="flex flex-col h-full gap-4">
-                      <div className="flex items-start justify-between">
-                        <div className="h-12 w-12 rounded-[14px] bg-gradient-to-br from-[#8B5E3C]/15 to-[#FF9500]/10 flex items-center justify-center">
-                          <Layers className="h-6 w-6 text-[#8B5E3C]" strokeWidth={1.5} />
-                        </div>
-                        {bale.badge && (
-                          <div className="flex items-center gap-1 bg-gradient-to-r from-[#FFD60A] to-[#FF9500] text-ink text-[11px] font-bold px-2.5 py-1 rounded-full">
-                            <Sparkles className="w-3 h-3" />
-                            {bale.badge}
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <h3 className="text-[17px] font-bold text-ink">{bale.name}</h3>
-                        <p className="text-[13px] text-ink-tertiary mt-1">{bale.idealCustomer}</p>
-                      </div>
-
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <p className="text-[22px] font-bold text-ink tracking-tight">
-                            {formatPrice(bale.priceTZS, selectedCurrency)}
-                          </p>
-                          <p className="text-[12px] text-ink-tertiary">
-                            ≈ {formatPrice(perKg, selectedCurrency)}/kg
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant="brand" size="sm">{bale.weight}</Badge>
-                          <p className="text-[11px] text-ink-tertiary mt-1">
-                            ~{bale.estimatedPieces} pcs
-                          </p>
-                        </div>
-                      </div>
-
-                      <MagneticButton className="mt-auto">
-                        <Button
-                          variant={added ? "brand" : "primary"}
-                          fullWidth
-                          size="lg"
-                          icon={added ? <Check className="w-5 h-5" /> : <Package className="w-5 h-5" />}
-                          onClick={() => handleAdd(bale)}
-                        >
-                          {added ? "Added to Cart!" : "Add to Cart"}
-                        </Button>
-                      </MagneticButton>
-                    </div>
-                  </GlassCard>
-                </TiltCard>
-              </motion.div>
-            );
-          })}
+        <div className="text-center py-16">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="h-16 w-16 rounded-[18px] bg-surface-secondary/80 flex items-center justify-center mx-auto mb-5">
+              <Layers className="h-7 w-7 text-ink-quaternary" strokeWidth={1.5} />
+            </div>
+            <Badge variant="brand" size="sm" className="mb-4">
+              <Sparkles className="h-3 w-3 mr-1.5 inline" />
+              Coming when suppliers join
+            </Badge>
+            <h2 className="text-headline text-ink tracking-tight mb-2">No bale suppliers yet</h2>
+            <p className="text-callout text-ink-tertiary max-w-md mx-auto leading-relaxed mb-8">
+              Wholesale bales appear here automatically once verified suppliers list them. In the
+              meantime, your own inventory is ready to sell — post products to the marketplace from
+              your Inventory page.
+            </p>
+            <MagneticButton strength={0.2}>
+              <Button variant="brand" size="lg" onClick={() => onNavigate("home")}>
+                Back to the storefront
+              </Button>
+            </MagneticButton>
+          </motion.div>
         </div>
 
         {/* ─── Trust / Info Strip ───────────────────────────────────────────── */}

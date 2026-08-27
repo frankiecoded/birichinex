@@ -112,85 +112,6 @@ function destinationLabel(s: TrackedShipment): string {
   return `${s.destinationCity}, ${s.destinationCountry}`;
 }
 
-// ── Sample Data ──────────────────────────────────────────────────────────────
-
-
-function createSampleCarriers(): Carrier[] {
-  return [
-    {
-      id: "c-001",
-      name: "DHL Express",
-      logo: "🟤",
-      services: ["Express", "Economy", "Freight"],
-      baseRatePerKg: 8500,
-      currency: "TZS",
-      estimatedDays: { domestic: "1-2 days", international: "3-7 days" },
-      coverage: ["East Africa", "Europe", "Asia", "Americas", "Middle East"],
-      rating: 4.8,
-      active: true,
-    },
-    {
-      id: "c-002",
-      name: "FedEx International",
-      logo: "🟣",
-      services: ["Priority", "Standard", "Freight"],
-      baseRatePerKg: 9200,
-      currency: "TZS",
-      estimatedDays: { domestic: "1-2 days", international: "4-8 days" },
-      coverage: ["Global"],
-      rating: 4.7,
-      active: true,
-    },
-    {
-      id: "c-003",
-      name: "UPS Worldwide",
-      logo: "🟤",
-      services: ["Express", "Expedited", "Standard"],
-      baseRatePerKg: 8800,
-      currency: "TZS",
-      estimatedDays: { domestic: "1-3 days", international: "3-9 days" },
-      coverage: ["Global"],
-      rating: 4.6,
-      active: true,
-    },
-    {
-      id: "c-004",
-      name: "Tanzania Post",
-      logo: "🔵",
-      services: ["Standard", "Registered", "EMS"],
-      baseRatePerKg: 3200,
-      currency: "TZS",
-      estimatedDays: { domestic: "2-5 days", international: "10-21 days" },
-      coverage: ["Tanzania", "East Africa", "International (EMS)"],
-      rating: 3.8,
-      active: true,
-    },
-    {
-      id: "c-005",
-      name: "Maersk Line",
-      logo: "🔵",
-      services: ["Ocean Freight", "FCL", "LCL"],
-      baseRatePerKg: 1200,
-      currency: "TZS",
-      estimatedDays: { domestic: "N/A", international: "14-35 days" },
-      coverage: ["Global Ports"],
-      rating: 4.5,
-      active: true,
-    },
-    {
-      id: "c-006",
-      name: "Aramex",
-      logo: "🟠",
-      services: ["Express", "Economy", "Shop & Ship"],
-      baseRatePerKg: 7500,
-      currency: "TZS",
-      estimatedDays: { domestic: "1-3 days", international: "5-10 days" },
-      coverage: ["Middle East", "Africa", "Asia", "Europe"],
-      rating: 4.4,
-      active: true,
-    },
-  ];
-}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -198,7 +119,7 @@ function generateTrackingNumber(): string {
   const date = new Date();
   const ymd = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
   const seq = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
-  return `PM-TRK-${ymd}-${seq}`;
+  return `BNX-TRK-${ymd}-${seq}`;
 }
 
 function formatDate(iso: string): string {
@@ -318,7 +239,7 @@ export default function LogisticsPage() {
 
   // State
   const [activeTab, setActiveTab] = useState<TabKey>("shipments");
-  const [carriers] = useState<Carrier[]>(createSampleCarriers);
+  const [carriers] = useState<Carrier[]>([]);
   const [form, setForm] = useState<ShipmentForm>(EMPTY_FORM);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -833,7 +754,7 @@ export default function LogisticsPage() {
                   <div className="flex-1 flex items-center gap-2 h-12 px-4 bg-surface-secondary/60 backdrop-blur-sm rounded-[12px] border border-glass-border">
                     <Search className="h-4 w-4 text-ink-quaternary" strokeWidth={1.5} />
                     <input
-                      placeholder="PM-TRK-XXXXXXXX-XXX"
+                      placeholder="BNX-TRK-XXXXXXXX-XXX"
                       className="bg-transparent text-[15px] text-ink placeholder:text-ink-quaternary focus:outline-none w-full font-mono"
                       value={trackingQuery.trackingNumber}
                       onChange={(e) => setTrackingQuery({ trackingNumber: e.target.value })}
@@ -925,6 +846,13 @@ export default function LogisticsPage() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3 }}
           >
+            {carriers.length === 0 ? (
+              <div className="text-center py-16">
+                <Globe className="h-12 w-12 text-ink-quaternary/40 mx-auto mb-3" strokeWidth={1} />
+                <p className="text-subhead font-bold text-ink">No carriers yet</p>
+                <p className="text-caption text-ink-tertiary mt-1">Approved carriers will appear here when they join the network.</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {carriers.map((carrier, i) => (
                 <motion.div
@@ -1002,6 +930,7 @@ export default function LogisticsPage() {
                 </motion.div>
               ))}
             </div>
+            )}
           </motion.div>
         )}
 
@@ -1330,6 +1259,7 @@ export default function LogisticsPage() {
                         className="w-full h-10 px-3 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 appearance-none"
                       >
                         <option value="">Select carrier</option>
+                        {carriers.length === 0 && <option value="Direct (no carrier)">Direct (no carrier)</option>}
                         {carriers.map((c) => (
                           <option key={c.id} value={c.name}>{c.name}</option>
                         ))}

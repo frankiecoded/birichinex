@@ -286,46 +286,17 @@ function pcmToWav(pcm: Buffer, sampleRate: number): Buffer {
   return Buffer.concat([header, pcm]);
 }
 
-// System instructions for the Portmetals Advisor
+// System instructions for the BirichiNex Advisor
 const SYSTEM_INSTRUCTION = `
-You are Amani, the lead Portmetals Africa Business Advisor and the operator layer of BirichiNex. You serve entrepreneurs, boutique owners, and traders building fashion businesses out of sorted European Mitumba clothing, leather, and premium refurbished technology from Europe.
+You are Amani, the lead BirichiNex Business Advisor. You serve the shop owner whose live business data is supplied in the intelligence block of each request — their catalog, inventory, transactions, orders, contacts, wallet, and goals. You reason only from that block; you never invent products, prices, stock, or history that are not present in it.
 
-Your tone and voice are set by the advisor personality instructions provided with each request — follow them for how you speak. This block is your factual source: the prices and bale tiers below, plus the live intelligence block, are the ground truth for the business.
+Your tone and voice are set by the advisor personality instructions provided with each request — follow them for how you speak. The intelligence block is the single source of truth for this business, and it is always current.
 
-You have access to the official Portmetals Africa Reviewed Prices (in Tanzanian Shilling - TZS):
-1. Men Cotton Shirt - 27,000 TZS
-2. Men Mixed Pants - 18,000 TZS
-3. Ladies Jeans - 15,000 TZS
-4. Flanel Shirt - 15,000 TZS
-5. Cotton Blouse (Brouse) - 10,000 TZS
-6. Shorts - 14,000 TZS
-7. Cotton Dress - 13,000 TZS
-8. Hawaii [Palazo] - 12,000 TZS
-9. Anoraks / Zippers - 18,000 TZS
-10. Sweatshirts with Capchion - 15,000 TZS
-11. Baby Medium Rummage (25KG) - 7,500 TZS
-12. Children Medium Rummage (30KG) - 10,000 TZS
-13. Jogging Pants (25KG) - 7,500 TZS
-14. Leggings - 10,000 TZS
-15. Mix T-Shirts - 13,000 TZS
-16. Sportwear - 15,000 TZS
-17. Ladies Handbags - 22,000 TZS
-18. Sweatshirt Light - 11,000 TZS
-19. Leather Pants / Skirts [U] - 25,000 TZS
-20. Ladies Fashion Jackets [Leather] - 30,000 TZS
-21. Men Leather Jackets - 35,000 TZS
-22. Light Zipper Jackets - 16,000 TZS
+When the shop has no data yet (empty inventory, no orders, no transactions), say so plainly and guide the founder toward the next concrete first step: adding inventory, connecting a sales channel, or setting prices. Never fabricate a catalog, prices, or implied past performance.
 
-We also offer Premium Sorted Bales:
-- 25kg Starter Bale: Perfect for new entrepreneurs. Focus on low risk.
-- 30kg Business Starter: Ideal for online/Instagram/TikTok sellers. Clean items.
-- 45kg Wholesale Bale: Best value for physical boutiques and market traders.
-- 55kg Premium Business Bale: For growing retailers looking for top "Cream" grade items.
-- 70kg Commercial Bale: For established distributors.
+Use pricing math (unit cost vs selling price) when margins or profit are discussed, grounding every figure in the shop's actual numbers from the intelligence block. Anchor customer acquisition (marketing, social media, visual merchandising) and financial discipline (reinvesting profit, holding a cash buffer) to the founder's live numbers when they are available.
 
-Frame second-hand clothes as a structured business venture, not a raffle. Use pricing math (buying unit price vs expected selling price) when margins or profit are in question. Anchor customer acquisition (marketing, social media, visual merchandising) and financial discipline (saving capital for the next bale) to the founder's actual live numbers when they are in the intelligence block.
-
-Be factually reliable above all: the reviewed prices above are the seller's official list prices, so quote them exactly and base math on them. Do not use emojis.
+Be factually reliable above all: never quote prices, stock levels, or performance that are not in the intelligence block. Do not use emojis.
 `;
 
 // API Endpoints
@@ -723,13 +694,13 @@ app.post("/api/chat", async (req, res) => {
     let mockReply = "";
 
     if (lowerMsg.includes("start") || lowerMsg.includes("how to")) {
-      mockReply = `Starting a fashion business requires strategic selection. For beginners, we highly recommend the 25kg Starter Bale or starting with Ladies Jeans (15,000 TZS) and Mix T-Shirts (13,000 TZS). By sorting them professionally and selling them individually, you can target a markup of 100%. What is your budget or target location? Let me map out a custom plan for you.`;
-    } else if (lowerMsg.includes("price") || lowerMsg.includes("cost") || lowerMsg.includes("bale")) {
-      mockReply = `Portmetals Africa offers premium sorted wholesale prices to guarantee profitability. For example, our Men Cotton Shirts are priced at 27,000 TZS per unit, and Ladies Jeans at 15,000 TZS. If you purchase our 25kg Starter Bale, you will find approximately 80-100 high-quality, pre-sorted pieces. This keeps your cost per item extremely low, allowing for higher profit margins in retail markets. Would you like me to calculate the specific returns on a particular category?`;
+      mockReply = `Starting a business works best when you start with real numbers. Add your first inventory items, set a selling price above your unit cost, and publish them to your storefront. From there we can plan marketing, track orders, and reinvest profit into stock. Would you like a step-by-step first-day plan?`;
+    } else if (lowerMsg.includes("price") || lowerMsg.includes("cost") || lowerMsg.includes("margin")) {
+      mockReply = `I can only give you accurate pricing math from your own data. Add your inventory with unit costs and target prices in the Inventory tab, and I'll calculate per-unit margins, break-even volume, and which categories earn you the most. Share a product and its cost and I'll run the numbers for you.`;
     } else if (lowerMsg.includes("tech") || lowerMsg.includes("laptop") || lowerMsg.includes("phone")) {
-      mockReply = `Our refurbished technology is imported directly from European partners, certified, tested, and comes with a 12-month warranty. For retail or office setup, we supply premium business-grade laptops and high-performance monitors starting at affordable rates. This allows entrepreneurs to run their offices and digital marketing campaigns efficiently without heavy capital overheads. What specs are you looking for?`;
+      mockReply = `Tell me which tech products you stock (or want to stock) and your target market, and I'll help you price them, compare financing options, and plan a marketing approach that fits your budget.`;
     } else {
-      mockReply = `Welcome to Portmetals Africa, your dedicated growth partner. I can advise you on selecting the right inventory, calculating your retail margins, developing effective digital marketing strategies, or understanding the Europe-to-Africa supply chain logistics. How can I assist your business growth today?`;
+      mockReply = `Welcome to BirichiNex. I'm your business advisor, grounded only in your live shop data. I can help you set prices, plan inventory, manage cash flow, follow up with customers, and grow sales. What is your current priority?`;
     }
 
     res.json({
@@ -768,7 +739,7 @@ app.post("/api/quote", async (req, res) => {
       : "New Entrepreneur";
 
     const prompt = `
-Analyze the following Portmetals Africa bulk quotation request and generate a personalized 3-part growth playbook:
+Analyze the following BirichiNex bulk quotation request and generate a personalized 3-part growth playbook:
 1. Expected Target Pricing: For the items ordered, what is the ideal retail range in East African markets (TZS/KES), and what is the projected gross profit?
 2. Marketing & Audience: How should the buyer advertise these specific items on social media (Instagram, TikTok) or physical showrooms?
 3. Sourcing Tips: What's the recommended restock frequency based on these categories?
@@ -818,21 +789,23 @@ ${profileSummary}
     if (!ai) {
       // Return smart simulated playbook
       const mockPlaybook = `
-# PORTMETALS AFRICA ENTERPRENEUR PLAYBOOK
-Prepared for: ${businessProfile?.businessName || "Valued Entrepreneur"}
+# BIRICHINEX GROWTH PLAYBOOK
+Prepared for: ${businessProfile?.businessName || "Founder"}
 Location: ${businessProfile?.businessLocation || "East Africa"}
+Quote items: ${itemsSummary}
 
 ## 1. Projected Returns & Retail Pricing Strategy
-- **Ladies Jeans**: Recommended retail price is 25,000 TZS to 30,000 TZS per item. Based on your cost of 15,000 TZS, this yields a 40% to 50% profit margin.
-- **Men Cotton Shirts**: Recommended retail is 45,000 TZS. At your cost of 27,000 TZS, you stand to generate high retail interest.
-- **Estimated Total Gross Margin**: 45% to 60% after cleaning and branding expenses.
+- Set a retail price of 1.8x to 2.5x your all-in unit cost (purchase price plus freight and handling) for each quoted item.
+- Calculate your per-item gross margin by subtracting that all-in cost from the retail price; the quoted line items drive the exact figures.
+- Target a blended gross margin of at least 40% to leave room for cleaning, branding, and selling costs.
 
 ## 2. Dynamic Marketing Playbook
-- **Content Creation**: Highlight the "European Sorting Standards" and "Zero Defects" guarantee. Create unboxing videos showing the crisp premium quality.
-- **Social Strategy**: Post clean, ironed, flat-lay photos of the shirts and styles on Instagram. Use TikTok to host live shopping bids for high-quality items.
+- Content Creation: Show the real quality and condition of each item with unboxing and flat-lay videos; emphasize what makes this stock different for your buyers.
+- Social Strategy: Post clean, styled photos on Instagram; use TikTok live selling for the fast-moving items to build urgency and repeat buyers.
 
 ## 3. Stocking & Restocking Advisory
-- Maintain a 2-week stock cycle. Reorder your next bale when current stock level drops to 30% to avoid supply chain disruptions.
+- Track sell-through rate per category and reorder before bestsellers run out, using your inventory alerts as the restock trigger.
+- Keep a buffer of working capital so a restock never depends on a single sale.
 `;
       return res.json({
         playbook: mockPlaybook.trim(),
@@ -933,7 +906,7 @@ app.post("/api/ai/voice", async (req, res) => {
 // ─── Zahara — AI Finance Agent ────────────────────────────────────────────────
 
 const FINANCE_SYSTEM_INSTRUCTION = `
-You are "Zahara", the AI Finance Agent of BirichiNex (a marketplace for East African entrepreneurs: sorted European Mitumba clothing, leather goods, and refurbished tech).
+You are "Zahara", the AI Finance Agent of BirichiNex, a multi-shop business platform for East African entrepreneurs.
 
 You combine the rigor of a professional CFO with the warmth of a trusted East African business partner.
 
@@ -943,7 +916,9 @@ HARD GUARDRAILS — never break these:
 3. You can run day-to-day analysis, recommend strategies, and create plans autonomously — but money and sensitive changes always require approval.
 4. Be honest about uncertainty. If a figure (e.g. exchange rate, tax rate) should be verified live, say so and offer to research it.
 
-Answer in clear, concise business English, in plain text (no markdown headers, no emojis). Use TZS figures where relevant and explain the reasoning behind every recommendation. When you propose an action, state exactly what you would do and mark it [NEEDS APPROVAL].
+Ground every recommendation in the shop owner's own numbers supplied with each request (wallet, transactions, inventory, orders, loyalty, subscription). Never invent balances or outcomes that are not in the data. When no data is provided or it is empty, say so and propose the first step to start tracking finances properly.
+
+Answer in clear, concise business English, in plain text (no markdown headers, no emojis). Use the shop's currency where relevant and explain the reasoning behind every recommendation. When you propose an action, state exactly what you would do and mark it [NEEDS APPROVAL].
 `;
 
 app.post("/api/finance/advise", async (req, res) => {
@@ -1289,7 +1264,7 @@ async function setupVite() {  if (process.env.NODE_ENV !== "production") {
   });
 
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Portmetals Africa Full-Stack server running on http://localhost:${PORT}`);
+    console.log(`BirichiNex Full-Stack server running on http://localhost:${PORT}`);
   });
 
   // ─── Graceful shutdown ────────────────────────────────────────────────────

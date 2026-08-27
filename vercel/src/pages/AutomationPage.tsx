@@ -68,75 +68,6 @@ interface Task {
 
 // ── Seed Data ──────────────────────────────────────────────────────────────
 
-const SEED_WORKFLOWS: Workflow[] = [
-  {
-    id: "wf-1", name: "Order Confirmation", trigger: "on-order",
-    actions: ["send-email", "update-status", "create-task"],
-    conditions: "Order total > 0", enabled: true,
-    createdAt: "2026-06-15T10:00:00Z", lastRun: "2026-07-21T08:30:00Z", runCount: 342,
-  },
-  {
-    id: "wf-2", name: "Low Stock Alert", trigger: "inventory-low",
-    actions: ["notify", "send-email"],
-    conditions: "Stock < Minimum Stock Level", enabled: true,
-    createdAt: "2026-06-20T14:00:00Z", lastRun: "2026-07-20T16:45:00Z", runCount: 89,
-  },
-  {
-    id: "wf-3", name: "Weekly Report", trigger: "schedule",
-    actions: ["send-email"],
-    conditions: "Every Monday at 08:00", enabled: true,
-    createdAt: "2026-05-10T09:00:00Z", lastRun: "2026-07-14T08:00:00Z", runCount: 11,
-  },
-  {
-    id: "wf-4", name: "Payment Reminder", trigger: "manual",
-    actions: ["send-email", "notify"],
-    conditions: "Invoice overdue > 7 days", enabled: false,
-    createdAt: "2026-07-01T11:00:00Z", lastRun: null, runCount: 0,
-  },
-  {
-    id: "wf-5", name: "Supplier Restock", trigger: "inventory-low",
-    actions: ["send-email", "create-task"],
-    conditions: "Stock < 5 AND supplier = approved", enabled: true,
-    createdAt: "2026-06-25T15:00:00Z", lastRun: "2026-07-19T12:00:00Z", runCount: 24,
-  },
-];
-
-const SEED_TRIGGERS: Trigger[] = [
-  { id: "tr-1", name: "New Order Placed", description: "Fires when a customer completes checkout", category: "event", usageCount: 3 },
-  { id: "tr-2", name: "Inventory Below Minimum", description: "Fires when any item drops below minimum stock", category: "condition", usageCount: 2 },
-  { id: "tr-3", name: "Daily Schedule", description: "Runs every day at a configured time", category: "time", usageCount: 1 },
-  { id: "tr-4", name: "Payment Received", description: "Fires when payment is confirmed", category: "event", usageCount: 0 },
-  { id: "tr-5", name: "Order Overdue", description: "Fires when an order passes its delivery date", category: "condition", usageCount: 1 },
-  { id: "tr-6", name: "Weekly Digest", description: "Runs every Monday morning", category: "time", usageCount: 1 },
-  { id: "tr-7", name: "Customer Created", description: "Fires when a new CRM contact is added", category: "event", usageCount: 0 },
-  { id: "tr-8", name: "Stock Depleted", description: "Fires when stock hits zero", category: "condition", usageCount: 0 },
-];
-
-const SEED_NOTIFICATIONS: NotificationRule[] = [
-  { id: "nt-1", name: "New Order Alerts", event: "Order placed", channels: { email: true, push: true, sms: false }, enabled: true },
-  { id: "nt-2", name: "Stock Warnings", event: "Inventory low", channels: { email: true, push: true, sms: true }, enabled: true },
-  { id: "nt-3", name: "Payment Confirmation", event: "Payment received", channels: { email: true, push: false, sms: false }, enabled: true },
-  { id: "nt-4", name: "Delivery Updates", event: "Shipment status change", channels: { email: false, push: true, sms: false }, enabled: false },
-  { id: "nt-5", name: "System Errors", event: "Workflow failed", channels: { email: true, push: true, sms: true }, enabled: true },
-];
-
-const SEED_BUSINESS_RULES: BusinessRule[] = [
-  { id: "br-1", name: "Auto-approve small orders", condition: "Order total < 500,000 TZS", action: "Auto-approve and send confirmation", enabled: true, createdAt: "2026-06-10T10:00:00Z" },
-  { id: "br-2", name: "Low stock reorder", condition: "Stock < minimum threshold", action: "Send reorder request to supplier", enabled: true, createdAt: "2026-06-12T11:00:00Z" },
-  { id: "br-3", name: "VIP customer priority", condition: "Customer tier = Platinum", action: "Priority processing and free shipping", enabled: true, createdAt: "2026-06-15T14:00:00Z" },
-  { id: "br-4", name: "Flag large expenses", condition: "Expense > 2,000,000 TZS", action: "Require manager approval", enabled: true, createdAt: "2026-07-01T09:00:00Z" },
-  { id: "br-5", name: "Auto-archive stale contacts", condition: "Last contact > 180 days", action: "Move to inactive list", enabled: false, createdAt: "2026-07-05T10:00:00Z" },
-];
-
-const SEED_TASKS: Task[] = [
-  { id: "tk-1", name: "Send order confirmation emails", status: "completed", lastRun: "2026-07-21T08:30:00Z", nextScheduled: "2026-07-22T08:30:00Z", workflowId: "wf-1" },
-  { id: "tk-2", name: "Check inventory levels", status: "running", lastRun: "2026-07-21T10:00:00Z", nextScheduled: "2026-07-21T22:00:00Z", workflowId: "wf-2" },
-  { id: "tk-3", name: "Generate weekly report", status: "pending", lastRun: "2026-07-14T08:00:00Z", nextScheduled: "2026-07-21T08:00:00Z", workflowId: "wf-3" },
-  { id: "tk-4", name: "Supplier restock notifications", status: "completed", lastRun: "2026-07-19T12:00:00Z", nextScheduled: "2026-07-22T12:00:00Z", workflowId: "wf-5" },
-  { id: "tk-5", name: "Reorder at threshold", status: "failed", lastRun: "2026-07-20T09:15:00Z", nextScheduled: "2026-07-21T09:15:00Z", workflowId: "wf-5" },
-  { id: "tk-6", name: "Sync marketplace prices", status: "completed", lastRun: "2026-07-21T06:00:00Z", nextScheduled: "2026-07-22T06:00:00Z", workflowId: "wf-1" },
-];
-
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const TRIGGER_LABELS: Record<TriggerType, string> = {
@@ -386,33 +317,33 @@ export default function AutomationPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Workflows
-  const [workflows, setWorkflows] = useState<Workflow[]>(SEED_WORKFLOWS);
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [workflowModal, setWorkflowModal] = useState<"add" | "edit" | null>(null);
   const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
   const [wfForm, setWfForm] = useState({ name: "", trigger: "on-order" as TriggerType, conditions: "" });
   const [wfActions, setWfActions] = useState<ActionType[]>([]);
 
   // Triggers
-  const [triggers, setTriggers] = useState<Trigger[]>(SEED_TRIGGERS);
+  const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [triggerModal, setTriggerModal] = useState<"add" | "edit" | null>(null);
   const [editingTrigger, setEditingTrigger] = useState<Trigger | null>(null);
   const [trForm, setTrForm] = useState({ name: "", description: "", category: "event" as "event" | "time" | "condition" });
 
   // Notifications
-  const [notifications, setNotifications] = useState<NotificationRule[]>(SEED_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationRule[]>([]);
   const [notifModal, setNotifModal] = useState<"add" | "edit" | null>(null);
   const [editingNotif, setEditingNotif] = useState<NotificationRule | null>(null);
   const [ntForm, setNtForm] = useState({ name: "", event: "" });
   const [ntChannels, setNtChannels] = useState({ email: true, push: true, sms: false });
 
   // Business Rules
-  const [businessRules, setBusinessRules] = useState<BusinessRule[]>(SEED_BUSINESS_RULES);
+  const [businessRules, setBusinessRules] = useState<BusinessRule[]>([]);
   const [ruleModal, setRuleModal] = useState<"add" | "edit" | null>(null);
   const [editingRule, setEditingRule] = useState<BusinessRule | null>(null);
   const [brForm, setBrForm] = useState({ name: "", condition: "", action: "" });
 
   // Tasks
-  const [tasks, setTasks] = useState<Task[]>(SEED_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   // ── Stats ────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
