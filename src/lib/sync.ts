@@ -98,8 +98,27 @@ export function serializeSnapshot(): Record<string, unknown> {
 }
 
 // ── Pull (load from cloud on boot) ──────────────────────────────────────────
+//
+// On boot the local store may already hold newer business data (the same user
+// kept working offline). `requireBlank` (used only at app start) makes the pull
+// act as a true restore: it only hydrates when there is nothing local worth
+// keeping, protecting against a stale cloud doc clobbering newer work.
 
-export async function pullSnapshot(): Promise<{ ok: boolean; hadData: boolean }> {
+const DATA_KEYS: ReadonlyArray<string> = [
+  "orders", "contacts", "transactions", "shipments", "inventoryItems",
+  "documents", "agentCalls", "dropshipOrders", "withdrawals",
+];
+
+function localStoreHasData(): boolean {
+  const state = useStore.getState();
+  for (const key of DATA_KEYS) {
+    const value = state[key];
+    if (Array.isArray(value) && value.length > 0) return true;
+  }
+  return Boolean(state.user) || Boolean(state.settings?.profile?.name);
+}
+
+export async function pullSnapshot(opts?: { requireBlank?: boolean }): Promise<{ ok: boolean; hadData: boolean }> {
   if (!syncConfigured()) return { ok: false, hadData: false }; // no device secret — stay offline
   try {
     const userKey = currentUserKey();
@@ -109,11 +128,19 @@ export async function pullSnapshot(): Promise<{ ok: boolean; hadData: boolean }>
     if (res.status === 503) return { ok: false, hadData: false }; // sync disabled
     if (!res.ok) return { ok: false, hadData: false };
     const data = await res.json();
-    if (data?.payload && typeof data.payload === "object") {
+    const hadData = Boolean(data?.payload && typeof data.payload === "object");
+    if (hadData) {
+      if (opts?.requireBlank && localStoreHasData()) {
+        // Local state is newer/equal — keep it, never overwrite with the
+        // cloud doc. Leave lastSentJson untouched so the next mutation or the
+        // caller's push re-uploads local as the source of truth.
+        return { ok: true, hadData: false };
+      }
       useStore.getState().hydrate(data.payload);
+      lastSentJson = JSON.stringify(serializeSnapshot());
+      return { ok: true, hadData: true };
     }
-    lastSentJson = JSON.stringify(serializeSnapshot());
-    return { ok: true, hadData: Boolean(data?.payload) };
+    return { ok: true, hadData: false };
   } catch (error) {
     console.warn("Sync: pull failed", error);
     return { ok: false, hadData: false };
@@ -121,9 +148,27 @@ export async function pullSnapshot(): Promise<{ ok: boolean; hadData: boolean }>
 }
 
 // ── Push (write to cloud) ───────────────────────────────────────────────────
+// One automatic retry after a short backoff for transient network/server
+// hiccups; a failed push is never silently dropped from the queue.
+
+const PUSH_RETRY_DELAY_MS = 2000;
 
 export async function pushSnapshot(): Promise<boolean> {
   if (!syncConfigured()) return false;
+  try {
+    const ok = await pushOnce();
+    if (!ok) {
+      await new Promise((resolve) => setTimeout(resolve, PUSH_RETRY_DELAY_MS));
+      return pushOnce();
+    }
+    return ok;
+  } catch (error) {
+    console.warn("Sync: push failed", error);
+    return false;
+  }
+}
+
+async function pushOnce(): Promise<boolean> {
   try {
     const userKey = currentUserKey();
     const payload = serializeSnapshot();

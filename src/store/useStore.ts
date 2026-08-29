@@ -37,7 +37,7 @@ import {
   CommunityConnection,
   CommunityConnectionStatus,
 } from '../types';
-import { hashPassword, verifyPassword, isHashedPassword } from "../lib/password";
+import { hashPassword, verifyPassword, isHashedPassword, hashCredential, verifyCredential, isHashedCredential } from "../lib/password";
 import { computeAudit, type DiscoveryAnswers } from '../../ai/src/discovery';
 import { buildFollowUps } from "../../ai/src/accounts";
 import type {
@@ -211,6 +211,9 @@ interface StoreState {
   setAccountType: (type: AccountType) => void;
   logout: () => void;
   setAuthView: (view: 'login' | 'signup' | 'forgot' | null) => void;
+  pendingGuestRewards: { total: number; orderId: string } | null;
+  setPendingGuestRewards: (rewards: { total: number; orderId: string } | null) => void;
+  applyGuestRewardsIfAny: () => void;
   setIntroComplete: (v: boolean) => void;
   setEntrySeen: (v: boolean) => void;
   updateUser: (partial: Partial<{ name: string; email: string }>) => void;
@@ -301,7 +304,7 @@ interface StoreState {
   setAutoRenew: (autoRenew: boolean) => void;
   businessWallet: BusinessWalletState;
   creditWalletRevenue: (amountTZS: number, description: string, orderId?: string) => void;
-  withdrawFromWallet: (amountTZS: number, bankAccount: BankAccountDetails) => void;
+  withdrawFromWallet: (amountTZS: number, bankAccount: BankAccountDetails) => Withdrawal | undefined;
   updateWithdrawalStatus: (id: string, status: WithdrawalStatus, message?: string) => void;
   withdrawals: Withdrawal[];
   upgradeReminderDismissed: boolean;
@@ -539,13 +542,14 @@ export const useStore = create<StoreState>()(
       // ── Auth ────────────────────────────────────────────────────────────────
       user: null,
       authView: null,
+      pendingGuestRewards: null,
       introComplete: false,
       entrySeen: false,
       users: {},
       loginHistory: [],
       sessions: [],
 
-      login: (email, name, accountType) =>
+      login: (email, name, accountType) => {
         set((state) => {
           const key = email.trim().toLowerCase();
           const reserved = state.users[key];
@@ -566,9 +570,11 @@ export const useStore = create<StoreState>()(
             sessions: [makeSession(key), ...state.sessions.map((s) => ({ ...s, current: false }))].slice(0, 8),
             loginHistory: [makeLoginEvent(key, 'success'), ...state.loginHistory].slice(0, 30),
           };
-        }),
+        });
+        get().applyGuestRewardsIfAny();
+      },
 
-      signup: (email, name, accountType, password) =>
+      signup: (email, name, accountType, password) => {
         set((state) => {
           const key = email.trim().toLowerCase();
           const reserved = state.users[key];
@@ -588,7 +594,27 @@ export const useStore = create<StoreState>()(
             },
             authView: null,
           };
-        }),
+        });
+        get().applyGuestRewardsIfAny();
+      },
+
+      setPendingGuestRewards: (rewards) => set({ pendingGuestRewards: rewards }),
+
+      // Credits cashback + loyalty points earned on a guest purchase the moment
+      // the shopper creates an account (or logs in) after checkout. Idempotent:
+      // the pending reward is cleared as soon as it is applied.
+      applyGuestRewardsIfAny: () => {
+        const state = get();
+        const pending = state.pendingGuestRewards;
+        if (!pending) return;
+        if (!state.user) return;
+        const cashback = Math.floor(pending.total * 0.01);
+        if (cashback > 0) {
+          state.awardWalletCashback(cashback, `First-order welcome cashback (${pending.orderId})`);
+        }
+        state.earnPointsFromPurchase(pending.total);
+        set({ pendingGuestRewards: null });
+      },
 
       attemptLogin: (email, password) => {
         const key = email.trim().toLowerCase();
@@ -600,11 +626,11 @@ export const useStore = create<StoreState>()(
             matches = verifyPassword(password, key, rec.password);
           } else {
             matches = rec.password === password;
-            if (matches) {
-              set((s) => ({
-                users: { ...s.users, [key]: { ...rec, password: hashPassword(password, key) } },
-              }));
-            }
+          }
+          if (matches && (!isHashedPassword(rec.password) || rec.password.startsWith("s1$"))) {
+            set((s) => ({
+              users: { ...s.users, [key]: { ...rec, password: hashPassword(password, key) } },
+            }));
           }
           if (!matches) {
             set((s) => ({ loginHistory: [makeLoginEvent(key, 'failed'), ...s.loginHistory].slice(0, 30) }));
@@ -620,12 +646,26 @@ export const useStore = create<StoreState>()(
         const rec = get().users[key];
         if (!rec?.twoFactorCode) return { ok: false, error: "Two-factor authentication is not enabled for this account." };
         const trimmed = String(code).trim();
-        if (trimmed === rec.twoFactorCode) return { ok: true };
-        if (rec.recoveryCodes && rec.recoveryCodes.includes(trimmed)) {
+        if (verifyCredential(trimmed, rec.twoFactorCode)) {
+          if (!isHashedCredential(rec.twoFactorCode)) {
+            set((s) => ({
+              users: {
+                ...s.users,
+                [key]: { ...rec, twoFactorCode: hashCredential(trimmed) },
+              },
+            }));
+          }
+          return { ok: true };
+        }
+        if (rec.recoveryCodes && rec.recoveryCodes.some((c) => verifyCredential(trimmed, c))) {
           set((s) => ({
             users: {
               ...s.users,
-              [key]: { ...rec, recoveryCodes: rec.recoveryCodes!.filter((c) => c !== trimmed) },
+              [key]: {
+                ...rec,
+                twoFactorCode: isHashedCredential(rec.twoFactorCode) ? rec.twoFactorCode : hashCredential(rec.twoFactorCode),
+                recoveryCodes: rec.recoveryCodes!.filter((c) => !verifyCredential(trimmed, c)),
+              },
             },
           }));
           return { ok: true };
@@ -682,8 +722,8 @@ export const useStore = create<StoreState>()(
                 accountType: existing?.accountType ?? user.accountType,
                 createdAt: existing?.createdAt ?? new Date().toISOString(),
                 password: existing?.password,
-                twoFactorCode: String(code).trim(),
-                recoveryCodes,
+                twoFactorCode: hashCredential(String(code).trim()),
+                recoveryCodes: recoveryCodes.map((c) => hashCredential(c)),
               },
             },
           };
@@ -697,7 +737,7 @@ export const useStore = create<StoreState>()(
         const key = user.email.trim().toLowerCase();
         const rec = get().users[key];
         if (!rec?.twoFactorCode) return { ok: true };
-        if (code && code.trim() !== rec.twoFactorCode) return { ok: false, error: "Code doesn't match your two-factor code." };
+        if (code && !verifyCredential(String(code).trim(), rec.twoFactorCode)) return { ok: false, error: "Code doesn't match your two-factor code." };
         set((s) => {
           const existing = s.users[key];
           if (!existing) return s;
@@ -723,7 +763,7 @@ export const useStore = create<StoreState>()(
                 createdAt: existing?.createdAt ?? new Date().toISOString(),
                 password: existing?.password,
                 twoFactorCode: existing?.twoFactorCode,
-                recoveryCodes: codes,
+                recoveryCodes: codes.map((c) => hashCredential(c)),
               },
             },
           };
@@ -1251,7 +1291,8 @@ export const useStore = create<StoreState>()(
 
       dismissUpgradeReminder: () => set({ upgradeReminderDismissed: true }),
 
-      creditWalletRevenue: (amountTZS, description, orderId) =>
+      creditWalletRevenue: (amountTZS, description, orderId) => {
+        if (!(amountTZS > 0)) return;
         set((state) => ({
           businessWallet: {
             ...state.businessWallet,
@@ -1269,13 +1310,23 @@ export const useStore = create<StoreState>()(
               ...state.businessWallet.transactions,
             ],
           },
-        })),
+        }));
+      },
 
       withdrawFromWallet: (amountTZS, bankAccount) => {
         const state = get();
-        if (state.businessWallet.balance < amountTZS) return;
+        if (!(amountTZS > 0) || state.businessWallet.balance < amountTZS) return undefined;
         const now = new Date().toISOString();
         const id = crypto.randomUUID();
+        const withdrawal: Withdrawal = {
+          id,
+          amount: amountTZS,
+          currency: 'TZS',
+          status: 'pending',
+          bankAccount,
+          createdAt: now,
+          updatedAt: now,
+        };
         set({
           businessWallet: {
             ...state.businessWallet,
@@ -1292,19 +1343,9 @@ export const useStore = create<StoreState>()(
               ...state.businessWallet.transactions,
             ],
           },
-          withdrawals: [
-            {
-              id,
-              amount: amountTZS,
-              currency: 'TZS' as const,
-              status: 'pending' as const,
-              bankAccount,
-              createdAt: now,
-              updatedAt: now,
-            },
-            ...state.withdrawals,
-          ],
+          withdrawals: [withdrawal, ...state.withdrawals],
         });
+        return withdrawal;
       },
 
       updateWithdrawalStatus: (id, status, message) =>
@@ -1313,11 +1354,13 @@ export const useStore = create<StoreState>()(
           if (!target) return state;
           let businessWallet = state.businessWallet;
           if (status === 'failed' && target.status !== 'completed' && target.status !== 'failed') {
-            // Refund the wallet so a failed payout never eats owner earnings.
-            businessWallet = {
-              ...businessWallet,
-              balance: businessWallet.balance + target.amount,
-              transactions: [
+              // Refund the wallet so a failed payout never eats owner earnings,
+              // and reverse the lifetime-withdrawn counter for the refunded amount.
+              businessWallet = {
+                ...businessWallet,
+                balance: businessWallet.balance + target.amount,
+                totalWithdrawn: Math.max(0, businessWallet.totalWithdrawn - target.amount),
+                transactions: [
                 {
                   id: crypto.randomUUID(),
                   type: 'refund' as const,
@@ -1347,7 +1390,8 @@ export const useStore = create<StoreState>()(
         transactions: [],
       },
 
-      addWalletFunds: (amount, description) =>
+      addWalletFunds: (amount, description) => {
+        if (!(amount > 0)) return;
         set((state) => ({
           wallet: {
             balance: state.wallet.balance + amount,
@@ -1364,11 +1408,12 @@ export const useStore = create<StoreState>()(
               ...state.wallet.transactions,
             ],
           },
-        })),
+        }));
+      },
 
       spendWalletFunds: (amount, description) => {
         const state = get();
-        if (state.wallet.balance < amount) return false;
+        if (!(amount > 0) || state.wallet.balance < amount) return false;
         set({
           wallet: {
             ...state.wallet,
@@ -1389,7 +1434,8 @@ export const useStore = create<StoreState>()(
         return true;
       },
 
-      awardWalletCashback: (amount, description) =>
+      awardWalletCashback: (amount, description) => {
+        if (!(amount > 0)) return;
         set((state) => ({
           wallet: {
             ...state.wallet,
@@ -1405,7 +1451,8 @@ export const useStore = create<StoreState>()(
               ...state.wallet.transactions,
             ],
           },
-        })),
+        }));
+      },
 
       // ── Settings ──────────────────────────────────────────────────────────
       settings: {
@@ -1503,6 +1550,7 @@ export const useStore = create<StoreState>()(
 
       addLoyaltyPoints: (points, description, orderId) =>
         set((state) => {
+          if (!(points > 0)) return state;
           const tx: LoyaltyTransaction = {
             id: crypto.randomUUID(),
             type: 'earn',
@@ -1530,7 +1578,7 @@ export const useStore = create<StoreState>()(
 
       redeemLoyaltyPoints: (points, description) => {
         const state = get();
-        if (state.loyalty.points < points) return false;
+        if (!(points > 0) || state.loyalty.points < points) return false;
         const tx: LoyaltyTransaction = {
           id: crypto.randomUUID(),
           type: 'redeem',
@@ -1550,6 +1598,7 @@ export const useStore = create<StoreState>()(
       },
 
       earnPointsFromPurchase: (amountTZS) => {
+        if (!(amountTZS > 0)) return;
         const state = get();
         const earned = calculateLoyaltyPoints(amountTZS, state.loyalty.currentTier);
         if (earned > 0) {
@@ -2226,8 +2275,47 @@ export const useStore = create<StoreState>()(
       // v10: open-entry — new visitors explore in guest mode first (entrySeen),
       // registration is optional until they want to participate. KSh is the
       // primary currency.
-      migrate: (persisted: any) => {
+      //
+      // IMPORTANT: migration receives the stored STATE (not the envelope), and
+      // only runs when the stored version differs. It must never destroy real
+      // business data. The full reset below applies ONLY to pre-production
+      // legacy demo state (storedVersion < 9). Anything newer is shape-migrated
+      // with all user data preserved.
+      migrate: (persisted: any, storedVersion?: number) => {
         const base = typeof persisted === 'object' && persisted !== null ? persisted : {};
+        const from = typeof storedVersion === 'number' ? storedVersion : 0;
+        if (from >= 9) {
+          return {
+            ...base,
+            entrySeen: typeof base.entrySeen === 'boolean' ? base.entrySeen : false,
+            selectedCurrency: base.selectedCurrency && typeof base.selectedCurrency === 'string'
+              ? base.selectedCurrency
+              : 'KES',
+            businessWallet: base.businessWallet ?? { balance: 0, totalEarned: 0, totalWithdrawn: 0, transactions: [] },
+            withdrawals: base.withdrawals ?? [],
+            settings: {
+              ...(base.settings ?? {}),
+              profile: {
+                name: base.settings?.profile?.name ?? '',
+                email: base.settings?.profile?.email ?? '',
+                phone: base.settings?.profile?.phone ?? '',
+                company: base.settings?.profile?.company ?? '',
+                language: base.settings?.profile?.language ?? 'en',
+                city: base.settings?.profile?.city ?? '',
+                country: base.settings?.profile?.country ?? '',
+              },
+            },
+            upgradeReminderDismissed: base.upgradeReminderDismissed ?? false,
+            subscription: {
+              plan: 'silver',
+              status: 'none',
+              startedAt: new Date().toISOString(),
+              billingPeriod: undefined,
+              autoRenew: false,
+              ...(base.subscription ?? {}),
+            },
+          };
+        }
         return {
           ...base,
           entrySeen: false,

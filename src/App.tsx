@@ -12,6 +12,7 @@ import CRMPage from "./pages/CRMPage";
 import InventoryPage from "./pages/InventoryPage";
 import FinancePage from "./pages/FinancePage";
 import AISalesAgentPage from "./pages/AISalesAgentPage";
+import FloatingAIAssistant from "./components/FloatingAIAssistant";
 import FinanceAgentPage from "./pages/FinanceAgentPage";
 import LearningPage from "./pages/LearningPage";
 import EntrepreneurHubPage from "./pages/EntrepreneurHubPage";
@@ -98,7 +99,7 @@ export default function App() {
 
   // ── Cloud state sync (Supabase) ──────────────────────────────────────────
   useEffect(() => {
-    void pullSnapshot().then((r) => {
+    void pullSnapshot({ requireBlank: true }).then((r) => {
       if (r.ok && !r.hadData) void pushSnapshot();
     });
     return subscribeToSync();
@@ -425,33 +426,39 @@ export default function App() {
   // --- Render ---
   if (appMode === "shopping") {
     return (
-      <ShoppingShell
-        selectedCurrency={selectedCurrency}
-        onCurrencyChange={setCurrency}
-        cartCount={cartCount}
-        userName={user?.name ?? "Guest"}
-        isSubscribed={isSubscribed}
-        onToggleMode={handleToggleMode}
-        onNavigate={handleShopNavigate}
-        currentView={shopView}
-        loyaltyPoints={loyalty.points}
-      >
-        {renderShopPage()}
-      </ShoppingShell>
+      <>
+        <ShoppingShell
+          selectedCurrency={selectedCurrency}
+          onCurrencyChange={setCurrency}
+          cartCount={cartCount}
+          userName={user?.name ?? "Guest"}
+          isSubscribed={isSubscribed}
+          onToggleMode={handleToggleMode}
+          onNavigate={handleShopNavigate}
+          currentView={shopView}
+          loyaltyPoints={loyalty.points}
+        >
+          {renderShopPage()}
+        </ShoppingShell>
+        <FloatingAIAssistant />
+      </>
     );
   }
 
   return (
-    <NavigationShell
-      currentView={currentView}
-      onNavigate={handleBusinessNavigate}
-      selectedCurrency={selectedCurrency}
-      onCurrencyChange={setCurrency}
-      onToggleMode={handleToggleMode}
-      userName={user?.name ?? "Guest"}
-      cartCount={cartCount}
-    >
-      {renderBusinessPage()}
-    </NavigationShell>
+    <>
+      <NavigationShell
+        currentView={currentView}
+        onNavigate={handleBusinessNavigate}
+        selectedCurrency={selectedCurrency}
+        onCurrencyChange={setCurrency}
+        onToggleMode={handleToggleMode}
+        userName={user?.name ?? "Guest"}
+        cartCount={cartCount}
+      >
+        {renderBusinessPage()}
+      </NavigationShell>
+      <FloatingAIAssistant />
+    </>
   );
 }

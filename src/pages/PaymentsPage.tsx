@@ -522,14 +522,13 @@ export default function PaymentsPage() {
         setWdrError(data?.error || "Withdrawal failed. Try again.");
         return;
       }
-      withdrawFromWallet(amt, {
+      const created = withdrawFromWallet(amt, {
         accountBank,
         accountNumber,
         accountName,
         country: wdrCountry,
         destinationBranchCode: wdrBranchCode.trim() || undefined,
       });
-      const created = withdrawals[0];
       if (created) {
         updateWithdrawalStatus(created.id, data.status === "failed" ? "failed" : "completed", data?.message);
       }
@@ -546,7 +545,7 @@ export default function PaymentsPage() {
     } finally {
       setWdrLoading(false);
     }
-  }, [wdrAmount, wdrAccountName, wdrAccountBank, wdrAccountNumber, wdrCountry, wdrBranchCode, businessWallet.balance, withdrawals, withdrawFromWallet, updateWithdrawalStatus, addNotification]);
+  }, [wdrAmount, wdrAccountName, wdrAccountBank, wdrAccountNumber, wdrCountry, wdrBranchCode, businessWallet.balance, withdrawFromWallet, updateWithdrawalStatus, addNotification]);
 
   // ── Render: Stats ─────────────────────────────────────────────────────────
 

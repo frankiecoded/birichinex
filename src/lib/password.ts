@@ -1,8 +1,20 @@
 /* Synchronous SHA-256 used to store account passwords hashed instead of plaintext.
    Web Crypto's SubtleCrypto is async-only, but the store's auth actions are
    synchronous, so a compact pure-JS implementation is used.
-   Format: "s1$" + hex digest of sha256(domainSalt + ":" + emailSalt + ":" + password)
-   Legacy records store plaintext; they are verified in-place and upgraded on login. */
+
+   Password formats:
+   - "s1$" + hex digest of sha256(domainSalt + ":" + emailSalt + ":" + password)
+     Legacy format (pre-salt-kitchen-sink). Still verified for backward compat.
+   - "s2$" + randomSalt$ + hex digest of
+     sha256(domainSalt + ":" + emailSalt + ":" + randomSalt + ":" + password)
+     Current format. Per-account random salt means identical passwords hash
+     differently, and legacy s1 hashes are upgraded in place on next login.
+
+   One-time credentials (2FA codes, recovery codes) are stored via
+   hashCredential/verifyCredential ("c$" + sha256Hex(domainSalt + ":cred:" + value))
+   instead of plaintext.
+
+   Legacy plaintext records are still verified and upgraded on use. */
 
 const ROUND_CONSTANTS = [
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -19,7 +31,7 @@ function rotr(x: number, n: number): number {
   return ((x >>> n) | (x << (32 - n))) >>> 0;
 }
 
-function sha256Hex(input: string): string {
+export function sha256Hex(input: string): string {
   const bytes = new TextEncoder().encode(input);
   const bitLen = bytes.length * 8;
   const paddedLen = (bytes.length + 9 + 63) & ~63;
@@ -68,14 +80,53 @@ function sha256Hex(input: string): string {
 
 const DOMAIN_SALT = "birichi-nex::acct/v1";
 
+function randomSalt(): string {
+  try {
+    const bytes = new Uint8Array(8);
+    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+      crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < 8; i++) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return Date.now().toString(16) + Math.random().toString(16).slice(2, 10);
+  }
+}
+
 export function isHashedPassword(stored: string): boolean {
-  return stored.startsWith("s1$");
+  return stored.startsWith("s1$") || stored.startsWith("s2$");
 }
 
 export function hashPassword(password: string, accountSalt: string): string {
-  return "s1$" + sha256Hex(`${DOMAIN_SALT}:${accountSalt.trim().toLowerCase()}:${password}`);
+  const salt = randomSalt();
+  return `s2$${salt}$${sha256Hex(`${DOMAIN_SALT}:${accountSalt.trim().toLowerCase()}:${salt}:${password}`)}`;
 }
 
 export function verifyPassword(password: string, accountSalt: string, stored: string): boolean {
-  return stored === hashPassword(password, accountSalt);
+  if (stored.startsWith("s2$")) {
+    const parts = stored.split("$");
+    if (parts.length !== 3) return false;
+    const [, salt, hash] = parts;
+    return sha256Hex(`${DOMAIN_SALT}:${accountSalt.trim().toLowerCase()}:${salt}:${password}`) === hash;
+  }
+  if (stored.startsWith("s1$")) {
+    return stored === "s1$" + sha256Hex(`${DOMAIN_SALT}:${accountSalt.trim().toLowerCase()}:${password}`);
+  }
+  return false;
+}
+
+export function isHashedCredential(stored: string): boolean {
+  return stored.startsWith("c$");
+}
+
+export function hashCredential(value: string): string {
+  return "c$" + sha256Hex(`${DOMAIN_SALT}:cred:${value}`);
+}
+
+export function verifyCredential(value: string, stored: string): boolean {
+  if (stored.startsWith("c$")) {
+    return stored === hashCredential(value);
+  }
+  return stored === value;
 }

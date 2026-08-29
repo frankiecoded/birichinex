@@ -42,6 +42,8 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
   const spendWalletFunds = useStore((s) => s.spendWalletFunds);
   const awardWalletCashback = useStore((s) => s.awardWalletCashback);
   const redeemLoyaltyPoints = useStore((s) => s.redeemLoyaltyPoints);
+  const user = useStore((s) => s.user);
+  const setPendingGuestRewards = useStore((s) => s.setPendingGuestRewards);
 
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("wallet");
@@ -49,6 +51,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [showAccountOffer, setShowAccountOffer] = useState(false);
   const [confirmation, setConfirmation] = useState<{ total: number; points: number; cashback: number; paymentLabel: string; method: string } | null>(null);
 
   const [shipping, setShipping] = useState({
@@ -64,7 +67,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
   const subtotal = cart.reduce((sum, item) => sum + item.unitPrice.amount * item.quantity, 0);
   const shippingCost = subtotal > 500000 ? 0 : 25000;
   const redeemValue = cartRedeem?.value ?? 0;
-  const total = subtotal + shippingCost - redeemValue;
+  const total = Math.max(0, subtotal + shippingCost - redeemValue);
   const pointsOnOrder = calculateLoyaltyPoints(total, loyalty.currentTier);
 
   const formatCardNumber = (val: string) => {
@@ -159,10 +162,18 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
     if (cartRedeem) {
       redeemLoyaltyPoints(cartRedeem.points, `Redeemed for order discount (${orderId})`);
     }
-    earnPointsFromPurchase(total);
     const cashback = Math.floor(total * 0.01);
-    if (cashback > 0) {
-      awardWalletCashback(cashback, `Order cashback (${orderId})`);
+    if (user) {
+      earnPointsFromPurchase(total);
+      if (cashback > 0) {
+        awardWalletCashback(cashback, `Order cashback (${orderId})`);
+      }
+    } else {
+      // Guest purchase: the order is fully placed, but cashback + loyalty
+      // points are held back and offered on the confirmation screen. They are
+      // credited automatically when the shopper creates an account.
+      setPendingGuestRewards({ total, orderId: trackingNumber });
+      setShowAccountOffer(true);
     }
 
     const paymentLabel = PAYMENT_METHODS.find((p) => p.id === paymentMethod)?.label ?? "Wallet";
@@ -482,7 +493,13 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
                   </div>
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-brand mb-4">
                     <Award className="h-3 w-3" />
-                    <span>You'll earn {pointsOnOrder} point{pointsOnOrder !== 1 ? "s" : ""} + {Math.floor(total * 0.01)} cashback on this order</span>
+                    <span className="text-center">
+                      {user ? (
+                        <>You'll earn {pointsOnOrder} point{pointsOnOrder !== 1 ? "s" : ""} + {Math.floor(total * 0.01)} cashback on this order</>
+                      ) : (
+                        <>Earn {pointsOnOrder} point{pointsOnOrder !== 1 ? "s" : ""} + {Math.floor(total * 0.01)} cashback — claimable with a free account</>
+                      )}
+                    </span>
                   </div>
                   <div className="flex gap-3">
                     <Button variant="secondary" size="lg" onClick={() => setStep(1)} icon={<ArrowLeft className="h-4 w-4" />} disabled={processing}>Back</Button>
@@ -529,6 +546,39 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
                   <div className="flex justify-between"><span className="text-caption text-ink-secondary">Wallet Cashback</span><span className="text-caption font-bold text-success">+{formatPrice(confirmation.cashback, selectedCurrency)}</span></div>
                 )}
               </motion.div>
+              {showAccountOffer && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.75 }}
+                  className="rounded-[16px] border border-brand/25 bg-brand/5 p-4 mb-6 text-left"
+                >
+                  <p className="text-callout font-semibold text-ink mb-1">
+                    Your order is safe — now keep it forever.
+                  </p>
+                  <p className="text-caption text-ink-secondary mb-3">
+                    Create a free account to save this order to your history and claim{" "}
+                    <span className="font-semibold text-brand">+{confirmation.points} pts</span>
+                    {confirmation.cashback > 0 && (
+                      <> and <span className="font-semibold text-success">+{formatPrice(confirmation.cashback, selectedCurrency)}</span> cashback</>
+                    )}{" "}
+                    waiting for you. No login needed to shop — only when you want the power of BirichiNex.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => useStore.getState().setAuthView("signup")}
+                      icon={<Award className="h-3.5 w-3.5" />}
+                    >
+                      Create free account
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setShowAccountOffer(false)}>
+                      Maybe later
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex gap-3">
                 <Button variant="secondary" fullWidth onClick={() => onNavigate("home")}>Continue Shopping</Button>
                 <Button variant="primary" fullWidth onClick={() => onNavigate("orders")}>Track My Order</Button>
