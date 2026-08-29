@@ -358,10 +358,10 @@ export function buildInboundTwiml(ctx: TwilioCallContext, digits?: string): TwiM
  * WebSocket. The bridge at /api/twilio/media-stream turns the stream into a
  * live Gemini conversation with full context about this specific call.
  */
-export function buildConversationalTwiml(ctx: TwilioCallContext): TwiMLResult {
+export function buildConversationalTwiml(ctx: TwilioCallContext, token?: string): TwiMLResult {
   const base = (getTwilioConfigStatus().twimlBaseUrl ?? "").replace(/\/+$/, "");
   const query = buildQuery(ctx);
-  const streamUrl = `wss://${base.replace(/^https?:\/\//, "")}/api/twilio/media-stream?${query}`;
+  const streamUrl = `wss://${base.replace(/^https?:\/\//, "")}/api/twilio/media-stream?${query}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
 
   const resp = new twilio.twiml.VoiceResponse();
   const voice = POLLY_VOICE[ctx.voice] || VOICE;

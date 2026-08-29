@@ -234,33 +234,18 @@ export function isAPIConfigured(): boolean {
 
 export interface ServerAIMode {
   live: boolean;
-  provider: string;
-  model: string;
-  ollama: boolean;
-  gemini: boolean;
-  huggingface: boolean;
-  label: string;
 }
 
 /**
- * Reports whether the server has a live AI brain configured (Hugging Face,
- * Ollama on the VPS, or a GEMINI_API_KEY set server-side).
+ * Reports whether the server has a live AI brain configured server-side.
  */
 export async function checkServerAIMode(): Promise<ServerAIMode> {
-  const empty: ServerAIMode = { live: false, provider: 'local', model: 'local', ollama: false, gemini: false, huggingface: false, label: 'Local simulation' };
+  const empty: ServerAIMode = { live: false };
   try {
     const res = await fetch('/api/ai/mode');
     if (!res.ok) return empty;
     const data = await res.json();
-    return {
-      live: Boolean(data?.live),
-      provider: String(data?.provider ?? 'local'),
-      model: String(data?.model ?? 'local'),
-      ollama: Boolean(data?.ollama),
-      gemini: Boolean(data?.gemini),
-      huggingface: Boolean(data?.huggingface),
-      label: String(data?.label ?? 'Local simulation'),
-    };
+    return { live: Boolean(data?.live) };
   } catch {
     return empty;
   }

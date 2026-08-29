@@ -584,7 +584,7 @@ export default function FinanceAgentPage() {
                       {research.source === "gemini-3.5-flash"
                         ? "Web-grounded · live"
                         : research.source === "ollama"
-                          ? "Live · Qwen3 on-device"
+                          ? "Live research"
                           : "Dataset answer"}
                     </Badge>
                   </div>

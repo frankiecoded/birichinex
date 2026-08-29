@@ -124,7 +124,6 @@ export default function AISalesAgentPage() {
   const abortPreviewRef = useRef(false);
   const [inboxTab, setInboxTab] = useState<"notifications" | "emails">("notifications");
   const [connection, setConnection] = useState<"conversational" | "live" | "simulated" | "checking">("checking");
-  const [fromNumber, setFromNumber] = useState<string | null>(null);
   const [geminiLive, setGeminiLive] = useState(false);
 
   const ownerEmail = user?.email ?? "owner@birichinex.com";
@@ -137,7 +136,6 @@ export default function AISalesAgentPage() {
       .then((d) => {
         if (d?.mode === "conversational") setConnection("conversational");
         else setConnection(d?.mode === "live" ? "live" : "simulated");
-        setFromNumber(d?.fromNumber ?? null);
         setGeminiLive(Boolean(d?.geminiLive));
       })
       .catch(() => setConnection("simulated"));
@@ -224,8 +222,8 @@ export default function AISalesAgentPage() {
           ],
           orderId: order?.id,
           summary: liveConversation
-            ? `Live AI conversation via Twilio + Gemini — ${contact.name} (${contact.phone}). SID ${data.callSid}.`
-            : `Live call placed via Twilio — ${contact.name} (${contact.phone}). SID ${data.callSid}.`,
+            ? `Live AI conversation — ${contact.name} (${contact.phone}).`
+            : `Live call placed — ${contact.name} (${contact.phone}).`,
         };
       }
     } catch (err) {
@@ -420,13 +418,13 @@ export default function AISalesAgentPage() {
                 <BadgeCheck className="h-3.5 w-3.5 text-[#30D158]" strokeWidth={1.5} />
                 {connection === "live" || connection === "conversational"
                   ? connection === "conversational"
-                    ? `${aiAgent.name} is live — real AI conversation calls, dialing from ${fromNumber}`
-                    : `${aiAgent.name} is live on Twilio — dialing from ${fromNumber}`
+                    ? `${aiAgent.name} is live — handling real calls with full conversation`
+                    : `${aiAgent.name} is live — placing outbound calls`
                   : connection === "checking"
                     ? "Checking call connection…"
                     : geminiLive
-                      ? `${aiAgent.name} is live — talk by voice in the Call Center, add Twilio keys to dial real numbers`
-                      : `${aiAgent.name} is ready — simulation mode (add Twilio keys for live calls)`}
+                      ? `${aiAgent.name} is live — talk by voice in the Call Center`
+                      : `${aiAgent.name} is in simulation mode for preview`}
               </p>
             </div>
           </div>
@@ -886,21 +884,14 @@ export default function AISalesAgentPage() {
                   </div>
                   {connection === "live" ? (
                     <p className="text-caption text-ink-tertiary leading-relaxed">
-                      Calls dial for real through the Twilio Voice API, from {fromNumber}. Customers can
-                      press 1 to repeat an order or 2 to request a call back — every outcome is logged and
-                      emailed to you.
+                      Outbound calls connect through the voice service. Customers can press 1 to repeat an
+                      order or 2 to request a call back — every outcome is logged and emailed to you.
                     </p>
                   ) : (
                     <p className="text-caption text-ink-tertiary leading-relaxed max-w-2xl">
                       {geminiLive
-                        ? "In-app live voice already works — open the Call Center tab and hit \"Talk to Amani now\" to have a real voice conversation with the assistant. To also dial real phone numbers, add "
-                        : "Real dialing is one config away. Add these to "}
-                      <span className="font-mono text-ink-secondary">TWILIO_ACCOUNT_SID</span>,{" "}
-                      <span className="font-mono text-ink-secondary">TWILIO_AUTH_TOKEN</span>,{" "}
-                      <span className="font-mono text-ink-secondary">TWILIO_PHONE_NUMBER</span> (E.164), and a public{" "}
-                      <span className="font-mono text-ink-secondary">TWILIO_TWIML_BASE_URL</span> (e.g. your ngrok or
-                      deployed URL). Point your Twilio number at <span className="font-mono text-ink-secondary">/api/twilio/inbound</span>{" "}
-                      to answer inbound calls too. Until then, calls run as a full simulation.
+                        ? "In-app live voice already works — open the Call Center tab and hit \"Talk to Amani now\" to have a real voice conversation with the assistant. Outbound dialing is being set up and will be enabled as soon as the phone service is configured."
+                        : "Real dialing is configured when the phone service for this account is activated. Until then, calls run as a full simulation so you can preview the experience."}
                     </p>
                   )}
                 </div>

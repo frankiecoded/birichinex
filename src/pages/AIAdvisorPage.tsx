@@ -5,17 +5,16 @@ import {
   ChevronRight, Sparkles, Brain, Database, ToggleLeft, ToggleRight,
   Target, TrendingUp, DollarSign, Package, Users,
   ShoppingCart, BarChart3, Zap, Globe, AlertCircle, Settings, User,
-  Key, ExternalLink, Shield, Activity,
+  Activity,
 } from "lucide-react";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import CursorSpotlight from "../components/three/CursorSpotlight";
 import BNXIntelligenceBoard from "../components/BNXIntelligenceBoard";
 import { useStore } from "../store/useStore";
-import { chatWithAI, configureAI, isAPIConfigured, getAIConfig, checkServerAIMode } from "../../ai/src/api-client";
+import { chatWithAI, checkServerAIMode } from "../../ai/src/api-client";
 import { buildBusinessContext, getPreferredLanguage } from "../../ai/src/core";
 import type { AIContext, UserData } from "../../ai/src/intent-engine";
-import type { AIProvider } from "../../ai/src/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -40,8 +39,19 @@ interface AdvisorConversation {
 
 // ─── Message Formatter ────────────────────────────────────────────────────
 
+// Escapes raw AI text so model output can never execute markup (XSS), then
+// renders a safe subset of lightweight markdown on top of the escaped text.
+function escapeHTML(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function formatMessage(content: string): string {
-  let html = content;
+  let html = escapeHTML(content);
 
   html = html.replace(/^## (.+)$/gm, '<h3 class="text-[15px] font-bold text-ink mb-2 mt-3">$1</h3>');
   html = html.replace(/^### (.+)$/gm, '<h4 class="text-[13px] font-bold text-ink mb-1 mt-2">$1</h4>');
@@ -205,142 +215,45 @@ const SUGGESTED_PROMPTS = [
   { icon: Target, label: "Market entry tips", color: "#5856D6" },
 ];
 
-// ─── API Settings Modal ───────────────────────────────────────────────────
+// ─── AI Connection Status Card ────────────────────────────────────────────
+// Read-only live status. Internally we display whether the intelligence
+// engine is reachable — never vendor names, model IDs, env keys, or endpooints.
 
-function APISettingsModal({ onClose }: { onClose: () => void }) {
-  const [provider, setProvider] = useState<AIProvider>(getAIConfig().provider);
-  const [apiKey, setApiKey] = useState(getAIConfig().apiKey || "");
-  const [model, setModel] = useState(getAIConfig().model || "");
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    configureAI({
-      provider,
-      apiKey:
-        provider === "local" || provider === "gemini" || provider === "ollama" ? undefined : apiKey,
-      model:
-        provider === "gemini" || provider === "ollama"
-          ? undefined
-          : provider === "openai"
-            ? (model || "gpt-4o")
-            : provider === "anthropic"
-              ? (model || "claude-sonnet-4-20250514")
-              : undefined,
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
+function ConnectionStatusCard({ live, onClose }: { live: boolean; onClose: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-scrim backdrop-blur-sm"
-      onClick={onClose}
+      initial={{ opacity: 0, scale: 0.95, y: 12 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 12 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="glass-material rounded-[20px] border border-glass-border p-6 w-full max-w-md shadow-2xl"
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="glass-material rounded-[20px] border border-glass-border p-6 w-full max-w-md shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-[12px] bg-gradient-to-br from-[#FF6482] to-[#FF375F] flex items-center justify-center">
-              <Key className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-[16px] font-bold text-ink">AI Configuration</h3>
-              <p className="text-[11px] text-ink-tertiary">Connect to a live AI provider</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-surface-secondary rounded-[10px]">
-            <X className="h-4 w-4 text-ink-tertiary" />
-          </button>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-[12px] bg-gradient-to-br from-[#FF6482] to-[#FF375F] flex items-center justify-center">
+          <Activity className="h-5 w-5 text-white" />
         </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-[12px] font-semibold text-ink-secondary block mb-1.5">Provider</label>
-            <div className="flex flex-wrap gap-2">
-              {(["ollama", "gemini", "openai", "anthropic", "local"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => { setProvider(p); setModel(""); }}
-                  className={`flex-1 min-w-[86px] h-10 rounded-[10px] text-[13px] font-medium border transition-all ${
-                    provider === p
-                      ? "bg-brand/10 border-brand/30 text-brand-dark"
-                      : "bg-surface-secondary/60 border-glass-border text-ink-secondary hover:bg-surface-secondary"
-                  }`}
-                >
-                  {p === "ollama" ? "Ollama (VPS)" : p === "gemini" ? "Gemini (server)" : p === "openai" ? "OpenAI" : p === "anthropic" ? "Anthropic" : "Local"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {(provider === "gemini" || provider === "ollama") && (
-            <div className="flex items-start gap-2 p-3 rounded-[10px] bg-[#30D158]/10 border border-[#30D158]/25">
-              <Shield className="h-4 w-4 text-success mt-0.5 shrink-0" />
-              <p className="text-[11px] text-ink-tertiary leading-relaxed">
-                Uses the server's <span className="font-mono text-ink-secondary">OLLAMA_ENABLED</span> (self-hosted
-                Qwen3 on your VPS) or <span className="font-mono text-ink-secondary">GEMINI_API_KEY</span> with the
-                full BirichiNex advisor brain — no key is stored or sent from your browser. This is the
-                recommended option.
-              </p>
-            </div>
-          )}
-
-          {provider !== "local" && provider !== "gemini" && provider !== "ollama" && (
-            <>
-              <div>
-                <label className="text-[12px] font-semibold text-ink-secondary block mb-1.5">API Key</label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={provider === "openai" ? "sk-..." : "sk-ant-..."}
-                  className="w-full h-10 px-3 bg-surface-secondary/60 rounded-[10px] text-[13px] text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-1 focus:ring-brand/20 border border-glass-border"
-                />
-              </div>
-              <div>
-                <label className="text-[12px] font-semibold text-ink-secondary block mb-1.5">Model (optional)</label>
-                <input
-                  type="text"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder={provider === "openai" ? "gpt-4o" : "claude-sonnet-4-20250514"}
-                  className="w-full h-10 px-3 bg-surface-secondary/60 rounded-[10px] text-[13px] text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-1 focus:ring-brand/20 border border-glass-border"
-                />
-              </div>
-              <div className="flex items-start gap-2 p-3 rounded-[10px] bg-surface-secondary/40 border border-glass-border/50">
-                <Shield className="h-4 w-4 text-ink-quaternary mt-0.5 shrink-0" />
-                <p className="text-[11px] text-ink-tertiary leading-relaxed">
-                  Your API key is stored locally in your browser and never sent to our servers. It's used directly to communicate with the AI provider.
-                </p>
-              </div>
-            </>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button variant="secondary" size="sm" fullWidth onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              variant={saved ? "primary" : "primary"}
-              size="sm"
-              fullWidth
-              onClick={handleSave}
-              icon={saved ? <Check className="h-3.5 w-3.5" /> : undefined}
-            >
-              {saved ? "Saved!" : "Save Configuration"}
-            </Button>
-          </div>
+        <div>
+          <h3 className="text-[16px] font-bold text-ink">Intelligence Engine</h3>
+          <p className="text-[11px] text-ink-tertiary">
+            {live ? "Live — online and ready" : "Offline — using built-in knowledge"}
+          </p>
         </div>
-      </motion.div>
+      </div>
+      <div className={`flex items-center gap-2 p-3 rounded-[10px] border ${
+        live ? "bg-success/10 border-success/25" : "bg-surface-secondary/40 border-glass-border/50"
+      }`}>
+        <span className={`h-2.5 w-2.5 rounded-full ${live ? "bg-success" : "bg-ink-quaternary"}`} />
+        <p className="text-[12px] text-ink-secondary">
+          {live
+            ? "The advisor brain is connected and answering from live data."
+            : "Running on the built-in knowledge engine until the service is online."}
+        </p>
+      </div>
+      <div className="flex justify-end mt-5">
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          <Check className="h-3.5 w-3.5" /> Understood
+        </Button>
+      </div>
     </motion.div>
   );
 }
@@ -367,17 +280,12 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
   const [intelTab, setIntelTab] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showAPISettings, setShowAPISettings] = useState(false);
-  const [apiReady, setApiReady] = useState(isAPIConfigured());
+  const [showStatus, setShowStatus] = useState(false);
+  const [apiReady, setApiReady] = useState(false);
 
-  // Refresh connection status: Server AI liveness + browser providers.
+  // Refresh connection status: is the server-side intelligence engine live?
   const refreshApiStatus = useCallback(() => {
-    const cfg = getAIConfig();
-    if (cfg.provider === "gemini" || cfg.provider === "ollama") {
-      checkServerAIMode().then((m) => setApiReady(m.live));
-    } else {
-      setApiReady(isAPIConfigured());
-    }
+    checkServerAIMode().then((m) => setApiReady(Boolean(m?.live)));
   }, []);
 
   useEffect(() => {
@@ -465,11 +373,6 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
     setConversations([conv]);
     setActiveConvId(conv.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Check API status on mount
-  useEffect(() => {
-    setApiReady(isAPIConfigured());
   }, []);
 
   const userData: UserData | undefined = useMemo(
@@ -699,10 +602,14 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
       {/* Ambient orb */}
       <div className="fixed top-0 right-0 h-96 w-96 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.06)_0%,transparent_70%)] blur-[80px] pointer-events-none z-0" />
 
-      {/* API Settings Modal */}
+      {/* AI Connection Status */}
       <AnimatePresence>
-        {showAPISettings && (
-          <APISettingsModal onClose={() => { setShowAPISettings(false); refreshApiStatus(); }} />
+        {showStatus && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-scrim backdrop-blur-sm p-4" onClick={() => setShowStatus(false)}>
+            <div className="relative w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <ConnectionStatusCard live={apiReady} onClose={() => setShowStatus(false)} />
+            </div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -771,11 +678,11 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
 
             <div className="p-3 border-t border-glass-border">
               <button
-                onClick={() => setShowAPISettings(true)}
+                onClick={() => setShowStatus(true)}
                 className="flex items-center gap-2 text-[11px] text-ink-tertiary hover:text-ink-secondary transition-colors w-full"
               >
                 <Bot className="h-3.5 w-3.5" />
-                <span>BirichiNex AI v2.0</span>
+                <span>BirichiNex AI</span>
                 <span className={`ml-auto h-2 w-2 rounded-full ${apiReady ? "bg-success" : "bg-ink-quaternary"}`} />
               </button>
             </div>
@@ -818,13 +725,9 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
                   </Badge>
                 </h1>
                 <p className="text-[12px] text-ink-tertiary">
-                  {getAIConfig().provider === "gemini" || getAIConfig().provider === "ollama"
-                    ? apiReady
-                      ? "Server AI connected — live answers"
-                      : "Server AI off — using local engine"
-                    : apiReady
-                      ? "Connected to live AI provider"
-                      : "Pattern matching • Knowledge base"}{" "}
+                  {apiReady
+                    ? "Advisor brain online — answering from your live business data"
+                    : "Built-in knowledge engine ready"}{" "}
                   • 62 knowledge entries
                 </p>
               </div>
@@ -851,18 +754,18 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
                 </button>
               </div>
 
-              {/* API Config Button */}
+              {/* AI Status Button */}
               <CursorSpotlight className="rounded-[14px]" spotlightColor="rgba(212,175,55,0.04)">
                 <button
-                  onClick={() => setShowAPISettings(true)}
+                  onClick={() => setShowStatus(true)}
                   className={`flex items-center gap-2 h-10 px-3 rounded-[14px] border transition-all duration-300 ${
                     apiReady
                       ? "bg-success/10 border-success/30 text-success"
                       : "bg-surface-secondary/60 border-glass-border text-ink-secondary hover:bg-surface-secondary"
                   }`}
                 >
-                  <Key className="h-4 w-4" strokeWidth={2} />
-                  <span className="text-[12px] font-semibold">{apiReady ? "Connected" : "Configure"}</span>
+                  <Activity className="h-4 w-4" strokeWidth={2} />
+                  <span className="text-[12px] font-semibold">{apiReady ? "Connected" : "Details"}</span>
                 </button>
               </CursorSpotlight>
 
@@ -942,12 +845,11 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
                 </p>
                 {!apiReady && (
                   <button
-                    onClick={() => setShowAPISettings(true)}
+                    onClick={() => setShowStatus(true)}
                     className="inline-flex items-center gap-1.5 text-[12px] text-brand hover:text-brand-dark transition-colors mb-6"
                   >
-                    <Key className="h-3 w-3" />
-                    Connect Server AI or another provider for enhanced responses
-                    <ExternalLink className="h-3 w-3" />
+                    <Activity className="h-3 w-3" />
+                    View advisor connection status
                   </button>
                 )}
 
@@ -1157,13 +1059,9 @@ export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
             </div>
 
             <p className="text-[10px] text-ink-quaternary text-center mt-2.5">
-              {getAIConfig().provider === "gemini" || getAIConfig().provider === "ollama"
-                ? apiReady
-                  ? "Connected to the server AI brain. Your keys stay on the server."
-                  : "Server AI is off — set OLLAMA_ENABLED=true (VPS) or GEMINI_API_KEY in .env, or connect another provider in settings."
-                : apiReady
-                  ? "Connected to a live AI provider."
-                  : "Using local knowledge base with 62 entries. Configure an AI provider for enhanced responses."}
+              {apiReady
+                ? "Answers are grounded in your live business data and kept private."
+                : "Using the built-in knowledge engine. Full advisor brain will be online shortly."}
             </p>
           </div>
         </div>

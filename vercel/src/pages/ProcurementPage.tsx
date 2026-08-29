@@ -606,7 +606,7 @@ export default function ProcurementPage() {
                     </div>
                     {playbook?.source && (
                       <Badge variant={playbook.source === "gemini-3.5-flash" ? "brand" : "default"} size="sm">
-                        {playbook.source === "gemini-3.5-flash" ? "Gemini · live" : "Simulated analyst"}
+                        {playbook.source === "gemini-3.5-flash" ? "AI analyst · live" : "Built-in analyst"}
                       </Badge>
                     )}
                   </div>

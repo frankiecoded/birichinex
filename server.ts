@@ -47,12 +47,113 @@ dotenv.config({ quiet: true });
 dotenv.config({ path: path.join(process.cwd(), ".env.local"), override: true, quiet: true });
 
 const app = express();
+app.disable("x-powered-by");
 // Trust the first proxy hop so req.protocol / req.ip reflect the original
 // client request (needed for Twilio signature validation behind Caddy/Funnel).
 app.set("trust proxy", true);
 // Business snapshots (inventory, orders, docs…) can be a few MB of JSON.
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// 2mb cap on JSON bodies — larger than any legitimate request this app makes.
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
+// ─── Security hardening: headers, origin guard, host guard ───────────────────
+// Layered defenses against cross-origin abuse, drive-by scraping, and the
+// open-port vector on the VPS.
+
+// Origins that may call this API cross-origin (browser sends Origin). Everything
+// else is rejected before any handler runs. Same-origin / server-to-server
+// requests (curl, Twilio, Paystack, health checks from the box) send no Origin
+// and are governed by the host + header guards below instead.
+const ALLOWED_ORIGINS = new Set([
+  "https://birichinex.com",
+  "https://www.birichinex.com",
+  "http://localhost:5173",   // Vite dev server
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000",
+  "https://portmetals-backend.tailab82b8.ts.net",
+]);
+
+// Hosts the API is legitimately served under (Vercel mirrors + the funnel host).
+// A request whose Host is the bare public IP (169.58.184.20:3000) or anything
+// unknown is rejected unless it originated from the server itself (loopback),
+// which keeps local smoke tests working while closing the open-port vector.
+const ALLOWED_HOSTS = new Set([
+  "birichinex.com",
+  "www.birichinex.com",
+  "portmetals-backend.tailab82b8.ts.net",
+  "localhost",
+  "127.0.0.1",
+]);
+
+function isLoopback(remote: string): boolean {
+  const r = String(remote || "").replace(/^::ffff:/, "");
+  return r === "127.0.0.1" || r === "::1" || r === "localhost";
+}
+
+function hostAllowed(req: express.Request): boolean {
+  const host = String(req.get("host") || "").toLowerCase();
+  if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) return true;
+  if (host.endsWith(".vercel.app")) return true;   // Vercel preview/mirror deploys
+  if (ALLOWED_HOSTS.has(host)) return true;
+  // Requests arriving through the server's own loopback (Caddy/funnel proxy)
+  // carry a trusted forwarded host.
+  if (isLoopback(req.socket.remoteAddress || "")) return true;
+  return false;
+}
+
+// Applied to every /api/* request. Ordering matters: reject routing probes,
+// block cross-origin callers, then let same-origin/trusted clients through.
+app.use("/api", (req, res, next) => {
+  const origin = req.get("origin") || "";
+  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Device-Secret, Authorization");
+  }
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  if (!hostAllowed(req)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
+});
+
+// Standardized security headers on every response (API + SPA assets).
+const SECURITY_HEADERS: Record<string, string> = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(self), geolocation=(self), payment=(self)",
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' blob: data:",
+    "connect-src 'self' wss: ws: https://api.openai.com https://api.anthropic.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'self'",
+    "form-action 'self'",
+  ].join("; "),
+};
+const HTTPS_SECURITY_HEADERS: Record<string, string> = {
+  ...SECURITY_HEADERS,
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+};
+
+app.use((req, res, next) => {
+  const isHttps = String(req.get("x-forwarded-proto") || "").startsWith("https") || req.protocol === "https";
+  Object.entries(isHttps ? HTTPS_SECURITY_HEADERS : SECURITY_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
+  next();
+});
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -122,8 +223,27 @@ const RATE_WINDOW_MS = 10_000;
 const RATE_MAX = 40; // per window per IP across all AI endpoints
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
+// Resolve the *real* client address. X-Forwarded-For is only trusted when the
+// immediate peer is the proxy (loopback / Tailscale CGNAT funnel). A caller
+// connecting directly to port 3000 with a forged header is rate-limited by
+// their actual socket address instead, so spoofing can't evade the budget.
+function isTrustedProxy(remote: string): boolean {
+  const r = String(remote || "").replace(/^::ffff:/, "");
+  if (r === "127.0.0.1" || r === "::1" || r.startsWith("100.")) return true;
+  return false;
+}
+
+function clientIp(req: express.Request): string {
+  const remote = String(req.socket.remoteAddress || "");
+  const forwarded = String(req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    ?.trim();
+  if (forwarded && isTrustedProxy(remote)) return forwarded;
+  return remote || forwarded || "unknown";
+}
+
 function rateLimited(req: express.Request): boolean {
-  const ip = String(req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.socket.remoteAddress || "unknown");
+  const ip = clientIp(req);
   const now = Date.now();
   const bucket = rateBuckets.get(ip);
   if (!bucket || bucket.resetAt <= now) {
@@ -137,6 +257,27 @@ function rateLimited(req: express.Request): boolean {
 
 function applyRateLimit(req: express.Request, res: express.Response): boolean {
   if (rateLimited(req)) {
+    res.status(429).json({ error: "Too many requests. Please slow down." });
+    return true;
+  }
+  return false;
+}
+
+// Tighter budgets for the highest-cost endpoints (real money or paid calls).
+const COST_ARTIFACT_MAX = 12; // per 60s per IP (e.g. Twilio call placement)
+const COST_ARTIFACT_WINDOW_MS = 60_000;
+const costArtifactBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function applyCostArtifactRateLimit(req: express.Request, res: express.Response): boolean {
+  const ip = clientIp(req);
+  const now = Date.now();
+  const bucket = costArtifactBuckets.get(ip);
+  if (!bucket || bucket.resetAt <= now) {
+    costArtifactBuckets.set(ip, { count: 1, resetAt: now + COST_ARTIFACT_WINDOW_MS });
+    return false;
+  }
+  bucket.count += 1;
+  if (bucket.count > COST_ARTIFACT_MAX) {
     res.status(429).json({ error: "Too many requests. Please slow down." });
     return true;
   }
@@ -340,7 +481,7 @@ app.get("/api/sync", async (req, res) => {
     res.json({ enabled: true, payload: data.payload, version: data.version, updatedAt: data.updated_at });
   } catch (error: any) {
     console.error("GET /api/sync error:", error);
-    res.status(500).json({ error: error?.message || "Sync read failed", enabled: true });
+    res.status(500).json({ error: "Sync read failed", enabled: true });
   }
 });
 
@@ -364,7 +505,7 @@ app.put("/api/sync", async (req, res) => {
     res.json({ enabled: true, version: row?.out_version ?? 0, updatedAt: row?.out_updated_at ?? null });
   } catch (error: any) {
     console.error("PUT /api/sync error:", error);
-    res.status(500).json({ error: error?.message || "Sync write failed", enabled: true });
+    res.status(500).json({ error: "Sync write failed", enabled: true });
   }
 });
 
@@ -380,7 +521,7 @@ app.delete("/api/sync", async (req, res) => {
     res.json({ enabled: true, cleared: true });
   } catch (error: any) {
     console.error("DELETE /api/sync error:", error);
-    res.status(500).json({ error: error?.message || "Sync delete failed", enabled: true });
+    res.status(500).json({ error: "Sync delete failed", enabled: true });
   }
 });
 
@@ -452,7 +593,7 @@ app.post("/api/payments/checkout", async (req, res) => {
     res.json({ reference, amount, currency: "USD", billingPeriod: period, mode: provider.mode, redirectUrl });
   } catch (error: any) {
     console.error("POST /api/payments/checkout error:", error);
-    res.status(500).json({ error: error?.message || "Checkout failed" });
+    res.status(500).json({ error: "Checkout failed" });
   }
 });
 
@@ -469,7 +610,7 @@ app.get("/api/payments/status", async (req, res) => {
     res.json({ reference, status, amount, currency, mode: provider.mode });
   } catch (error: any) {
     console.error("GET /api/payments/status error:", error);
-    res.status(500).json({ error: error?.message || "Status check failed" });
+    res.status(500).json({ error: "Status check failed" });
   }
 });
 
@@ -511,6 +652,13 @@ app.post("/api/payments/simulate-fail", (req, res) => {
 app.post("/api/payments/withdraw", async (req, res) => {
   try {
     if (applyRateLimit(req, res)) return;
+    if (applyCostArtifactRateLimit(req, res)) return;
+    // Moving money out requires the owner device secret, same as sync writes.
+    // Real money leaves the account only with the owner device secret. In
+    // simulation mode (the default) nothing moves, so it stays frictionless.
+    if (!isSimulationProvider(getPaymentProvider()) && !deviceSecretValid(req)) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { amount, bankAccount } = req.body || {};
     const amountNum = Number(amount);
     if (!Number.isInteger(amountNum) || amountNum < WITHDRAW_MIN_TZS || amountNum > WITHDRAW_MAX_TZS) {
@@ -553,7 +701,7 @@ app.post("/api/payments/withdraw", async (req, res) => {
     res.json({ reference, amount: amountNum, currency: "TZS", mode: provider.mode, status: result.status, message: result.message });
   } catch (error: any) {
     console.error("POST /api/payments/withdraw error:", error);
-    res.status(500).json({ error: error?.message || "Withdrawal failed" });
+    res.status(500).json({ error: "Withdrawal failed" });
   }
 });
 
@@ -596,6 +744,12 @@ app.post("/api/chat", async (req, res) => {
     }
     if (messages.some((m: any) => !m?.role || typeof m.content !== "string" || m.content.length > MAX_CHAT_MSG_CHARS)) {
       return res.status(400).json({ error: `Each message must be text ≤ ${MAX_CHAT_MSG_CHARS} characters` });
+    }
+    // Whitelist roles so a crafted payload can't smuggle model-level roles
+    // (e.g. "tool", "developer") that an upstream provider might misinterpret.
+    const ROLE_WHITELIST = new Set(["system", "user", "assistant"]);
+    if (messages.some((m: any) => !ROLE_WHITELIST.has(String(m.role)))) {
+      return res.status(400).json({ error: "Invalid message role" });
     }
 
     const provider = await getActiveProvider();
@@ -645,13 +799,13 @@ app.post("/api/chat", async (req, res) => {
         if (wantStream && !res.writableEnded) {
           if (streamStarted) {
             // Headers already sent — close the SSE envelope gracefully.
-            try { res.write(`event: error\ndata: ${JSON.stringify({ error: err?.message || "Stream failed" })}\n\n`); res.end(); } catch { res.end(); }
+            try { res.write(`event: error\ndata: ${JSON.stringify({ error: "AI stream failed" })}\n\n`); res.end(); } catch { res.end(); }
             return;
           }
           // Nothing written yet — stay on JSON.
           res.removeHeader("Content-Length");
           res.setHeader("Content-Type", "application/json");
-          return res.status(502).json({ error: err?.message || "Hugging Face unavailable", live: true });
+          return res.status(502).json({ error: "AI service unavailable", live: true });
         }
       }
     }
@@ -720,7 +874,7 @@ app.post("/api/chat", async (req, res) => {
 
   } catch (error: any) {
     console.error("Error in /api/chat:", error);
-    res.status(500).json({ error: error?.message || "Internal Server Error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -741,8 +895,27 @@ app.post("/api/quote", async (req, res) => {
     if (businessProfile && String(JSON.stringify(businessProfile)).length > MAX_QUOTE_PROFILE_CHARS) {
       return res.status(400).json({ error: "Business profile is too large" });
     }
+    // Validate/marshal each item so malformed shapes can't crash or get
+    // interpreted as model instructions (name/price are numeric fields).
+    const VALID_ITEMS = /^.{1,120}$/;
+    const itemsClean: Array<{ name: string; quantity: number; price: number }> = [];
+    for (const item of items) {
+      const name = String(item?.name ?? "").trim();
+      const quantity = Number(item?.quantity);
+      const priceTZS = Number(item?.priceTZS);
+      if (!VALID_ITEMS.test(name) || !name) {
+        return res.status(400).json({ error: "Each line item needs a short name" });
+      }
+      if (!Number.isFinite(quantity) || quantity < 1 || quantity > 100_000) {
+        return res.status(400).json({ error: "Quantity must be a positive number" });
+      }
+      if (!Number.isFinite(priceTZS) || priceTZS < 0 || priceTZS > 10_000_000_000) {
+        return res.status(400).json({ error: "Price must be a non-negative number" });
+      }
+      itemsClean.push({ name, quantity, price: priceTZS });
+    }
 
-    const itemsSummary = items.map((i: any) => `- ${i.name} (Qty: ${i.quantity}, Price: ${i.priceTZS.toLocaleString()} TZS)`).join("\n");
+    const itemsSummary = itemsClean.map((i) => `- ${i.name} (Qty: ${i.quantity}, Price: ${i.price.toLocaleString()} TZS)`).join("\n");
     const profileSummary = businessProfile 
       ? `Business Name: ${businessProfile.businessName}, Location: ${businessProfile.businessLocation}, Experience: ${businessProfile.experience}`
       : "New Entrepreneur";
@@ -838,7 +1011,7 @@ Quote items: ${itemsSummary}
 
   } catch (error: any) {
     console.error("Error in /api/quote:", error);
-    res.status(500).json({ error: error?.message || "Internal Server Error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -850,31 +1023,20 @@ const callStatusLog: Array<Record<string, string>> = [];
 // Live conversational call transcript lines (in-memory; latest 200).
 const liveCallTranscripts: Array<{ at: string; streamSid: string | null; role: string; text: string }> = [];
 
-// Transcript of recent live AI conversations (owner inbox).
-app.get("/api/agent-call/transcripts", (_req, res) => {
+// Transcript of recent live AI conversations (owner inbox). No UI consumer
+// calls this over the network — it's the operator's private audit of call
+// content — so it requires the device secret like the sync endpoints do.
+app.get("/api/agent-call/transcripts", (req, res) => {
+  if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
   res.json({ transcripts: liveCallTranscripts.slice(-100) });
 });
 
-// AI provider mode — lets the UI show live provider vs local/simulated.
+// AI provider mode — a privacy-friendly boolean only. The UI needs to know
+// whether a live brain answered or the built-in one did, never which vendor
+// or model is under the hood. (An attacker probing this endpoint gets nothing.)
 app.get("/api/ai/mode", async (_req, res) => {
   const provider = await getActiveProvider();
-  const model = await getActiveModel();
-  res.json({
-    live: provider !== "local",
-    provider,
-    model,
-    ollama: provider === "ollama",
-    gemini: provider === "gemini",
-    huggingface: provider === "huggingface",
-    label:
-      provider === "huggingface"
-        ? `Hugging Face (${HF_MODEL.split("/").pop()})`
-        : provider === "ollama"
-          ? `Ollama (${OLLAMA_MODEL})`
-          : provider === "gemini"
-            ? "Google Gemini"
-            : "Local simulation",
-  });
+  res.json({ live: provider !== "local" });
 });
 
 // Gemini TTS (Google AI Studio, free tier) — the copilot's voice. The Gemini
@@ -908,7 +1070,7 @@ app.post("/api/ai/voice", async (req, res) => {
     });
   } catch (error: any) {
     console.error("Error in /api/ai/voice:", error);
-    res.status(500).json({ error: error?.message || "TTS failed", voice: false });
+    res.status(500).json({ error: "TTS failed", voice: false });
   }
 });
 
@@ -939,17 +1101,27 @@ app.post("/api/finance/advise", async (req, res) => {
   try {
     if (applyRateLimit(req, res)) return;
     const { question, snapshot, conversation } = req.body || {};
+    if (question !== undefined && typeof question !== "string") {
+      return res.status(400).json({ error: "Question must be text" });
+    }
+    const q = String(question || "Give me an overview of my finances.").slice(0, 2000);
     const provider = await getActiveProvider();
 
-    const priorTurns = Array.isArray(conversation) ? conversation.slice(-6).join("\n") : "";
-    const snapshotBlock =
-      snapshot && typeof snapshot === "object" && Object.keys(snapshot).length > 0
-        ? `Live business figures (the single source of truth — ground every answer in these exact numbers):\n${JSON.stringify(snapshot, null, 2)}`
-        : "";
+    const conv = Array.isArray(conversation) ? conversation.filter((c) => typeof c === "string").slice(-6) : [];
+    const priorTurns = conv.join("\n").slice(0, 6000);
+    let snapshotBlock = "";
+    if (snapshot && typeof snapshot === "object" && Object.keys(snapshot).length > 0) {
+      try {
+        const serialized = JSON.stringify(snapshot);
+        if (serialized.length <= 200_000) {
+          snapshotBlock = `Live business figures (the single source of truth — ground every answer in these exact numbers):\n${serialized}`;
+        }
+      } catch { /* unparseable snapshot → ignore, owner still gets an answer */ }
+    }
     const userContent = [
       snapshotBlock,
       priorTurns ? `Prior conversation:\n${priorTurns}` : "",
-      `The owner now asks: ${String(question || "Give me an overview of my finances.")}`,
+      `The owner now asks: ${q}`,
     ].filter(Boolean).join("\n\n");
 
     if (provider === "huggingface") {
@@ -1015,6 +1187,7 @@ app.post("/api/finance/research", async (req, res) => {
     if (applyRateLimit(req, res)) return;
     const { query } = req.body || {};
     const provider = await getActiveProvider();
+    const q = String(query || "").slice(0, 2000);
 
     if (provider === "huggingface") {
       try {
@@ -1025,7 +1198,7 @@ app.post("/api/finance/research", async (req, res) => {
               content:
                 "You are Zahara, a financial research assistant for East African businesses. Answer in flowing, natural prose with the facts you know, and clearly flag anything that should be verified against live sources before acting.",
             },
-            { role: "user", content: String(query || "") },
+            { role: "user", content: q },
           ],
           { temperature: 0.5, maxTokens: 850 },
         );
@@ -1044,7 +1217,7 @@ app.post("/api/finance/research", async (req, res) => {
               content:
                 "/no_think\n\nYou are Zahara, a financial research assistant for East African businesses. Answer in flowing, natural prose with the facts you know, and clearly flag anything that should be verified against live sources before acting.",
             },
-            { role: "user", content: String(query || "") },
+            { role: "user", content: q },
           ],
           { temperature: 0.5, maxTokens: 850 },
         );
@@ -1058,12 +1231,12 @@ app.post("/api/finance/research", async (req, res) => {
     const ai = getGeminiClient();
     if (!ai) {
       const { localFinanceResearch } = await import("./ai/src/finance-agent");
-      return res.json(localFinanceResearch(String(query || "")));
+      return res.json(localFinanceResearch(q));
     }
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: [{ role: "user", parts: [{ text: String(query || "") }] }],
+      contents: [{ role: "user", parts: [{ text: q }] }],
       config: {
         systemInstruction: "You are Zahara, a financial research assistant for East African businesses. Research the question using Google Search and answer in flowing, natural prose with the current facts and figures. Note where data should be verified before acting.",
         tools: [{ googleSearch: {} }],
@@ -1109,6 +1282,8 @@ function twilioContextFromRequest(query: any): TwilioCallContext {
 }
 
 // 4. Connection status — lets the UI show Live vs Simulation mode.
+// Only existence flags are returned; the operator's phone number and the
+// internal TwiML base URL stay server-side.
 app.get("/api/agent-call/mode", (_req, res) => {
   const status = getTwilioConfigStatus();
   const conversational = isLiveConversationReady();
@@ -1117,9 +1292,9 @@ app.get("/api/agent-call/mode", (_req, res) => {
     conversational,
     geminiLive: isGeminiLiveReady(),
     configured: status.configured,
-    fromNumber: status.fromNumber,
-    twimlBaseUrl: status.twimlBaseUrl,
     record: status.record,
+    hasFromNumber: Boolean(status.fromNumber),
+    hasTwimlBaseUrl: Boolean(status.twimlBaseUrl),
   });
 });
 
@@ -1155,6 +1330,8 @@ app.post("/api/agent-live/token", (req, res) => {
   if (!isGeminiLiveReady()) {
     return res.status(503).json({ error: "Gemini voice is not configured on this server." });
   }
+  // Tokens are short-lived (5 min), HMAC-signed, and the socket is capped at
+  // 3 concurrent sessions per IP — the bridge itself refuses duplicates.
   res.json({ token: issueLiveSessionToken(), expiresIn: LIVE_SESSION_TTL_MS / 1000 });
 });
 
@@ -1164,24 +1341,35 @@ app.post("/api/agent-live/token", (req, res) => {
 app.post("/api/agent-call", async (req, res) => {
   try {
     if (applyRateLimit(req, res)) return;
+    if (applyCostArtifactRateLimit(req, res)) return;
     const { type, contact, order, config } = req.body || {};
 
     if (!isLiveReady() || !contact?.phone || type === "inbound") {
       return res.json({ mode: "simulated" });
     }
 
+    // Validate the destination phone so we can't be used to dial arbitrary
+    // (premium-rate) numbers.
+    const to = String(contact.phone).replace(/[^\d+]/g, "");
+    if (!/^\+?\d{7,15}$/.test(to)) {
+      return res.status(400).json({ error: "A valid phone number is required" });
+    }
+
+    // From here a real paid call is placed — only the owner may do that.
+    if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+
     const conversational = isLiveConversationReady();
 
     const ctx: TwilioCallContext = {
-      to: String(contact.phone),
-      customer: String(contact.name || "Customer"),
-      agent: String(config?.name || "Amani"),
-      business: String(config?.business || "BirichiNex"),
-      orderId: order?.id ? String(order.id) : undefined,
-      productName: order?.productName ? String(order.productName) : undefined,
-      orderStatus: order?.status ? String(order.status) : undefined,
-      opener: Array.isArray(config?.openingPhrases) ? String(config.openingPhrases[0]) : undefined,
-      closing: Array.isArray(config?.closingPhrases) ? String(config.closingPhrases[0]) : undefined,
+      to,
+      customer: String(contact.name || "Customer").slice(0, 120),
+      agent: String(config?.name || "Amani").slice(0, 60),
+      business: String(config?.business || "BirichiNex").slice(0, 60),
+      orderId: order?.id ? String(order.id).slice(0, 40) : undefined,
+      productName: order?.productName ? String(order.productName).slice(0, 80) : undefined,
+      orderStatus: order?.status ? String(order.status).slice(0, 40) : undefined,
+      opener: Array.isArray(config?.openingPhrases) ? String(config.openingPhrases[0]).slice(0, 200) : undefined,
+      closing: Array.isArray(config?.closingPhrases) ? String(config.closingPhrases[0]).slice(0, 200) : undefined,
       tone: (config?.tone as TwilioCallContext["tone"]) || "warm",
       language: (config?.language as TwilioCallContext["language"]) || "en",
       voice: (config?.voice as TwilioCallContext["voice"]) || "kore",
@@ -1193,7 +1381,7 @@ app.post("/api/agent-call", async (req, res) => {
       conversational,
     };
 
-    const { lines } = conversational ? buildConversationalTwiml(ctx) : buildOutboundTwiml(ctx);
+    const { lines } = conversational ? buildConversationalTwiml(ctx, issueLiveSessionToken()) : buildOutboundTwiml(ctx);
     const placed = await placeOutboundCall(ctx);
 
     res.json({
@@ -1206,7 +1394,7 @@ app.post("/api/agent-call", async (req, res) => {
     });
   } catch (error: any) {
     console.error("Error placing Twilio call:", error);
-    res.status(500).json({ mode: "error", error: error?.message || "Twilio call failed" });
+    res.status(500).json({ mode: "error", error: "Call placement failed" });
   }
 });
 
@@ -1236,7 +1424,9 @@ app.all("/api/twilio/twiml", (req, res) => {
   if (!twilioSignatureValid(req)) return res.status(401).send("Signature validation failed");
   const ctx = twilioContextFromRequest(req.query);
   if (ctx.conversational) {
-    const { twiml } = buildConversationalTwiml(ctx);
+    // Token only when real Twilio is configured, so the signature-less dev
+    // mode can't be used to mint media-stream tokens and burn Gemini Live.
+    const { twiml } = buildConversationalTwiml(ctx, isLiveReady() ? issueLiveSessionToken() : undefined);
     return res.type("text/xml").send(twiml);
   }
   const digits = String(req.body?.Digits || req.query?.Digits || "");
@@ -1249,7 +1439,7 @@ app.all("/api/twilio/inbound", (req, res) => {
   if (!twilioSignatureValid(req)) return res.status(401).send("Signature validation failed");
   const ctx = twilioContextFromRequest(req.query);
   if (ctx.conversational) {
-    const { twiml } = buildConversationalTwiml(ctx);
+    const { twiml } = buildConversationalTwiml(ctx, isLiveReady() ? issueLiveSessionToken() : undefined);
     return res.type("text/xml").send(twiml);
   }
   const digits = String(req.body?.Digits || req.query?.Digits || "");
@@ -1306,6 +1496,19 @@ async function setupVite() {  if (process.env.NODE_ENV !== "production") {
       const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
       url.searchParams.forEach((value, key) => { params[key] = value; });
     } catch { /* keep empty params */ }
+
+    // Authorization: a memory/currency piracy guard. Twilio connects here with
+    // a live-session token minted via the (device-secret + rate-limited) token
+    // endpoint; anyone opening the socket without one is refused so the server
+    // can't be used to burn Gemini Live minutes or scrape transcripts.
+    // Authorization: only accept the socket if Twilio was pointed at it by a
+    // TwiML document we minted (which embeds a short-lived signed token).
+    // This stops strangers from opening media-streams to burn Gemini Live
+    // minutes or force transcript ingestion.
+    if (!params.token || !verifyLiveSessionToken(params.token)) {
+      ws.close(4001, "unauthorized");
+      return;
+    }
     const ctx = twilioContextFromRequest(params);
     console.log(`[media-stream] WebSocket connected (${ctx.business} / ${ctx.agent} — ${ctx.customer}).`);
     void handleTwilioMediaStream(ws, ctx, getGeminiClient(), {
