@@ -106,7 +106,7 @@ function hostAllowed(req: express.Request): boolean {
 // block cross-origin callers, then let same-origin/trusted clients through.
 app.use("/api", (req, res, next) => {
   const origin = req.get("origin") || "";
-  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+  if (origin && !ALLOWED_ORIGINS.has(origin) && !/\.vercel\.app$/.test(origin)) {
     return res.status(403).json({ error: "Forbidden" });
   }
   if (origin) {
@@ -1489,7 +1489,31 @@ async function setupVite() {  if (process.env.NODE_ENV !== "production") {
   const server = http.createServer(app);
 
   // ─── Live conversational call bridge (Twilio Media Streams -> Gemini Live) ─
-  const wss = new WebSocketServer({ server, path: "/api/twilio/media-stream" });
+  // Two path-routed WebSocket servers share ONE http server. ws' built-in
+  // path option rejects non-matching upgrades on each listener, so the first
+  // server would abort the second's handshakes. Route by pathname ourselves.
+  const wss = new WebSocketServer({ noServer: true });
+  const liveWss = new WebSocketServer({ noServer: true });
+
+  const dispatchUpgrade = (req, socket, head) => {
+    let pathname = "/";
+    try {
+      pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+    } catch { /* keep root */ }
+    let target: WebSocketServer | null = null;
+    if (pathname === "/api/twilio/media-stream") target = wss;
+    else if (pathname === "/api/agent-live") target = liveWss;
+    if (!target) {
+      socket.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+    target.handleUpgrade(req, socket, head, (ws) => {
+      target!.emit("connection", ws, req);
+    });
+  };
+  server.on("upgrade", dispatchUpgrade);
+
   wss.on("connection", (ws, req) => {
     const params: Record<string, string> = {};
     try {
@@ -1528,7 +1552,6 @@ async function setupVite() {  if (process.env.NODE_ENV !== "production") {
   });
 
   // ─── In-app live voice bridge (browser -> /api/agent-live -> Gemini Live) ─
-  const liveWss = new WebSocketServer({ server, path: "/api/agent-live" });
   liveWss.on("connection", (ws, req) => {
     let params: Record<string, string> = {};
     let token = "";

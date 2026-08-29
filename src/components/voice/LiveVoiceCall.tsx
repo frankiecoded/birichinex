@@ -3,6 +3,12 @@ import { Mic, PhoneOff, AudioLines, ShieldCheck, Loader2 } from "lucide-react";
 import type { AIAgentConfig } from "../../types";
 import { createResampler16, float32ToPcm16, pcm16Base64Decode, pcm16Base64Encode, pcm16ToFloat32 } from "../../lib/live-audio";
 
+// Vercel-hosted origins cannot tunnel WebSocket upgrades to the backend, so
+// the voice socket + its token are fetched straight from the public funnel.
+const BACKEND_ORIGIN =
+  (import.meta.env.VITE_BACKEND_ORIGIN as string | undefined) ||
+  "https://portmetals-backend.tailab82b8.ts.net";
+
 type VoiceStatus = "idle" | "connecting" | "open" | "ending" | "error" | "closed";
 
 interface LiveLine {
@@ -51,8 +57,6 @@ export default function LiveVoiceCall({ agent, business, userName }: LiveVoiceCa
   const aliveRef = useRef(true);
 
   const wsUrl = (() => {
-    const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
-    const host = typeof location !== "undefined" ? location.host : "localhost";
     const qs = new URLSearchParams({
       business,
       agent: agent.name,
@@ -64,7 +68,7 @@ export default function LiveVoiceCall({ agent, business, userName }: LiveVoiceCa
       human: agent.humanTouch ? "true" : "false",
       repeat: agent.repeatOrders ? "true" : "false",
     }).toString();
-    return `${proto}://${host}/api/agent-live?${qs}`;
+    return `${BACKEND_ORIGIN.replace(/^http/, "ws")}/api/agent-live?${qs}`;
   })();
 
   useEffect(() => {
@@ -166,7 +170,7 @@ export default function LiveVoiceCall({ agent, business, userName }: LiveVoiceCa
   );
 
   const requestToken = async (): Promise<string> => {
-    const resp = await fetch("/api/agent-live/token", { method: "POST" });
+    const resp = await fetch(`${BACKEND_ORIGIN}/api/agent-live/token`, { method: "POST" });
     if (!resp.ok) throw new Error("Voice server is not configured.");
     const data = await resp.json();
     if (!data?.token) throw new Error("No voice session token returned.");
