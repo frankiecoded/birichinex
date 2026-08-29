@@ -39,12 +39,13 @@ import {
 } from '../types';
 import { hashPassword, verifyPassword, isHashedPassword } from "../lib/password";
 import { computeAudit, type DiscoveryAnswers } from '../../ai/src/discovery';
+import { buildFollowUps } from "../../ai/src/accounts";
 import type {
   FinanceAction,
   FinanceApprovalEvent,
   UserBusinessDataset,
 } from '../../ai/src/finance-agent';
-import type { BusinessRecommendation, RecommendationOutcome, RecommendationStatus } from '../types';
+import type { BusinessRecommendation, RecommendationOutcome, RecommendationStatus, FollowUpItem } from '../types';
 import { COURSES, DROPSHIP_TIERS, calculateLoyaltyPoints, MEMBERSHIP_TIERS, convertPrice } from '../data/platform';
 import type { TrackedOrder, TrackedShipment, TrackingStatus } from '../data/delivery';
 import type { DailyReflection, WeeklyReview } from '../data/routines';
@@ -369,6 +370,10 @@ interface StoreState {
   agentCalls: AgentCall[];
   logAgentCall: (call: Omit<AgentCall, 'id' | 'createdAt'>) => void;
   updateAgentCall: (id: string, updates: Partial<AgentCall>) => void;
+  followUps: FollowUpItem[];
+  mergeFollowUps: (drafts: FollowUpItem[]) => void;
+  setFollowUpStatus: (id: string, status: FollowUpItem['status']) => void;
+  refreshFollowUps: () => void;
 
   // ── AI Finance Agent (Zahara) ─────────────────────────────────────────────
   agentActions: FinanceAction[];
@@ -469,6 +474,7 @@ export const SYNCED_KEYS = [
   "weeklyReviews",
   "aiAgent",
   "agentCalls",
+  "followUps",
   "agentActions",
   "agentApprovals",
   "userDataset",
@@ -1711,6 +1717,38 @@ export const useStore = create<StoreState>()(
             c.id === id ? { ...c, ...updates } : c,
           ),
         })),
+
+      // ── AI Customer Follow-ups (account-driven, always-live) ─────────────
+      // The queue is computed deterministically from the REAL account data.
+      // mergeFollowUps upserts drafts but never reopens an item the owner
+      // already handled, so completed work stays done across refreshes/sync.
+      followUps: [],
+
+      mergeFollowUps: (drafts) =>
+        set((state) => {
+          const map = new Map(state.followUps.map((f) => [f.id, f]));
+          for (const draft of drafts) {
+            const existing = map.get(draft.id);
+            if (!existing || existing.status === "open") map.set(draft.id, draft);
+          }
+          return { followUps: [...map.values()] };
+        }),
+
+      setFollowUpStatus: (id, status) =>
+        set((state) => ({
+          followUps: state.followUps.map((f) => (f.id === id ? { ...f, status } : f)),
+        })),
+
+      refreshFollowUps: () => {
+        const s = useStore.getState();
+        const drafts = buildFollowUps({
+          contacts: s.contacts,
+          orders: s.orders,
+          agentCalls: s.agentCalls,
+          currency: s.selectedCurrency ?? 'KES',
+        });
+        useStore.getState().mergeFollowUps(drafts);
+      },
 
       // ── AI Finance Agent (Zahara) ─────────────────────────────────────────
       agentActions: [],

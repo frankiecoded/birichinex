@@ -22,6 +22,7 @@
  */
 
 import { useStore } from "../../src/store/useStore";
+import { buildCustomerAwareness } from "./accounts";
 import { fmtTZS } from "./finance-agent";
 import {
   aggregate,
@@ -801,6 +802,15 @@ export function buildSystemContext(c: BNXBusinessContext): string {
     ? `Fastest mover: ${c.pulse.movers[0].product} (${c.pulse.movers[0].orders} sold, ${fmtTZS(c.pulse.movers[0].revenue)}, ${c.pulse.movers[0].share}% of revenue).`
     : "No sales recorded yet — focus on sourcing + first customers.";
 
+  // Always-live customer reality: accounts + who needs a follow-up and why.
+  const s = useStore.getState();
+  const customerAwareness = buildCustomerAwareness({
+    contacts: s.contacts,
+    orders: s.orders,
+    agentCalls: s.agentCalls,
+    currency: s.selectedCurrency ?? "KES",
+  });
+
   return `## LIVE BUSINESS INTELLIGENCE (mandatory grounding — cite these exact figures, never give generic advice)
 - Business: ${c.profile.businessName} | Owner: ${c.profile.userName} | Preferred language: ${c.profile.language}
 - Live health proxy: ${c.health.live}/100${c.health.auditScore !== null ? ` (founder audit: ${c.health.auditScore}/100)` : ""}
@@ -808,6 +818,8 @@ export function buildSystemContext(c: BNXBusinessContext): string {
 - Stock: ${c.stock.outOfStock.length} out of stock, ${c.stock.lowStock.length} low (${c.stock.outOfStock.map((i) => i.name).slice(0, 3).join(", ") || "none"}), ${c.stock.marketplaceListings} listed on marketplace
 - Customers: ${c.customers.contacts} contacts (${c.customers.activeContacts} active), ${c.customers.missedCalls7d} missed calls this week
 - ${movers}
+- CUSTOMER ACCOUNTS (always live — reference real customers, never invent them):
+${customerAwareness}
 - TOP PRIORITIES THIS PERIOD:
 ${prior}
 - WHAT WE TRIED AND MEASURED ON THIS BUSINESS:

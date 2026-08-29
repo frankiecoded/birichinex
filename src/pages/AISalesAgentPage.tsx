@@ -19,7 +19,8 @@ import {
   SimOrder,
   CustomerContext,
 } from "../../ai/src/sales-agent";
-import { AgentCall, AgentCallOutcome, AgentCallObjective, AgentLanguage, AgentVoiceId, TranscriptLine } from "../types";
+import { chatWithAI } from "../../ai/src/api-client";
+import { AgentCall, AgentCallOutcome, AgentCallObjective, AgentLanguage, AgentVoiceId, FollowUpItem, FollowUpKind, TranscriptLine } from "../types";
 
 const VOICES: { id: AgentVoiceId; label: string; gemini: string; gender: "Female" | "Male"; desc: string }[] = [
   { id: "kore", label: "Kore", gemini: "Kore", gender: "Female", desc: "Warm, clear — the default secretary" },
@@ -77,6 +78,29 @@ const TYPE_LABELS: Record<AgentCall["type"], string> = {
   "outbound-cart-recovery": "Cart recovery",
 };
 
+const FOLLOWUP_LABELS: Record<FollowUpKind, string> = {
+  "missed-callback": "Missed callback",
+  "unpaid-order": "Pending order",
+  "lapsed-high-value": "High-value lapsed",
+  "reorder-window": "Reorder due",
+  "delivery-confirm": "Delivery check",
+  "lead-first-touch": "New lead",
+};
+
+const PRIORITY_COLOR: Record<FollowUpItem["priority"], string> = {
+  critical: "#FF453A",
+  high: "#FF9500",
+  medium: "#007AFF",
+  low: "#8E8E93",
+};
+
+const PRIORITY_RANK: Record<FollowUpItem["priority"], number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
 function formatDuration(sec: number) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -111,6 +135,9 @@ export default function AISalesAgentPage() {
   const user = useStore((s) => s.user);
   const addWalletFunds = useStore((s) => s.addWalletFunds);
   const addLoyaltyPoints = useStore((s) => s.addLoyaltyPoints);
+  const followUps = useStore((s) => s.followUps);
+  const setFollowUpStatus = useStore((s) => s.setFollowUpStatus);
+  const refreshFollowUps = useStore((s) => s.refreshFollowUps);
 
   const [tab, setTab] = useState<"live" | "inbox" | "voice">("live");
   const [busy, setBusy] = useState<"inbound" | "followups" | null>(null);
@@ -125,6 +152,9 @@ export default function AISalesAgentPage() {
   const [inboxTab, setInboxTab] = useState<"notifications" | "emails">("notifications");
   const [connection, setConnection] = useState<"conversational" | "live" | "simulated" | "checking">("checking");
   const [geminiLive, setGeminiLive] = useState(false);
+  const [draftItem, setDraftItem] = useState<FollowUpItem | null>(null);
+  const [drafting, setDrafting] = useState(false);
+  const [draftText, setDraftText] = useState("");
 
   const ownerEmail = user?.email ?? "owner@birichinex.com";
   const ownerName = user?.name ?? "Business Owner";
@@ -237,6 +267,88 @@ export default function AISalesAgentPage() {
     return active;
   };
 
+  // ── Account-driven follow-ups ─────────────────────────────────────────────
+  useEffect(() => {
+    refreshFollowUps();
+  }, [refreshFollowUps]);
+
+  const spendFor = (name: string) =>
+    orders
+      .filter((o) => o.customerName === name && o.status !== "cancelled" && o.status !== "returned")
+      .reduce((t, o) => t + (o.totalAmount || 0), 0);
+
+  const openFollowUps = followUps
+    .filter((f) => f.status === "open")
+    .sort(
+      (a, b) =>
+        PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
+        a.customerName.localeCompare(b.customerName),
+    );
+
+  const handleDialFollowUp = async (item: FollowUpItem) => {
+    const wasBusy = busy !== null;
+    if (!wasBusy) setBusy(item.priority === "critical" ? "inbound" : "followups");
+    const contact: SimContact = {
+      id: item.customerId,
+      name: item.customerName,
+      phone: item.customerPhone || "+255 700 000 000",
+    };
+    const customer: CustomerContext = {
+      name: contact.name,
+      orderCount: orders.filter((o) => o.customerName === item.customerName).length,
+      lifetimeSpend: spendFor(contact.name),
+      openOrderId: item.orderId,
+    };
+    const call = await dialCall(
+      "outbound-followup",
+      contact,
+      customer,
+      item.orderId || item.productName || item.amount
+        ? {
+            id: item.orderId || `BNX-${item.customerName.replace(/\s+/g, "").toUpperCase()}`,
+            productName: item.productName ?? "your order",
+            status: "follow-up",
+            customerName: contact.name,
+          }
+        : undefined,
+    );
+    recordCall(call);
+    setFollowUpStatus(item.id, "done");
+    refreshFollowUps();
+    if (!wasBusy) setBusy(null);
+  };
+
+  const handleDraftFollowUp = async (item: FollowUpItem) => {
+    setDraftItem(item);
+    setDrafting(true);
+    setDraftText("");
+    try {
+      const res = await chatWithAI(
+        `Draft a short, warm, personal follow-up for a real customer of mine. It must read like a sharp person in East Africa wrote it — natural, specific, no clichés, no greeting-formula filler. Keep it to at most two short sentences, ready to send.
+
+Customer: ${item.customerName} (${item.customerPhone || "no phone on file"})
+Why they're being followed up: ${item.title} — ${item.detail}
+Channel: ${item.channel}`,
+        { conversationHistory: [] },
+      );
+      setDraftText(res.content?.trim() || item.script);
+    } catch {
+      setDraftText(item.script);
+    }
+    setDrafting(false);
+  };
+
+  const copyDraft = async () => {
+    if (draftText) {
+      try {
+        await navigator.clipboard?.writeText(draftText);
+      } catch {
+        /* clipboard unavailable — the text remains visible to copy manually */
+      }
+    }
+    setDraftItem(null);
+  };
+
   const handleInbound = async () => {
     if (busy) return;
     setBusy("inbound");
@@ -271,7 +383,19 @@ export default function AISalesAgentPage() {
   const handleFollowUps = async () => {
     if (busy) return;
     setBusy("followups");
-    await new Promise((r) => setTimeout(r, 700));
+    await new Promise((r) => setTimeout(r, 500));
+    const queue = followUps.filter((f) => f.status === "open");
+    if (queue.length > 0) {
+      const pending = queue.slice(0, 3);
+      if (pending.length > 0) logEmail(buildFollowUpReminderEmail(ownerEmail, pending.length));
+      for (const item of pending) {
+        await handleDialFollowUp(item);
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      setBusy(null);
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 200));
     const pending = orders.filter((o) => o.status !== "delivered").slice(0, 3);
     if (pending.length > 0) logEmail(buildFollowUpReminderEmail(ownerEmail, pending.length));
     for (const order of pending) {
@@ -534,6 +658,86 @@ export default function AISalesAgentPage() {
                   </Button>
                 )}
               </div>
+            </div>
+          </motion.div>
+
+          {/* ═══ ACCOUNT-DRIVEN FOLLOW-UPS ═══ */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="glass-material rounded-[20px] p-6 border border-glass-border/30 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(0,122,255,0.06)_0%,transparent_70%)] blur-[40px] pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-[14px] bg-[#007AFF]/10 flex items-center justify-center">
+                    <Target className="h-5 w-5 text-[#007AFF]" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h2 className="text-subhead font-bold text-ink">Account follow-ups</h2>
+                    <p className="text-caption text-ink-tertiary">Who needs a nudge today — computed from each customer's real account</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" size="sm">{openFollowUps.length} open</Badge>
+                  <Button variant="ghost" size="sm" onClick={refreshFollowUps}>
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5 text-brand" /> Re-scan
+                  </Button>
+                </div>
+              </div>
+
+              {openFollowUps.length === 0 ? (
+                <div className="mt-5 rounded-[16px] bg-surface-secondary/60 border border-glass-border/40 p-8 text-center">
+                  <BadgeCheck className="h-6 w-6 text-[#30D158] mx-auto mb-2" strokeWidth={1.5} />
+                  <p className="text-caption text-ink-secondary">No one needs a follow-up right now.</p>
+                  <p className="text-caption text-ink-quaternary mt-1">
+                    Amani surfaces missed callbacks, pending orders, lapsed buyers and reorder windows here automatically.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-5 space-y-3">
+                  {openFollowUps.map((item) => (
+                    <div key={item.id} className="rounded-[16px] bg-surface-secondary/50 border border-glass-border/40 p-4">
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <span className="mt-1.5 h-2 w-2 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[item.priority] }} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-caption font-bold text-ink">{item.customerName}</p>
+                              <span className="text-caption text-ink-quaternary">{item.customerPhone}</span>
+                              <Badge variant="default" size="sm">{FOLLOWUP_LABELS[item.kind]}</Badge>
+                              {item.amount !== undefined && <Badge variant="brand" size="sm">{item.amount.toLocaleString()}</Badge>}
+                            </div>
+                            <p className="text-caption text-ink-secondary mt-1 leading-relaxed">{item.detail}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={busy !== null}
+                            onClick={() => { if (!busy) void handleDialFollowUp(item); }}
+                          >
+                            <PhoneOutgoing className="h-3.5 w-3.5 mr-1.5" /> Dial
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => void handleDraftFollowUp(item)}>
+                            <MessageSquare className="h-3.5 w-3.5 mr-1.5 text-brand" /> Draft
+                          </Button>
+                          <button
+                            onClick={() => setFollowUpStatus(item.id, "done")}
+                            className="h-8 w-8 rounded-full bg-transparent hover:bg-surface-secondary text-ink-quaternary hover:text-[#30D158] transition-colors flex items-center justify-center"
+                            title="Mark done"
+                          >
+                            <Check className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -1327,6 +1531,60 @@ export default function AISalesAgentPage() {
           </motion.div>
         </div>
       )}
+
+      {/* ═══ AI DRAFT MODAL ═══ */}
+      <AnimatePresence>
+        {draftItem && (
+          <motion.div
+            className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => { if (!drafting) setDraftItem(null); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-material rounded-[20px] border border-glass-border p-6 w-full max-w-lg"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-[12px] bg-brand/10 flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-brand" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-caption font-bold text-ink">AI-drafted follow-up</h3>
+                    <p className="text-caption text-ink-tertiary">{draftItem.customerName} · {FOLLOWUP_LABELS[draftItem.kind]}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { if (!drafting) setDraftItem(null); }}
+                  className="text-ink-quaternary hover:text-ink transition-colors"
+                  title="Close"
+                >
+                  <Square className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              </div>
+              <div className="rounded-[14px] bg-surface-secondary/60 border border-glass-border/40 p-4 min-h-[120px] max-h-[280px] overflow-y-auto">
+                {drafting ? (
+                  <div className="flex items-center gap-3 text-caption text-ink-tertiary py-6 justify-center">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
+                    Amani is writing a personal outreach…
+                  </div>
+                ) : (
+                  <p className="text-caption text-ink-secondary leading-relaxed whitespace-pre-wrap">{draftText}</p>
+                )}
+              </div>
+              <div className="flex items-center justify-end gap-3 mt-5">
+                <Button variant="ghost" size="md" onClick={() => setDraftItem(null)} disabled={drafting}>Close</Button>
+                <Button variant="brand" size="md" onClick={copyDraft} disabled={drafting || !draftText}>
+                  <Check className="h-4 w-4 mr-2" /> Copy & close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

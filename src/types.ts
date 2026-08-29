@@ -867,3 +867,61 @@ export interface OwnerEmail {
   read: boolean;
   createdAt: string;
 }
+
+// --- AI Customer Accounts & Account-Driven Follow-Ups ------------------------
+// A consolidated, always-live view of every customer computed from the real
+// business data (contacts + orders + agent calls). The AI uses it to ground
+// every reply and to decide who needs a follow-up and why.
+
+export interface CustomerAccount {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  status: "lead" | "active" | "inactive";
+  tags: string[];
+  createdAt: string;
+  lastContactAt: string;
+  orderCount: number;
+  lifetimeSpend: number;
+  avgOrderValue: number;
+  firstOrderAt: string | null;
+  lastOrderAt: string | null;
+  lastProduct?: string;
+  activeOrderCount: number;
+  activeOrderValue: number;
+  missedCallback: boolean;
+  repeatCycleDays: number | null;
+}
+
+export type FollowUpKind =
+  | "missed-callback"
+  | "unpaid-order"
+  | "lapsed-high-value"
+  | "reorder-window"
+  | "delivery-confirm"
+  | "lead-first-touch";
+
+export type FollowUpChannel = "call" | "whatsapp" | "email";
+
+export type FollowUpStatus = "open" | "done" | "dismissed";
+
+export interface FollowUpItem {
+  id: string;
+  kind: FollowUpKind;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  title: string;
+  detail: string;
+  channel: FollowUpChannel;
+  priority: "critical" | "high" | "medium" | "low";
+  status: FollowUpStatus;
+  createdAt: string;
+  dueAt: string;
+  script: string;
+  orderId?: string;
+  productName?: string;
+  amount?: number;
+}
