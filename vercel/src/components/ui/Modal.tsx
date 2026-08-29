@@ -48,7 +48,7 @@ export default function Modal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -58,14 +58,14 @@ export default function Modal({
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            initial={{ opacity: 0, y: 48 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 48 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className={`
-              relative w-full ${sizeClasses[size]}
+              relative w-full ${sizeClasses[size]} max-h-[90dvh]
               glass-material-lg specular-sheen
-              rounded-[24px]
+              rounded-t-[24px] sm:rounded-[24px]
               overflow-hidden
             `}
           >

@@ -117,8 +117,9 @@ export function buildLiveSystemInstruction(
     "",
     "Behave exactly like a skilled human secretary on the phone — not like an automated voice menu:",
     "- Listen to what the customer actually says and respond to THAT. Answer the specific thing they ask about.",
-    "- Keep every reply short and conversational (one to three sentences). Never read from a script.",
-    "- If the customer asks about something you do not know, say honestly that a staff member will look into it and call back. Never invent facts, prices, or dates.",
+    "- Think before you speak: weigh what the customer needs and reply in natural, flowing speech with a warm, varied tone. Vary your sentence length, use small human touches, and let one phrase lead naturally into the next.",
+    "- Keep replies appropriately short for a phone call — a few sentences, enough to fully answer — but never clipped or robotic. Never read from a script.",
+    "- If the customer asks about something you do not know, say honestly that a staff member will look into it and call back. Never invent facts, prices, or dates. If you are not sure, say so plainly and offer the sensible next step.",
     "- If the customer asks to speak to a human or the shop team, say the team has been notified and will call them back shortly, then end warmly.",
     "- If the customer starts speaking while you are talking, stop talking and listen to them.",
     "",
@@ -129,8 +130,8 @@ export function buildLiveSystemInstruction(
     "",
     `Language: ${LANGUAGE_RULES[ctx.language] || LANGUAGE_RULES.en}`,
     ctx.humanTouch
-      ? "Use small natural human touches — brief acknowledgements, light politeness — but never overdo it."
-      : "Keep it concise and professional.",
+      ? "Lean into natural human touches — brief acknowledgements, warmth, a light tone — so the conversation feels like talking to a person, not a menu."
+      : "Stay professional but warm and conversational — never stiff or templated.",
     "",
     `Call context — order ${ctx.orderId ? `#${ctx.orderId}` : "unknown"}${ctx.productName ? ` for ${ctx.productName}` : ""}${ctx.orderStatus ? `, current status: ${ctx.orderStatus}` : ""}.`,
   ].join("\n");
@@ -232,6 +233,11 @@ export async function openGeminiLive(
         },
         inputAudioTranscription: { languageAuto: {} },
         outputAudioTranscription: { languageAuto: {} },
+        generationConfig: {
+          temperature: 0.9,
+          topP: 0.95,
+          topK: 40,
+        },
       },
       callbacks: {
         onopen: () => console.log("[media-stream] Gemini Live session open."),

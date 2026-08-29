@@ -170,7 +170,7 @@ export default function FloatingPillNav({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="fixed inset-0 bg-scrim/20 backdrop-blur-sm z-[998]"
+              className="fixed inset-0 bg-scrim/40 backdrop-blur-sm z-[998]"
               onClick={() => { setExpanded(false); setActiveCategory(null); }}
             />
 

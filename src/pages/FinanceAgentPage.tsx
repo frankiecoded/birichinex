@@ -183,7 +183,11 @@ export default function FinanceAgentPage() {
       const res = await fetch("/api/finance/advise", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, snapshot }),
+        body: JSON.stringify({
+          question: q,
+          snapshot,
+          conversation: chat.slice(-6).map((m) => `${m.role}: ${m.text}`),
+        }),
       });
       const data = await res.json();
       setChat((c) => [...c, { role: "agent", text: data?.text ?? localFinanceReply(q, snapshot) }]);

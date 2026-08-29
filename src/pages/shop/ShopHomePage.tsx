@@ -1,4 +1,4 @@
-import { useState, useRef, MouseEvent } from "react";
+import { useState, useRef, useEffect, MouseEvent } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import {
   ArrowRight, Truck, Shield, RotateCcw, Sparkles, Bot,
@@ -238,10 +238,17 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
   const shopName = profile.company || profile.name || "Your Shop";
   const emptyInventory = inventoryItems.length === 0;
   const heroRef = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia("(min-width: 1024px)").matches);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setIsDesktop(mql.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const heroY = useTransform(scrollYProgress, [0, 1], isDesktop ? [0, 150] : [0, 0]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.95]);
+  const heroScale = useTransform(scrollYProgress, [0, 1], isDesktop ? [1, 0.95] : [1, 1]);
 
   const [videoReady, setVideoReady] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);

@@ -204,7 +204,7 @@ async function callOllamaChat(
     body: JSON.stringify({
       model: OLLAMA_MODEL,
       messages,
-      temperature: options.temperature ?? 0.7,
+      temperature: options.temperature ?? 0.85,
       max_tokens: options.maxTokens ?? 2048,
       stream: false,
     }),
@@ -290,15 +290,22 @@ function pcmToWav(pcm: Buffer, sampleRate: number): Buffer {
 
 // System instructions for the BirichiNex Advisor
 const SYSTEM_INSTRUCTION = `
-You are Amani, the lead BirichiNex Business Advisor. You serve the shop owner whose live business data is supplied in the intelligence block of each request — their catalog, inventory, transactions, orders, contacts, wallet, and goals. You reason only from that block; you never invent products, prices, stock, or history that are not present in it.
+You are Amani, the lead BirichiNex Business Advisor and a trusted peer to the shop owner whose live business data is supplied in the intelligence block of each request — their catalog, inventory, transactions, orders, contacts, wallet, and goals. You reason only from that block; you never invent products, prices, stock, or history that are not present in it.
 
-Your tone and voice are set by the advisor personality instructions provided with each request — follow them for how you speak. The intelligence block is the single source of truth for this business, and it is always current.
+HOW YOU SPEAK — this governs everything:
+- You think before you answer. Reason through the situation inside your head — what is actually happening in their numbers, what it probably means, what the realistic options are — then speak from that reasoning. Your answer should feel like the conclusion of real thinking, not a reflex.
+- You talk like a sharp, warm advisor having a conversation, not like a support bot. Use first person ("I'd look at this as..."), vary your sentence rhythm, and let one idea flow into the next. Favor flowing paragraphs over bullet lists; if a short list genuinely helps, keep it to the essentials and weave it into the flow.
+- Never open with generic filler like "Great question!" or "Based on your data...". Start with something specific to their actual situation — name what you're seeing in their numbers, or the real question at the heart of what they asked.
+- Mirror the owner's language and energy. If they're casual, be direct and warm; if they're formal, be precise and considered. Refer to them naturally ("you"), never as "the user" or "the shop owner".
+- Be concrete, not vague. Put numbers in context ("that KSh 4,200 margin is roughly a 22% return on that product") instead of just quoting them.
+- Emojis are allowed and used sparingly, only for brief warmth or emphasis — never in every sentence. No markdown headers or code fences; minimal markdown anyway.
 
-When the shop has no data yet (empty inventory, no orders, no transactions), say so plainly and guide the founder toward the next concrete first step: adding inventory, connecting a sales channel, or setting prices. Never fabricate a catalog, prices, or implied past performance.
+HOW YOU REASON:
+- When the shop has no data yet (empty inventory, no orders, no transactions), say so plainly and guide the founder toward the next concrete first step: adding inventory, connecting a sales channel, or setting prices. Never fabricate a catalog, prices, or implied past performance.
+- Use pricing math (unit cost vs selling price) when margins or profit are discussed, grounding every figure in the shop's actual numbers from the intelligence block. Anchor customer acquisition (marketing, social media, visual merchandising) and financial discipline (reinvesting profit, holding a cash buffer) to the founder's live numbers when they are available.
+- If something is genuinely uncertain, say so honestly and give your best judgment with reasoning — don't fake certainty, and don't hedge into mush.
 
-Use pricing math (unit cost vs selling price) when margins or profit are discussed, grounding every figure in the shop's actual numbers from the intelligence block. Anchor customer acquisition (marketing, social media, visual merchandising) and financial discipline (reinvesting profit, holding a cash buffer) to the founder's live numbers when they are available.
-
-Be factually reliable above all: never quote prices, stock levels, or performance that are not in the intelligence block. Do not use emojis.
+Be factually reliable above all: never quote prices, stock levels, or performance that are not in the intelligence block.
 `;
 
 // API Endpoints
@@ -679,7 +686,7 @@ app.post("/api/chat", async (req, res) => {
         contents: contents,
         config: {
           systemInstruction: `${SYSTEM_INSTRUCTION.trim()}\n\n${clientSystem}`.trim(),
-          temperature: 0.7,
+          temperature: 0.85,
         }
       });
 
@@ -918,25 +925,41 @@ HARD GUARDRAILS — never break these:
 3. You can run day-to-day analysis, recommend strategies, and create plans autonomously — but money and sensitive changes always require approval.
 4. Be honest about uncertainty. If a figure (e.g. exchange rate, tax rate) should be verified live, say so and offer to research it.
 
-Ground every recommendation in the shop owner's own numbers supplied with each request (wallet, transactions, inventory, orders, loyalty, subscription). Never invent balances or outcomes that are not in the data. When no data is provided or it is empty, say so and propose the first step to start tracking finances properly.
+Ground every recommendation in the shop owner's own numbers supplied with each request (wallet, transactions, inventory, orders, loyalty, subscription). Never invent balances or outcomes that are not in the data. Whenever a block titled "Live business figures" appears in the request, it is the owner's actual current data — you MUST read and reason from those exact figures and never claim no data was provided. Only when the block is absent or explicitly empty should you say there is no data yet and propose the first step to start tracking finances properly.
 
-Answer in clear, concise business English, in plain text (no markdown headers, no emojis). Use the shop's currency where relevant and explain the reasoning behind every recommendation. When you propose an action, state exactly what you would do and mark it [NEEDS APPROVAL].
+HOW YOU SPEAK:
+- You reason before you answer: read what is actually happening in their figures, weigh the realistic options, then speak from that. Your answer reads like the conclusion of real thought, not a canned template.
+- Speak in warm, flowing business English. Use first person, vary sentence length, and favor paragraphs over bullet lists — if a short list is genuinely clearer, weave it into the prose.
+- Never open with filler like "Great question!" or "Based on your data". Start with something concrete about their actual situation — the pattern you see in their numbers, or the real question underneath.
+- Be specific, not vague: put figures in context ("your cash buffer covers roughly three weeks of typical spending") rather than just restating them. State the reasoning behind every recommendation. When you propose an action, say exactly what you would do and mark it [NEEDS APPROVAL].
+- Emojis allowed sparingly for warmth and emphasis; no markdown headers, no code fences.
 `;
 
 app.post("/api/finance/advise", async (req, res) => {
   try {
     if (applyRateLimit(req, res)) return;
-    const { question, snapshot } = req.body || {};
+    const { question, snapshot, conversation } = req.body || {};
     const provider = await getActiveProvider();
+
+    const priorTurns = Array.isArray(conversation) ? conversation.slice(-6).join("\n") : "";
+    const snapshotBlock =
+      snapshot && typeof snapshot === "object" && Object.keys(snapshot).length > 0
+        ? `Live business figures (the single source of truth — ground every answer in these exact numbers):\n${JSON.stringify(snapshot, null, 2)}`
+        : "";
+    const userContent = [
+      snapshotBlock,
+      priorTurns ? `Prior conversation:\n${priorTurns}` : "",
+      `The owner now asks: ${String(question || "Give me an overview of my finances.")}`,
+    ].filter(Boolean).join("\n\n");
 
     if (provider === "huggingface") {
       try {
         const { text, model } = await callHuggingFaceChat(
           [
             { role: "system", content: FINANCE_SYSTEM_INSTRUCTION },
-            { role: "user", content: String(question || "Give me an overview of my finances.") },
+            { role: "user", content: userContent },
           ],
-          { temperature: 0.4, maxTokens: 900 },
+          { temperature: 0.6, maxTokens: 900 },
         );
         return res.json({ text, source: "huggingface", model, live: true, grounded: false });
       } catch (err: any) {
@@ -949,9 +972,9 @@ app.post("/api/finance/advise", async (req, res) => {
         const { text, model } = await callOllamaChat(
           [
             { role: "system", content: `/no_think\n\n${FINANCE_SYSTEM_INSTRUCTION}` },
-            { role: "user", content: String(question || "Give me an overview of my finances.") },
+            { role: "user", content: userContent },
           ],
-          { temperature: 0.4, maxTokens: 900 },
+          { temperature: 0.6, maxTokens: 900 },
         );
         return res.json({ text, source: "ollama", model, live: true, grounded: false });
       } catch (err: any) {
@@ -969,11 +992,11 @@ app.post("/api/finance/advise", async (req, res) => {
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: [{ role: "user", parts: [{ text: String(question || "Give me an overview of my finances.") }] }],
+      contents: [{ role: "user", parts: [{ text: userContent }] }],
       config: {
         systemInstruction: FINANCE_SYSTEM_INSTRUCTION,
         tools: [{ googleSearch: {} }],
-        temperature: 0.4,
+        temperature: 0.6,
         maxOutputTokens: 900,
       },
     });
@@ -1000,11 +1023,11 @@ app.post("/api/finance/research", async (req, res) => {
             {
               role: "system",
               content:
-                "You are Zahara, a financial research assistant for East African businesses. Answer concisely with the facts you know and clearly flag anything that should be verified against live sources before acting. Plain text only.",
+                "You are Zahara, a financial research assistant for East African businesses. Answer in flowing, natural prose with the facts you know, and clearly flag anything that should be verified against live sources before acting.",
             },
             { role: "user", content: String(query || "") },
           ],
-          { temperature: 0.3, maxTokens: 700 },
+          { temperature: 0.5, maxTokens: 850 },
         );
         return res.json({ text, source: "huggingface", model, live: true, citations: [] });
       } catch (err: any) {
@@ -1019,11 +1042,11 @@ app.post("/api/finance/research", async (req, res) => {
             {
               role: "system",
               content:
-                "/no_think\n\nYou are Zahara, a financial research assistant for East African businesses. Answer concisely with the facts you know and clearly flag anything that should be verified against live sources before acting. Plain text only.",
+                "/no_think\n\nYou are Zahara, a financial research assistant for East African businesses. Answer in flowing, natural prose with the facts you know, and clearly flag anything that should be verified against live sources before acting.",
             },
             { role: "user", content: String(query || "") },
           ],
-          { temperature: 0.3, maxTokens: 700 },
+          { temperature: 0.5, maxTokens: 850 },
         );
         return res.json({ text, source: "ollama", model, live: true, citations: [] });
       } catch (err: any) {
@@ -1042,10 +1065,10 @@ app.post("/api/finance/research", async (req, res) => {
       model: "gemini-3.5-flash",
       contents: [{ role: "user", parts: [{ text: String(query || "") }] }],
       config: {
-        systemInstruction: "You are Zahara, a financial research assistant for East African businesses. Research the question using Google Search and answer concisely with the current facts and figures. Note where data should be verified before acting. Plain text only.",
+        systemInstruction: "You are Zahara, a financial research assistant for East African businesses. Research the question using Google Search and answer in flowing, natural prose with the current facts and figures. Note where data should be verified before acting.",
         tools: [{ googleSearch: {} }],
-        temperature: 0.3,
-        maxOutputTokens: 700,
+        temperature: 0.5,
+        maxOutputTokens: 850,
       },
     });
     const text = response.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "No results.";

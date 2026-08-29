@@ -13,6 +13,9 @@ interface AuthIntroProps {
 export default function AuthIntro({ onComplete }: AuthIntroProps) {
   const [introPhase, setIntroPhase] = useState<IntroPhase>("falling");
 
+  // Respect prefers-reduced-motion: skip straight to done without animation.
+  const REDUCED_MOTION = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   const letterStyles = useMemo(
     () =>
       INTRO_CHARS.map((_, i) => ({
@@ -24,18 +27,28 @@ export default function AuthIntro({ onComplete }: AuthIntroProps) {
   );
 
   useEffect(() => {
-    const t1 = setTimeout(() => setIntroPhase("shaking"), 1500);
-    const t2 = setTimeout(() => setIntroPhase("transitioning"), 2800);
+    if (REDUCED_MOTION) {
+      setIntroPhase("done");
+      onComplete();
+      return;
+    }
+    const t1 = setTimeout(() => setIntroPhase("shaking"), 1000);
+    const t2 = setTimeout(() => setIntroPhase("transitioning"), 1900);
     const t3 = setTimeout(() => {
       setIntroPhase("done");
       onComplete();
-    }, 3800);
+    }, 2400);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [onComplete]);
+  }, [onComplete, REDUCED_MOTION]);
+
+  const skip = () => {
+    setIntroPhase("done");
+    onComplete();
+  };
 
   return (
     <AnimatePresence>
@@ -48,9 +61,18 @@ export default function AuthIntro({ onComplete }: AuthIntroProps) {
         >
           {/* Dark backdrop */}
           <div
-            className="absolute inset-0 bg-[#0a0a12]"
+            className="absolute inset-0 bg-[#0a0a12] cursor-pointer"
+            onClick={skip}
             style={{ backdropFilter: "blur(40px) saturate(150%)" }}
           />
+
+          {/* Skip hint */}
+          <button
+            onClick={skip}
+            className="absolute bottom-6 right-6 z-30 px-4 h-9 flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] text-white/45 text-[12px] font-semibold backdrop-blur-sm hover:text-white/80 active:scale-95 transition-all"
+          >
+            Skip
+          </button>
 
           {/* Ambient glow */}
           <div

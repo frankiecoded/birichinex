@@ -73,6 +73,20 @@ export default function NavigationShell({
     setMobileOpen(false);
   }, [currentView]);
 
+  // Lock the page while the mobile drawer is open.
+  useEffect(() => {
+    if (mobileOpen) {
+      const root = document.querySelector("main");
+      const prev = root?.style.overflow ?? "";
+      if (root) root.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+      return () => {
+        if (root) root.style.overflow = prev;
+        document.body.style.overflow = "";
+      };
+    }
+  }, [mobileOpen]);
+
   useEffect(() => {
     if (!guideCompleted) {
       const t = setTimeout(() => startGuide(), 650);

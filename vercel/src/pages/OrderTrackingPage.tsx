@@ -394,37 +394,37 @@ export default function OrderTrackingPage({ onNavigate, scope = "all", embedded 
   const nairobiZones = useMemo(() => getNairobiZones(), []);
 
   return (
-    <div className={`relative w-full ${embedded ? "h-full" : "h-[calc(100vh-80px)]"} overflow-hidden`}>
+    <div className={`relative w-full ${embedded ? "h-full" : "md:h-[calc(100vh-80px)] h-auto md:min-h-[560px]"} overflow-hidden`}>
       <style>{`@keyframes ping{0%{transform:scale(1);opacity:1}75%,100%{transform:scale(2);opacity:0}}`}</style>
 
       {/* ─── Tab Bar ─────────────────────────────────────────────────────── */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] flex gap-2">
         <button
           onClick={() => setActiveTab('tracking')}
-          className={`px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all ${
+          className={`px-4 py-2.5 rounded-full text-[13px] font-semibold transition-all ${
             activeTab === 'tracking'
               ? 'bg-[#007AFF] text-white shadow-lg shadow-[#007AFF]/30'
               : 'glass-material text-ink-secondary hover:text-ink border border-glass-border'
           }`}
         >
           <Navigation className="inline h-4 w-4 mr-1.5 -mt-0.5" />
-          Live Tracking
+          Tracking
         </button>
         <button
           onClick={() => setActiveTab('pricing')}
-          className={`px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all ${
+          className={`px-4 py-2.5 rounded-full text-[13px] font-semibold transition-all ${
             activeTab === 'pricing'
               ? 'bg-[#007AFF] text-white shadow-lg shadow-[#007AFF]/30'
               : 'glass-material text-ink-secondary hover:text-ink border border-glass-border'
           }`}
         >
           <DollarSign className="inline h-4 w-4 mr-1.5 -mt-0.5" />
-          Delivery Pricing
+          Pricing
         </button>
       </div>
 
       {activeTab === 'tracking' ? (
-        <div className="flex h-full">
+        <div className="flex h-full md:h-[calc(100vh-120px)] min-h-[420px]">
           {/* ─── Order List Sidebar ─────────────────────────────────────────── */}
           <AnimatePresence>
             {sidebarOpen && (
@@ -435,7 +435,7 @@ export default function OrderTrackingPage({ onNavigate, scope = "all", embedded 
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 className="h-full z-[1000] relative flex-shrink-0 overflow-hidden border-r border-glass-border"
               >
-                <div className="w-[360px] h-full bg-surface/95 backdrop-blur-2xl flex flex-col">
+                <div className="w-[min(360px,88vw)] h-full bg-surface/95 backdrop-blur-2xl flex flex-col">
                   {/* Stats */}
                   <div className="p-4 border-b border-glass-border">
                     <div className="grid grid-cols-4 gap-2 mb-4">
@@ -543,7 +543,7 @@ export default function OrderTrackingPage({ onNavigate, scope = "all", embedded 
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-[1050] w-6 h-12 glass-material border border-glass-border rounded-r-[8px] flex items-center justify-center hover:bg-surface-secondary/60 transition-colors"
-            style={{ left: sidebarOpen ? 360 : 0 }}
+            style={{ left: sidebarOpen ? "min(360px,88vw)" : 0 }}
           >
             {sidebarOpen ? <ChevronLeft className="h-4 w-4 text-ink-secondary" /> : <ChevronRight className="h-4 w-4 text-ink-secondary" />}
           </button>
@@ -617,7 +617,7 @@ export default function OrderTrackingPage({ onNavigate, scope = "all", embedded 
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: 400, opacity: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="absolute right-0 top-0 bottom-0 w-[380px] z-[1050] bg-surface/95 backdrop-blur-2xl border-l border-glass-border overflow-y-auto"
+                className="absolute right-0 top-0 bottom-0 w-[min(380px,92vw)] z-[1050] bg-surface/95 backdrop-blur-2xl border-l border-glass-border overflow-y-auto"
               >
                 {/* Header */}
                 <div className="sticky top-0 z-10 bg-surface/90 backdrop-blur-xl border-b border-glass-border p-4">

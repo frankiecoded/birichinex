@@ -26,7 +26,7 @@ const variantClasses = {
 
 const sizeClasses = {
   sm: "h-9 px-3 text-caption rounded-[10px] gap-1.5",
-  md: "h-10 px-4 text-subhead rounded-[12px] gap-2",
+  md: "h-11 px-4 text-subhead rounded-[12px] gap-2",
   lg: "h-12 px-6 text-body rounded-[14px] gap-2.5",
 };
 
