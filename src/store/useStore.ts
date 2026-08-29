@@ -211,9 +211,6 @@ interface StoreState {
   setAccountType: (type: AccountType) => void;
   logout: () => void;
   setAuthView: (view: 'login' | 'signup' | 'forgot' | null) => void;
-  pendingGuestRewards: { total: number; orderId: string } | null;
-  setPendingGuestRewards: (rewards: { total: number; orderId: string } | null) => void;
-  applyGuestRewardsIfAny: () => void;
   setIntroComplete: (v: boolean) => void;
   setEntrySeen: (v: boolean) => void;
   updateUser: (partial: Partial<{ name: string; email: string }>) => void;
@@ -542,7 +539,6 @@ export const useStore = create<StoreState>()(
       // ── Auth ────────────────────────────────────────────────────────────────
       user: null,
       authView: null,
-      pendingGuestRewards: null,
       introComplete: false,
       entrySeen: false,
       users: {},
@@ -571,7 +567,6 @@ export const useStore = create<StoreState>()(
             loginHistory: [makeLoginEvent(key, 'success'), ...state.loginHistory].slice(0, 30),
           };
         });
-        get().applyGuestRewardsIfAny();
       },
 
       signup: (email, name, accountType, password) => {
@@ -595,25 +590,6 @@ export const useStore = create<StoreState>()(
             authView: null,
           };
         });
-        get().applyGuestRewardsIfAny();
-      },
-
-      setPendingGuestRewards: (rewards) => set({ pendingGuestRewards: rewards }),
-
-      // Credits cashback + loyalty points earned on a guest purchase the moment
-      // the shopper creates an account (or logs in) after checkout. Idempotent:
-      // the pending reward is cleared as soon as it is applied.
-      applyGuestRewardsIfAny: () => {
-        const state = get();
-        const pending = state.pendingGuestRewards;
-        if (!pending) return;
-        if (!state.user) return;
-        const cashback = Math.floor(pending.total * 0.01);
-        if (cashback > 0) {
-          state.awardWalletCashback(cashback, `First-order welcome cashback (${pending.orderId})`);
-        }
-        state.earnPointsFromPurchase(pending.total);
-        set({ pendingGuestRewards: null });
       },
 
       attemptLogin: (email, password) => {

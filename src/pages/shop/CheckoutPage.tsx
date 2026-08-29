@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft, ArrowRight, Check, Lock, Truck, CreditCard,
-  Smartphone, Building2, Banknote, ShoppingBag, Package, X, Wallet, Loader2, Award, AlertTriangle
+  Smartphone, Building2, Banknote, ShoppingBag, Package, X, Wallet, Loader2, Award, AlertTriangle, UserRound
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import { formatPrice, calculateLoyaltyPoints } from "../../data/platform";
@@ -43,7 +43,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
   const awardWalletCashback = useStore((s) => s.awardWalletCashback);
   const redeemLoyaltyPoints = useStore((s) => s.redeemLoyaltyPoints);
   const user = useStore((s) => s.user);
-  const setPendingGuestRewards = useStore((s) => s.setPendingGuestRewards);
+  const signup = useStore((s) => s.signup);
 
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("wallet");
@@ -51,7 +51,10 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState("");
   const [orderId, setOrderId] = useState("");
-  const [showAccountOffer, setShowAccountOffer] = useState(false);
+  const [acctName, setAcctName] = useState("");
+  const [acctEmail, setAcctEmail] = useState("");
+  const [acctPassword, setAcctPassword] = useState("");
+  const [acctError, setAcctError] = useState("");
   const [confirmation, setConfirmation] = useState<{ total: number; points: number; cashback: number; paymentLabel: string; method: string } | null>(null);
 
   const [shipping, setShipping] = useState({
@@ -121,6 +124,26 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
 
   const handlePlaceOrder = () => {
     setPayError("");
+    setAcctError("");
+    if (!user) {
+      // Purchasing is the moment every customer gets a shopper account —
+      // browsing and the cart need no login, but an order always lands on one.
+      const name = (acctName || shipping.name).trim();
+      const email = (acctEmail || shipping.email).trim();
+      if (!name) {
+        setAcctError("Enter your name to create your shopper account.");
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setAcctError("Enter a valid email — it becomes your shopper account.");
+        return;
+      }
+      if (acctPassword && acctPassword.trim().length < 6) {
+        setAcctError("Password must be at least 6 characters (or leave it blank).");
+        return;
+      }
+      signup(email, name, "shopper", acctPassword.trim() || undefined);
+    }
     const err = validatePayment();
     if (err) {
       setPayError(err);
@@ -163,17 +186,9 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
       redeemLoyaltyPoints(cartRedeem.points, `Redeemed for order discount (${orderId})`);
     }
     const cashback = Math.floor(total * 0.01);
-    if (user) {
-      earnPointsFromPurchase(total);
-      if (cashback > 0) {
-        awardWalletCashback(cashback, `Order cashback (${orderId})`);
-      }
-    } else {
-      // Guest purchase: the order is fully placed, but cashback + loyalty
-      // points are held back and offered on the confirmation screen. They are
-      // credited automatically when the shopper creates an account.
-      setPendingGuestRewards({ total, orderId: trackingNumber });
-      setShowAccountOffer(true);
+    earnPointsFromPurchase(total);
+    if (cashback > 0) {
+      awardWalletCashback(cashback, `Order cashback (${orderId})`);
     }
 
     const paymentLabel = PAYMENT_METHODS.find((p) => p.id === paymentMethod)?.label ?? "Wallet";
@@ -336,6 +351,55 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Payment Methods */}
               <div className="lg:col-span-2 space-y-3">
+                {!user ? (
+                  <div className="rounded-[16px] border border-brand/25 bg-brand/5 p-4 sm:p-5 mb-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-10 w-10 rounded-[12px] bg-brand/15 flex items-center justify-center shrink-0">
+                        <UserRound className="h-5 w-5 text-brand" strokeWidth={1.8} />
+                      </div>
+                      <div>
+                        <p className="text-subhead font-bold text-ink leading-tight">One last step — your shopper account</p>
+                        <p className="text-[11px] text-ink-tertiary leading-snug">Browsing and adding to cart need no login. Checking out is where your account is created.</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-caption text-ink-secondary font-semibold block mb-1.5">Full name</label>
+                        <input value={acctName} onChange={(e) => setAcctName(e.target.value)} placeholder={shipping.name || "e.g. Amina Hassan"} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" />
+                      </div>
+                      <div>
+                        <label className="text-caption text-ink-secondary font-semibold block mb-1.5">Email</label>
+                        <input type="email" value={acctEmail} onChange={(e) => setAcctEmail(e.target.value)} placeholder={shipping.email || "you@example.com"} className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" />
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="text-caption text-ink-secondary font-semibold block mb-1.5">
+                        Password <span className="font-normal text-ink-quaternary">(optional — set one to sign back in later)</span>
+                      </label>
+                      <input type="password" value={acctPassword} onChange={(e) => setAcctPassword(e.target.value)} placeholder="••••••••" className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" />
+                    </div>
+                    {acctError && (
+                      <p className="mt-3 flex items-center gap-1.5 text-caption text-error">
+                        <X className="h-3.5 w-3.5 shrink-0" />
+                        {acctError}
+                      </p>
+                    )}
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <p className="text-[11px] text-ink-tertiary leading-snug">Your order lands directly on this account — points and cashback are credited instantly.</p>
+                      <button
+                        onClick={() => useStore.getState().setAuthView("login")}
+                        className="shrink-0 text-[11px] font-semibold text-brand hover:underline"
+                      >
+                        Sign in instead
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-1 flex items-center gap-2 text-caption text-ink-secondary">
+                    <UserRound className="h-4 w-4 text-brand" />
+                    Purchasing as <span className="font-semibold text-ink">{user.name || user.email}</span>
+                  </div>
+                )}
                 <h2 className="text-title font-bold text-ink mb-4">Payment Method</h2>
                 {PAYMENT_METHODS.map((pm) => {
                   const Icon = pm.icon;
@@ -493,13 +557,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
                   </div>
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-brand mb-4">
                     <Award className="h-3 w-3" />
-                    <span className="text-center">
-                      {user ? (
-                        <>You'll earn {pointsOnOrder} point{pointsOnOrder !== 1 ? "s" : ""} + {Math.floor(total * 0.01)} cashback on this order</>
-                      ) : (
-                        <>Earn {pointsOnOrder} point{pointsOnOrder !== 1 ? "s" : ""} + {Math.floor(total * 0.01)} cashback — claimable with a free account</>
-                      )}
-                    </span>
+                    <span>You'll earn {pointsOnOrder} point{pointsOnOrder !== 1 ? "s" : ""} + {Math.floor(total * 0.01)} cashback on this order</span>
                   </div>
                   <div className="flex gap-3">
                     <Button variant="secondary" size="lg" onClick={() => setStep(1)} icon={<ArrowLeft className="h-4 w-4" />} disabled={processing}>Back</Button>
@@ -546,39 +604,6 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
                   <div className="flex justify-between"><span className="text-caption text-ink-secondary">Wallet Cashback</span><span className="text-caption font-bold text-success">+{formatPrice(confirmation.cashback, selectedCurrency)}</span></div>
                 )}
               </motion.div>
-              {showAccountOffer && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.75 }}
-                  className="rounded-[16px] border border-brand/25 bg-brand/5 p-4 mb-6 text-left"
-                >
-                  <p className="text-callout font-semibold text-ink mb-1">
-                    Your order is safe — now keep it forever.
-                  </p>
-                  <p className="text-caption text-ink-secondary mb-3">
-                    Create a free account to save this order to your history and claim{" "}
-                    <span className="font-semibold text-brand">+{confirmation.points} pts</span>
-                    {confirmation.cashback > 0 && (
-                      <> and <span className="font-semibold text-success">+{formatPrice(confirmation.cashback, selectedCurrency)}</span> cashback</>
-                    )}{" "}
-                    waiting for you. No login needed to shop — only when you want the power of BirichiNex.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => useStore.getState().setAuthView("signup")}
-                      icon={<Award className="h-3.5 w-3.5" />}
-                    >
-                      Create free account
-                    </Button>
-                    <Button variant="secondary" size="sm" onClick={() => setShowAccountOffer(false)}>
-                      Maybe later
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex gap-3">
                 <Button variant="secondary" fullWidth onClick={() => onNavigate("home")}>Continue Shopping</Button>
                 <Button variant="primary" fullWidth onClick={() => onNavigate("orders")}>Track My Order</Button>
