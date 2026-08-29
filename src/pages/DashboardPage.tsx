@@ -591,7 +591,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       </div>
 
       {/* ── Stats ────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Revenue", value: stats.totalRevenue, icon: DollarSign, color: "#30D158", formatted: true, view: "finance" as BirichiNexView },
           { label: "Customers", value: stats.totalContacts, icon: Users, color: "#007AFF", formatted: false, view: "crm" as BirichiNexView },

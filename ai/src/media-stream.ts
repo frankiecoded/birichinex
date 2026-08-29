@@ -1,14 +1,16 @@
 // ============================================
 // Amani — Live Conversational Call Bridge.
 //
-// Bridges Twilio Media Streams (G.711 μ-law audio over WebSocket) to the
-// Gemini Live API (real-time, bidirectional audio). The model hears the
-// caller, understands what is relevant in THIS specific conversation, and
-// speaks back naturally — just like a human secretary on the phone.
+// Bridges real-time audio to the Gemini Live API (real-time, bidirectional
+// audio). Two call paths share this module:
 //
-// Flow:
-//   caller audio -> μ-law 8kHz -> PCM16 16kHz -> Gemini Live
-//   Gemini Live  -> PCM16 24kHz -> μ-law 8kHz   -> caller audio
+//   1. Twilio Media Streams (G.711 μ-law audio over WebSocket):
+//        caller audio -> μ-law 8kHz -> PCM16 16kHz -> Gemini Live
+//        Gemini Live  -> PCM16 24kHz -> μ-law 8kHz   -> caller audio
+//
+//   2. In-app live voice (browser -> /api/agent-live WebSocket):
+//        browser mic -> PCM16 16kHz -> Gemini Live
+//        Gemini Live -> PCM16 24kHz -> PCM16 16kHz  -> browser speaker
 //
 // The AI persona (name, tone, language, objective, order context, opening
 // and closing lines) is built from the same AIAgentConfig used across the
@@ -26,7 +28,7 @@ import {
 } from "./live-audio";
 
 export const GEMINI_LIVE_MODEL =
-  process.env.GEMINI_LIVE_MODEL || "gemini-live-2.5-flash-preview";
+  process.env.GEMINI_LIVE_MODEL || "gemini-3.1-flash-live-preview";
 
 const GEMINI_LIVE_VOICE: Record<string, string> = {
   kore: "Kore",
@@ -48,6 +50,11 @@ export function isLiveConversationReady(): boolean {
       (process.env.TWILIO_TWIML_BASE_URL || process.env.APP_URL) &&
       process.env.GEMINI_API_KEY,
   );
+}
+
+/** True when Gemini Live itself is usable (Gemini key present). */
+export function isGeminiLiveReady(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY);
 }
 
 export interface MediaStreamCallbacks {
@@ -141,10 +148,140 @@ interface TwilioMediaEvent {
   media?: { payload?: string };
 }
 
-interface GeminiLiveSession {
-  sendRealtimeInput(params: { audio: { data: string; mimeType: string } }): void;
-  sendClientContent(params: { turns?: { role: string; parts: { text: string }[] }[]; turnComplete?: boolean }): void;
+/**
+ * A live Gemini session opened to a stable handle decoupled from the
+ * transport (Twilio vs browser WebSocket).
+ */
+export interface LiveSessionHandle {
+  /** Send caller/mic audio as 16-bit little-endian PCM at 16kHz. */
+  sendAudio16k(data: Buffer): void;
+  /** Send a textual user turn (priming, barge-in text, silent fallback). */
+  sendUserText(text: string): void;
   close(): void;
+}
+
+export interface LiveSessionHandlers {
+  /** Gemini output audio — 16-bit little-endian PCM at 24kHz. */
+  onAudioPcm24k?: (pcm24k: Int16Array) => void;
+  onAgentText?: (text: string, partial: boolean) => void;
+  onCustomerText?: (text: string, partial: boolean) => void;
+  /** Caller spoke over the AI — cancel queued output playback. */
+  onInterrupted?: () => void;
+  onError?: (message: string) => void;
+  onClose?: () => void;
+}
+
+/**
+ * Opens a Gemini Live audio session configured for the given call context.
+ * Shared by the Twilio media-stream handler and the in-app browser bridge so
+ * both paths get identical behavior and the same persona.
+ */
+export async function openGeminiLive(
+  gemini: GoogleGenAI,
+  ctx: TwilioCallContext,
+  handlers: LiveSessionHandlers,
+): Promise<LiveSessionHandle | null> {
+  let session: any = null;
+  let closed = false;
+
+  const onGeminiMessage = (msg: any) => {
+    if (closed) return;
+    const sc = msg?.serverContent;
+    if (!sc) return;
+
+    // Caller spoke over the AI — stop playback and clear what we queued.
+    if (sc.interrupted) {
+      handlers.onInterrupted?.();
+      return;
+    }
+
+    // Gemini output audio lives under serverContent.modelTurn.parts[].
+    const turn = sc.modelTurn;
+    if (turn?.parts) {
+      for (const part of turn.parts) {
+        const inline = part?.inlineData;
+        if (inline?.data) {
+          try {
+            const pcm24k = decodePcm16Base64(inline.data);
+            if (pcm24k.length > 0) handlers.onAudioPcm24k?.(pcm24k);
+          } catch (err) {
+            console.error("[media-stream] Audio decode error:", err);
+          }
+        }
+      }
+    }
+
+    const agentText = sc.outputTranscription?.text;
+    if (agentText) handlers.onAgentText?.(agentText, !sc.turnComplete);
+    const customerText = sc.interimInputTranscription?.text;
+    if (customerText) handlers.onCustomerText?.(customerText, true);
+  };
+
+  try {
+    const liveSession = await gemini.live.connect({
+      model: GEMINI_LIVE_MODEL,
+      config: {
+        responseModalities: [Modality.AUDIO],
+        systemInstruction: [{ text: buildLiveSystemInstruction(ctx) }],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: GEMINI_LIVE_VOICE[ctx.voice] || "Kore",
+            },
+          },
+        },
+        inputAudioTranscription: { languageAuto: {} },
+        outputAudioTranscription: { languageAuto: {} },
+      },
+      callbacks: {
+        onopen: () => console.log("[media-stream] Gemini Live session open."),
+        onmessage: onGeminiMessage,
+        onerror: (e: any) => {
+          const message = e?.error?.message || e?.message || String(e);
+          console.error("[media-stream] Gemini error:", message);
+          handlers.onError?.(message);
+        },
+        onclose: () => {
+          if (!closed) {
+            try { handlers.onClose?.(); } catch { /* noop */ }
+          }
+        },
+      },
+    });
+
+    session = liveSession as any;
+    return {
+      sendAudio16k(data: Buffer) {
+        if (closed) return;
+        try {
+          session?.sendRealtimeInput?.({ audio: { data: data.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
+        } catch (err) {
+          console.error("[media-stream] Audio forward error:", err);
+        }
+      },
+      sendUserText(text: string) {
+        if (closed) return;
+        try {
+          session?.sendClientContent?.({
+            turns: [{ role: "user", parts: [{ text }] }],
+            turnComplete: true,
+          });
+        } catch (err) {
+          console.error("[media-stream] Text send error:", err);
+        }
+      },
+      close() {
+        closed = true;
+        try {
+          session?.close?.();
+        } catch { /* noop */ }
+      },
+    };
+  } catch (err) {
+    console.error("[media-stream] Failed to open Gemini Live session:", err);
+    handlers.onError?.(err instanceof Error ? err.message : String(err));
+    return null;
+  }
 }
 
 const MAX_PRE_BUFFER = 50; // ~1s of 20ms frames buffered while the session opens
@@ -170,8 +307,9 @@ export async function handleTwilioMediaStream(
 
   let streamSid: string | null = null;
   let closed = false;
-  let session: GeminiLiveSession | null = null;
-  let sessionPromise: Promise<GeminiLiveSession | null> | null = null;
+  let sessionFailed = false;
+  let session: LiveSessionHandle | null = null;
+  let sessionPromise: Promise<LiveSessionHandle | null> | null = null;
   const preSessionAudio: string[] = [];
 
   const send = (payload: Record<string, unknown>) => {
@@ -182,80 +320,42 @@ export async function handleTwilioMediaStream(
     send({ event: "media", streamSid, media: { payload: mulaw.toString("base64") } });
   };
 
-  const onGeminiMessage = (msg: any) => {
-    const sc = msg?.serverContent;
-    if (!sc) return;
-
-    // Caller spoke over the AI — stop playback and clear what we queued.
-    if (sc.interrupted) {
-      downsample.reset();
-      send({ event: "clear", streamSid });
-      return;
-    }
-
-    if (msg.data) {
-      const pcm24k = decodePcm16Base64(msg.data);
-      if (pcm24k.length > 0 && streamSid) {
+  const openSession = async (): Promise<LiveSessionHandle | null> => {
+    if (!gemini) return null;
+    const handle = await openGeminiLive(gemini, ctx, {
+      onAudioPcm24k: (pcm24k) => {
         const pcm8k = downsample(pcm24k);
-        sendMedia(pcm16ToUlaw(pcm8k));
-      }
-    }
-
-    const agentText = sc.outputTranscription?.text;
-    if (agentText) callbacks?.onTranscription?.("agent", agentText, !sc.turnComplete);
-    const customerText = sc.interimInputTranscription?.text;
-    if (customerText) callbacks?.onTranscription?.("customer", customerText, true);
-  };
-
-  const openSession = async (): Promise<GeminiLiveSession | null> => {
-    try {
-      const liveSession = await gemini.live.connect({
-        model: GEMINI_LIVE_MODEL,
-        config: {
-          responseModalities: [Modality.AUDIO],
-          systemInstruction: [{ text: buildLiveSystemInstruction(ctx) }],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: GEMINI_LIVE_VOICE[ctx.voice] || "Kore",
-              },
-            },
-          },
-          inputAudioTranscription: { languageAuto: {} },
-          outputAudioTranscription: { languageAuto: {} },
-        },
-        callbacks: {
-          onopen: () => console.log("[media-stream] Gemini Live session open."),
-          onmessage: onGeminiMessage,
-          onerror: (e: any) => console.error("[media-stream] Gemini error:", e?.error?.message || e),
-          onclose: () => {
-            if (!closed) cleanup();
-          },
-        },
-      });
-      const sessionHandle = liveSession as unknown as GeminiLiveSession;
-      session = sessionHandle;
-
-      // Flush any caller audio captured while the session was opening.
-      for (const payload of preSessionAudio.splice(0)) {
-        forwardAudio(payload);
-      }
-
-      // Prime the model so it speaks first — the customer has just answered.
-      sessionHandle.sendClientContent({
-        turns: [
-          { role: "user", parts: [{ text: "[The customer just answered the phone. Open the call now — greet them and begin.]" }] },
-        ],
-        turnComplete: true,
-      });
-      return sessionHandle;
-    } catch (err) {
-      console.error("[media-stream] Failed to open Gemini Live session:", err);
+        if (streamSid) sendMedia(pcm16ToUlaw(pcm8k));
+      },
+      onInterrupted: () => {
+        downsample.reset();
+        send({ event: "clear", streamSid });
+      },
+      onAgentText: (text, partial) => callbacks?.onTranscription?.("agent", text, partial),
+      onCustomerText: (text, partial) => callbacks?.onTranscription?.("customer", text, partial),
+      onError: (message) => console.error("[media-stream] Gemini:", message),
+    });
+    if (!handle) {
+      // Session never established — close the stream so Twilio serves the
+      // fallback <Say> in the conversational TwiML instead of dead air.
+      sessionFailed = true;
+      try { ws.close(); } catch { /* noop */ }
       return null;
     }
+
+    // Flush any caller audio captured while the session was opening.
+    for (const payload of preSessionAudio.splice(0)) {
+      forwardAudio(payload);
+    }
+
+    // Prime the model so it speaks first — the customer has just answered.
+    handle.sendUserText(
+      "[The customer just answered the phone. Open the call now — greet them and begin.]",
+    );
+    return handle;
   };
 
-  const ensureSession = (): Promise<GeminiLiveSession | null> => {
+  const ensureSession = (): Promise<LiveSessionHandle | null> => {
     if (!sessionPromise) sessionPromise = openSession();
     return sessionPromise;
   };
@@ -271,17 +371,14 @@ export async function handleTwilioMediaStream(
   };
 
   function forwardAudio(payload: string) {
-    if (closed) return;
+    if (closed || !session) return;
     try {
       const mulaw = Buffer.from(payload, "base64");
       const pcm8k = ulawToPcm16(mulaw);
       const pcm16k = upsample(pcm8k);
-      session?.sendRealtimeInput({
-        audio: {
-          data: Buffer.from(pcm16k.buffer, pcm16k.byteOffset, pcm16k.byteLength).toString("base64"),
-          mimeType: "audio/pcm;rate=16000",
-        },
-      });
+      session.sendAudio16k(
+        Buffer.from(pcm16k.buffer, pcm16k.byteOffset, pcm16k.byteLength),
+      );
     } catch (err) {
       console.error("[media-stream] Audio forward error:", err);
     }

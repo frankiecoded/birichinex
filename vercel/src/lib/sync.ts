@@ -152,6 +152,31 @@ export function schedulePush(): void {
   }, PUSH_DEBOUNCE_MS);
 }
 
+// ── Health probe (Settings → Support) ────────────────────────────────────────
+// A cheap read against /api/sync tells the user whether cloud backup is live.
+// A 2xx from GET means both the server and Postgres are reachable.
+
+export type SyncHealth =
+  | { state: "ok" }
+  | { state: "disabled" }
+  | { state: "offline" }
+  | { state: "error"; detail?: string };
+
+export async function probeSync(): Promise<SyncHealth> {
+  if (!syncConfigured()) return { state: "offline" };
+  try {
+    const userKey = currentUserKey();
+    const res = await fetch(`/api/sync?userKey=${encodeURIComponent(userKey)}`, {
+      headers: syncHeaders(),
+    });
+    if (res.status === 503) return { state: "disabled" };
+    if (!res.ok) return { state: "error", detail: `HTTP ${res.status}` };
+    return { state: "ok" };
+  } catch (error) {
+    return { state: "error", detail: error instanceof Error ? error.message : undefined };
+  }
+}
+
 // ── Store subscription (deduped, handles identity changes) ──────────────────
 
 let lastSyncedUserKey = currentUserKey();

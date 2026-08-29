@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
+import LiveVoiceCall from "../components/voice/LiveVoiceCall";
 import { useStore } from "../store/useStore";
 import {
   simulateAgentCall,
@@ -124,6 +125,7 @@ export default function AISalesAgentPage() {
   const [inboxTab, setInboxTab] = useState<"notifications" | "emails">("notifications");
   const [connection, setConnection] = useState<"conversational" | "live" | "simulated" | "checking">("checking");
   const [fromNumber, setFromNumber] = useState<string | null>(null);
+  const [geminiLive, setGeminiLive] = useState(false);
 
   const ownerEmail = user?.email ?? "owner@birichinex.com";
   const ownerName = user?.name ?? "Business Owner";
@@ -136,6 +138,7 @@ export default function AISalesAgentPage() {
         if (d?.mode === "conversational") setConnection("conversational");
         else setConnection(d?.mode === "live" ? "live" : "simulated");
         setFromNumber(d?.fromNumber ?? null);
+        setGeminiLive(Boolean(d?.geminiLive));
       })
       .catch(() => setConnection("simulated"));
   }, []);
@@ -421,7 +424,9 @@ export default function AISalesAgentPage() {
                     : `${aiAgent.name} is live on Twilio — dialing from ${fromNumber}`
                   : connection === "checking"
                     ? "Checking call connection…"
-                    : `${aiAgent.name} is ready — simulation mode (add Twilio keys for live calls)`}
+                    : geminiLive
+                      ? `${aiAgent.name} is live — talk by voice in the Call Center, add Twilio keys to dial real numbers`
+                      : `${aiAgent.name} is ready — simulation mode (add Twilio keys for live calls)`}
               </p>
             </div>
           </div>
@@ -473,7 +478,7 @@ export default function AISalesAgentPage() {
       {tab === "live" && (
         <div className="space-y-6">
           {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((s, i) => (
               <motion.div
                 key={s.label}
@@ -521,9 +526,30 @@ export default function AISalesAgentPage() {
                 <Button variant="secondary" size="md" onClick={handleFollowUps} loading={busy === "followups"}>
                   <PhoneOutgoing className="h-4 w-4 mr-2" /> Run order follow-ups
                 </Button>
+                {geminiLive && (
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={() => document.getElementById("live-voice")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                  >
+                    <AudioLines className="h-4 w-4 mr-2" /> Talk to Amani live
+                  </Button>
+                )}
               </div>
             </div>
           </motion.div>
+
+          {/* Live voice — talk to Amani directly from the app */}
+          {geminiLive && (
+            <motion.div
+              id="live-voice"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <LiveVoiceCall agent={aiAgent} business="BirichiNex" userName={ownerName} />
+            </motion.div>
+          )}
 
           {/* Call feed */}
           <div>
@@ -851,6 +877,12 @@ export default function AISalesAgentPage() {
                         {connection === "checking" ? "Checking…" : "Simulation"}
                       </Badge>
                     )}
+                    {geminiLive && (
+                      <Badge variant="brand" size="sm">
+                        <AudioLines className="h-3 w-3 mr-1.5 inline" />
+                        In-app voice live
+                      </Badge>
+                    )}
                   </div>
                   {connection === "live" ? (
                     <p className="text-caption text-ink-tertiary leading-relaxed">
@@ -860,8 +892,10 @@ export default function AISalesAgentPage() {
                     </p>
                   ) : (
                     <p className="text-caption text-ink-tertiary leading-relaxed max-w-2xl">
-                      Real dialing is one config away. Add these to <span className="font-mono text-ink-secondary">.env</span>{" "}
-                      and restart: <span className="font-mono text-ink-secondary">TWILIO_ACCOUNT_SID</span>,{" "}
+                      {geminiLive
+                        ? "In-app live voice already works — open the Call Center tab and hit \"Talk to Amani now\" to have a real voice conversation with the assistant. To also dial real phone numbers, add "
+                        : "Real dialing is one config away. Add these to "}
+                      <span className="font-mono text-ink-secondary">TWILIO_ACCOUNT_SID</span>,{" "}
                       <span className="font-mono text-ink-secondary">TWILIO_AUTH_TOKEN</span>,{" "}
                       <span className="font-mono text-ink-secondary">TWILIO_PHONE_NUMBER</span> (E.164), and a public{" "}
                       <span className="font-mono text-ink-secondary">TWILIO_TWIML_BASE_URL</span> (e.g. your ngrok or

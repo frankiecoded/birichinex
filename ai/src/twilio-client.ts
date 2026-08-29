@@ -364,9 +364,29 @@ export function buildConversationalTwiml(ctx: TwilioCallContext): TwiMLResult {
   const streamUrl = `wss://${base.replace(/^https?:\/\//, "")}/api/twilio/media-stream?${query}`;
 
   const resp = new twilio.twiml.VoiceResponse();
-  resp.connect().stream({ url: streamUrl, track: "inbound_track" });
-
+  const voice = POLLY_VOICE[ctx.voice] || VOICE;
   const lines: string[] = [];
+
+  // A quick hold line so the caller immediately hears something real while
+  // the Gemini Live session opens (audio takes a moment to arrive).
+  say(
+    resp,
+    `Thank you for calling ${ctx.business}. Please hold while I connect you to ${ctx.agent}.`,
+    lines,
+    voice,
+  );
+
+  // Full-duplex media stream bridged to Gemini Live. If the bridge closes
+  // (e.g. Gemini is unavailable), Twilio runs the <Say> below so the caller
+  // always gets a human-sounding answer instead of dead air.
+  resp.connect().stream({ url: streamUrl, track: "inbound_track" });
+  say(
+    resp,
+    "I'm sorry, our assistant is temporarily unavailable. Our team will call you back shortly. Have a great day.",
+    lines,
+    voice,
+  );
+
   if (ctx.opener) {
     lines.push(fill(ctx.opener, { customer: ctx.customer, agent: ctx.agent, business: ctx.business, order: ctx.orderId ?? "your order" }));
   } else {

@@ -274,7 +274,7 @@ export default function FloatingPillNav({
 
                 <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-5">
                   <div className="flex items-center gap-1 bg-white/40 p-1 rounded-[12px] border border-white/40 dark:bg-glass/60 dark:border-glass-border">
-                    {(["TZS", "KES", "UGX", "USD"] as Currency[]).map((curr) => (
+                    {(["KES", "TZS", "UGX", "USD"] as Currency[]).map((curr) => (
                       <button
                         key={curr}
                         onClick={() => onCurrencyChange(curr)}

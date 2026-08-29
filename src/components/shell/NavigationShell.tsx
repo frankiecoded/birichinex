@@ -375,7 +375,7 @@ export default function NavigationShell({
           <div className="flex items-center gap-2">
             {/* Currency Selector */}
             <div className="hidden sm:flex items-center bg-surface-secondary/60 backdrop-blur-sm p-0.5 rounded-[10px] border border-glass-border">
-              {(["TZS", "KES", "UGX", "USD"] as Currency[]).map((curr) => (
+              {(["KES", "TZS", "UGX", "USD"] as Currency[]).map((curr) => (
                 <button
                   key={curr}
                   onClick={() => onCurrencyChange(curr)}

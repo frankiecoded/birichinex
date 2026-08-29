@@ -462,7 +462,7 @@ export default function DocumentsPage() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Documents", value: stats.total.toString(), icon: FileText, color: "#007AFF" },
           { label: "Pending Signatures", value: stats.pendingSignatures.toString(), icon: Pen, color: "#FF9500" },

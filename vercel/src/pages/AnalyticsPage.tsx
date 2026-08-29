@@ -116,7 +116,7 @@ export default function AnalyticsPage() {
       </motion.div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Revenue Growth", value: kpis.revenueGrowth, icon: TrendingUp, color: "#30D158" },
           { label: "Total Contacts", value: kpis.customerAcquisition, icon: Users, color: "#007AFF" },

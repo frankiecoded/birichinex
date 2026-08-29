@@ -22,8 +22,10 @@ import {
 } from "./ai/src/twilio-client";
 import {
   handleTwilioMediaStream,
+  isGeminiLiveReady,
   isLiveConversationReady,
 } from "./ai/src/media-stream";
+import { handleLiveVoiceSocket } from "./ai/src/live-session";
 import {
   getPaymentMode,
   getPaymentProvider,
@@ -1090,11 +1092,47 @@ app.get("/api/agent-call/mode", (_req, res) => {
   res.json({
     mode: conversational ? "conversational" : isLiveReady() ? "live" : "simulated",
     conversational,
+    geminiLive: isGeminiLiveReady(),
     configured: status.configured,
     fromNumber: status.fromNumber,
     twimlBaseUrl: status.twimlBaseUrl,
     record: status.record,
   });
+});
+
+// Short-lived signed token that authorizes an in-app live voice WebSocket.
+// The signature secret is boot-random unless LIVE_SESSION_SECRET is set, so
+// stale tokens cannot be replayed across restarts.
+const LIVE_SESSION_SECRET =
+  process.env.LIVE_SESSION_SECRET ||
+  crypto.randomBytes(32).toString("hex");
+const LIVE_SESSION_TTL_MS = 5 * 60 * 1000;
+const liveSessionCounts = new Map<string, number>();
+
+function issueLiveSessionToken(): string {
+  const payload = String(Date.now() + LIVE_SESSION_TTL_MS);
+  const sig = crypto.createHmac("sha256", LIVE_SESSION_SECRET).update(payload).digest("base64url");
+  return `${payload}.${sig}`;
+}
+
+function verifyLiveSessionToken(token: string): boolean {
+  const [payload, sig] = String(token || "").split(".");
+  if (!payload || !sig) return false;
+  try {
+    const expected = crypto.createHmac("sha256", LIVE_SESSION_SECRET).update(payload).digest("base64url");
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
+    return Number(payload) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+app.post("/api/agent-live/token", (req, res) => {
+  if (applyRateLimit(req, res)) return;
+  if (!isGeminiLiveReady()) {
+    return res.status(503).json({ error: "Gemini voice is not configured on this server." });
+  }
+  res.json({ token: issueLiveSessionToken(), expiresIn: LIVE_SESSION_TTL_MS / 1000 });
 });
 
 // 5. Place an outbound live call. When Gemini + Twilio are configured the
@@ -1261,6 +1299,45 @@ async function setupVite() {  if (process.env.NODE_ENV !== "production") {
         console.log(`[media-stream][${role}] ${text}`);
       },
     });
+  });
+
+  // ─── In-app live voice bridge (browser -> /api/agent-live -> Gemini Live) ─
+  const liveWss = new WebSocketServer({ server, path: "/api/agent-live" });
+  liveWss.on("connection", (ws, req) => {
+    let params: Record<string, string> = {};
+    let token = "";
+    try {
+      const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+      url.searchParams.forEach((value, key) => { params[key] = value; });
+      token = params.token || "";
+      delete params.token;
+    } catch { /* keep empty params */ }
+
+    if (!verifyLiveSessionToken(token)) {
+      ws.close(4001, "unauthorized");
+      return;
+    }
+
+    const ip = req.socket.remoteAddress || "unknown";
+    const active = liveSessionCounts.get(ip) || 0;
+    if (active >= 3) {
+      ws.close(4003, "too many live sessions");
+      return;
+    }
+    liveSessionCounts.set(ip, active + 1);
+
+    const ctx = twilioContextFromRequest(params);
+    console.log(`[live-session] In-app voice connected (${ctx.business} / ${ctx.agent}).`);
+
+    const release = () => {
+      const n = (liveSessionCounts.get(ip) || 1) - 1;
+      if (n <= 0) liveSessionCounts.delete(ip);
+      else liveSessionCounts.set(ip, n);
+    };
+    ws.on("close", release);
+    ws.on("error", release);
+
+    handleLiveVoiceSocket(ws, ctx, getGeminiClient());
   });
 
   server.listen(PORT, "0.0.0.0", () => {

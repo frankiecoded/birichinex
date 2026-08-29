@@ -456,7 +456,8 @@ export interface DropshippingSubscription {
   tier: DropshippingTier;
   status: "active" | "inactive" | "cancelled";
   subscribedAt: string;
-  expiresAt: string;
+  /** Omitted (undefined) means no expiration — the free Starter tier is permanent. */
+  expiresAt?: string;
 }
 
 // --- Business Audit (AI Discovery Engine) ---
@@ -626,12 +627,98 @@ export interface SubscriptionState {
   plan: MembershipTier;
   status: "none" | "active" | "cancelled" | "expired";
   startedAt: string;
-  expiresAt: string;
+  /** Omitted (undefined) means the plan has no expiry — the free Silver tier is permanent. */
+  expiresAt?: string;
   billingPeriod?: BillingPeriod;
   autoRenew?: boolean;
 }
 
 export const PAID_PLANS: MembershipTier[] = ["gold", "platinum", "enterprise"];
+
+// --- Community (forums, partnerships, events, directory, networking) ---
+
+export interface CommunityComment {
+  id: string;
+  content: string;
+  author: string;
+  authorCompany: string;
+  likes: number;
+  likedByUser: boolean;
+  createdAt: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  author: string;
+  authorCompany: string;
+  likes: number;
+  likedByUser: boolean;
+  bookmarkedByUser: boolean;
+  comments: CommunityComment[];
+  createdAt: string;
+}
+
+export type CommunityPartnershipStatus = "proposed" | "active" | "expired" | "declined";
+
+export interface CommunityPartnership {
+  id: string;
+  title: string;
+  description: string;
+  proposer: string;
+  proposerCompany: string;
+  target: string;
+  targetCompany: string;
+  category: string;
+  status: CommunityPartnershipStatus;
+  createdAt: string;
+}
+
+export type CommunityEventStatus = "upcoming" | "ongoing" | "completed" | "cancelled";
+
+export interface CommunityEvent {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  date: string;
+  time: string;
+  location: string;
+  organizer: string;
+  organizerCompany: string;
+  status: CommunityEventStatus;
+  rsvpCount: number;
+  rsvpByUser: boolean;
+  maxAttendees: number;
+  createdAt: string;
+}
+
+export interface CommunityBusiness {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  location: string;
+  owner: string;
+  rating: number;
+  memberSince: string;
+  specialties: string[];
+  connected: boolean;
+}
+
+export type CommunityConnectionStatus = "pending" | "accepted" | "declined";
+
+export interface CommunityConnection {
+  id: string;
+  from: string;
+  fromCompany: string;
+  message: string;
+  status: CommunityConnectionStatus;
+  createdAt: string;
+}
 
 // --- Wallet (shopper balance, Amazon/Jumia style) ---
 

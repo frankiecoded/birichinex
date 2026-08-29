@@ -70,7 +70,8 @@ export default function MembershipPage() {
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isActive =
-    subscription.status === "active" && new Date(subscription.expiresAt).getTime() > Date.now();
+    subscription.status === "active" &&
+    (!subscription.expiresAt || new Date(subscription.expiresAt).getTime() > Date.now());
 
   useEffect(() => {
     if (justActivated) {
@@ -276,10 +277,14 @@ export default function MembershipPage() {
           <p className="text-caption text-ink-tertiary">{TIER_DESCS[currentTier]}</p>
           {isActive ? (
             <p className="text-caption text-success mt-2 font-semibold">
-              Active until {new Date(subscription.expiresAt).toLocaleDateString()} · {subscription.billingPeriod} plan
+              Active until {new Date(subscription.expiresAt ?? Date.now()).toLocaleDateString()} · {subscription.billingPeriod} plan
             </p>
           ) : subscription.status === "cancelled" ? (
             <p className="text-caption text-warning mt-2 font-semibold">Membership cancelled — choose a plan to continue</p>
+          ) : currentTier === "silver" && !justActivated ? (
+            <p className="text-caption text-ink-tertiary mt-2 font-semibold">
+              Free plan — no expiry, no card needed. Everything to run your shop is included; upgrade anytime for extra tools.
+            </p>
           ) : null}
           {justActivated && (
             <motion.p

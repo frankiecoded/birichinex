@@ -33,88 +33,18 @@ import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
 import Modal from "../components/ui/Modal";
 import { useStore } from "../store/useStore";
-import { BirichiNexView } from "../types";
+import {
+  BirichiNexView,
+  CommunityPost,
+  CommunityComment,
+  CommunityPartnership,
+  CommunityPartnershipStatus,
+  CommunityEvent,
+  CommunityBusiness,
+  CommunityConnection,
+} from "../types";
 
-// ── Local Types ──────────────────────────────────────────────────────────────
-
-interface CommunityPost {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  author: string;
-  authorCompany: string;
-  likes: number;
-  likedByUser: boolean;
-  bookmarkedByUser: boolean;
-  comments: CommunityComment[];
-  createdAt: string;
-}
-
-interface CommunityComment {
-  id: string;
-  content: string;
-  author: string;
-  authorCompany: string;
-  likes: number;
-  likedByUser: boolean;
-  createdAt: string;
-}
-
-interface Partnership {
-  id: string;
-  title: string;
-  description: string;
-  proposer: string;
-  proposerCompany: string;
-  target: string;
-  targetCompany: string;
-  category: string;
-  status: "proposed" | "active" | "expired" | "declined";
-  createdAt: string;
-}
-
-interface CommunityEvent {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  date: string;
-  time: string;
-  location: string;
-  organizer: string;
-  organizerCompany: string;
-  status: "upcoming" | "ongoing" | "completed" | "cancelled";
-  rsvpCount: number;
-  rsvpByUser: boolean;
-  maxAttendees: number;
-  createdAt: string;
-}
-
-interface BusinessProfile {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  location: string;
-  owner: string;
-  rating: number;
-  memberSince: string;
-  specialties: string[];
-  connected: boolean;
-}
-
-interface ConnectionRequest {
-  id: string;
-  from: string;
-  fromCompany: string;
-  message: string;
-  status: "pending" | "accepted" | "declined";
-  createdAt: string;
-}
-
-// ── Seed Data ────────────────────────────────────────────────────────────────
+// ── Categories ────────────────────────────────────────────────────────────────
 
 const POST_CATEGORIES = [
   "General",
@@ -208,11 +138,32 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   const currentUserName = user?.name ?? settings.profile.name;
   const currentUserCompany = settings.profile.company;
 
+  // ── Store-backed community data (persisted + synced to the cloud) ────────
+  const posts = useStore((s) => s.community.posts);
+  const partnerships = useStore((s) => s.community.partnerships);
+  const events = useStore((s) => s.community.events);
+  const businesses = useStore((s) => s.community.businesses);
+  const connections = useStore((s) => s.community.connections);
+  const addCommunityPost = useStore((s) => s.addCommunityPost);
+  const updateCommunityPost = useStore((s) => s.updateCommunityPost);
+  const deleteCommunityPost = useStore((s) => s.deleteCommunityPost);
+  const toggleCommunityPostLike = useStore((s) => s.toggleCommunityPostLike);
+  const toggleCommunityPostBookmark = useStore((s) => s.toggleCommunityPostBookmark);
+  const addCommunityComment = useStore((s) => s.addCommunityComment);
+  const toggleCommunityCommentLike = useStore((s) => s.toggleCommunityCommentLike);
+  const addCommunityPartnership = useStore((s) => s.addCommunityPartnership);
+  const setCommunityPartnershipStatus = useStore((s) => s.setCommunityPartnershipStatus);
+  const deleteCommunityPartnership = useStore((s) => s.deleteCommunityPartnership);
+  const addCommunityEvent = useStore((s) => s.addCommunityEvent);
+  const toggleCommunityEventRsvp = useStore((s) => s.toggleCommunityEventRsvp);
+  const deleteCommunityEvent = useStore((s) => s.deleteCommunityEvent);
+  const setCommunityBusinessConnected = useStore((s) => s.setCommunityBusinessConnected);
+  const setCommunityConnectionStatus = useStore((s) => s.setCommunityConnectionStatus);
+
   // ── Tab State ────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<Tab>("forums");
 
   // ── Forum State ──────────────────────────────────────────────────────────
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [postSearch, setPostSearch] = useState("");
   const [postCategoryFilter, setPostCategoryFilter] = useState("All");
   const [showNewPostModal, setShowNewPostModal] = useState(false);
@@ -226,7 +177,6 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // ── Partnership State ────────────────────────────────────────────────────
-  const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [partnershipSearch, setPartnershipSearch] = useState("");
   const [partnershipStatusFilter, setPartnershipStatusFilter] = useState("all");
   const [showNewPartnershipModal, setShowNewPartnershipModal] = useState(false);
@@ -239,7 +189,6 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   });
 
   // ── Event State ──────────────────────────────────────────────────────────
-  const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [eventSearch, setEventSearch] = useState("");
   const [eventStatusFilter, setEventStatusFilter] = useState("all");
   const [showNewEventModal, setShowNewEventModal] = useState(false);
@@ -254,22 +203,20 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   });
 
   // ── Directory State ──────────────────────────────────────────────────────
-  const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
   const [businessSearch, setBusinessSearch] = useState("");
   const [businessCategoryFilter, setBusinessCategoryFilter] = useState("All");
-  const [selectedBusiness, setSelectedBusiness] = useState<BusinessProfile | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<CommunityBusiness | null>(null);
 
   // ── Networking State ─────────────────────────────────────────────────────
-  const [connections, setConnections] = useState<ConnectionRequest[]>([]);
   const [sharedPostId, setSharedPostId] = useState<string | null>(null);
-  const [messageTarget, setMessageTarget] = useState<BusinessProfile | null>(null);
+  const [messageTarget, setMessageTarget] = useState<CommunityBusiness | null>(null);
   const [messageText, setMessageText] = useState("");
   const [messageSent, setMessageSent] = useState(false);
 
   // ── Stats Computed ───────────────────────────────────────────────────────
   const stats = useMemo(
     () => ({
-      activeMembers: 156,
+      activeMembers: businesses.length + connections.filter((c) => c.status === "accepted").length,
       postsThisWeek: posts.filter((p) => {
         const d = new Date(p.createdAt);
         const now = new Date();
@@ -314,53 +261,40 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
       comments: [],
       createdAt: new Date().toISOString(),
     };
-    setPosts((prev) => [post, ...prev]);
+    addCommunityPost(post);
     setNewPostTitle("");
     setNewPostContent("");
     setNewPostCategory("General");
     setNewPostTags("");
     setShowNewPostModal(false);
-  }, [newPostTitle, newPostContent, newPostCategory, newPostTags, currentUserName, currentUserCompany]);
+  }, [newPostTitle, newPostContent, newPostCategory, newPostTags, currentUserName, currentUserCompany, addCommunityPost]);
 
   const handleUpdatePost = useCallback(() => {
     if (!editingPost || !editingPost.title.trim() || !editingPost.content.trim()) return;
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === editingPost.id
-          ? {
-              ...p,
-              title: editingPost.title,
-              content: editingPost.content,
-              category: editingPost.category,
-              tags: editingPost.tags,
-            }
-          : p,
-      ),
-    );
+    updateCommunityPost(editingPost.id, {
+      title: editingPost.title,
+      content: editingPost.content,
+      category: editingPost.category,
+      tags: editingPost.tags,
+    });
     setEditingPost(null);
-  }, [editingPost]);
+  }, [editingPost, updateCommunityPost]);
 
   const handleDeletePost = useCallback((id: string) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id));
+    deleteCommunityPost(id);
     setDeleteConfirmId(null);
     if (expandedPost?.id === id) setExpandedPost(null);
-  }, [expandedPost]);
+  }, [expandedPost, deleteCommunityPost]);
 
-  const handleLikePost = useCallback((id: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, likedByUser: !p.likedByUser, likes: p.likedByUser ? p.likes - 1 : p.likes + 1 }
-          : p,
-      ),
-    );
-  }, []);
+  const handleLikePost = useCallback(
+    (id: string) => toggleCommunityPostLike(id),
+    [toggleCommunityPostLike],
+  );
 
-  const handleBookmarkPost = useCallback((id: string) => {
-    setPosts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, bookmarkedByUser: !p.bookmarkedByUser } : p)),
-    );
-  }, []);
+  const handleBookmarkPost = useCallback(
+    (id: string) => toggleCommunityPostBookmark(id),
+    [toggleCommunityPostBookmark],
+  );
 
   const handleAddComment = useCallback(
     (postId: string) => {
@@ -374,32 +308,16 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
         likedByUser: false,
         createdAt: new Date().toISOString(),
       };
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId ? { ...p, comments: [...p.comments, comment] } : p,
-        ),
-      );
+      addCommunityComment(postId, comment);
       setCommentText("");
     },
-    [commentText, currentUserName, currentUserCompany],
+    [commentText, currentUserName, currentUserCompany, addCommunityComment],
   );
 
-  const handleLikeComment = useCallback((postId: string, commentId: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId
-          ? {
-              ...p,
-              comments: p.comments.map((c) =>
-                c.id === commentId
-                  ? { ...c, likedByUser: !c.likedByUser, likes: c.likedByUser ? c.likes - 1 : c.likes + 1 }
-                  : c,
-              ),
-            }
-          : p,
-      ),
-    );
-  }, []);
+  const handleLikeComment = useCallback(
+    (postId: string, commentId: string) => toggleCommunityCommentLike(postId, commentId),
+    [toggleCommunityCommentLike],
+  );
 
   // ── Partnership Handlers ─────────────────────────────────────────────────
   const filteredPartnerships = useMemo(() => {
@@ -416,7 +334,7 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
 
   const handleCreatePartnership = useCallback(() => {
     if (!newPartnership.title.trim() || !newPartnership.description.trim()) return;
-    const pt: Partnership = {
+    const pt: CommunityPartnership = {
       id: generateId(),
       title: newPartnership.title.trim(),
       description: newPartnership.description.trim(),
@@ -428,18 +346,18 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
       status: "proposed",
       createdAt: new Date().toISOString(),
     };
-    setPartnerships((prev) => [pt, ...prev]);
+    addCommunityPartnership(pt);
     setNewPartnership({ title: "", description: "", target: "", targetCompany: "", category: "Distribution" });
     setShowNewPartnershipModal(false);
-  }, [newPartnership, currentUserName, currentUserCompany]);
+  }, [newPartnership, currentUserName, currentUserCompany, addCommunityPartnership]);
 
-  const handleUpdatePartnershipStatus = useCallback((id: string, status: Partnership["status"]) => {
-    setPartnerships((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
-  }, []);
+  const handleUpdatePartnershipStatus = useCallback((id: string, status: CommunityPartnershipStatus) => {
+    setCommunityPartnershipStatus(id, status);
+  }, [setCommunityPartnershipStatus]);
 
   const handleDeletePartnership = useCallback((id: string) => {
-    setPartnerships((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+    deleteCommunityPartnership(id);
+  }, [deleteCommunityPartnership]);
 
   // ── Event Handlers ───────────────────────────────────────────────────────
   const filteredEvents = useMemo(() => {
@@ -472,28 +390,18 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
       maxAttendees: newEvent.maxAttendees,
       createdAt: new Date().toISOString(),
     };
-    setEvents((prev) => [evt, ...prev]);
+    addCommunityEvent(evt);
     setNewEvent({ title: "", description: "", category: "Workshop", date: "", time: "", location: "", maxAttendees: 50 });
     setShowNewEventModal(false);
-  }, [newEvent, currentUserName, currentUserCompany]);
+  }, [newEvent, currentUserName, currentUserCompany, addCommunityEvent]);
 
   const handleRSVP = useCallback((id: string) => {
-    setEvents((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              rsvpByUser: !e.rsvpByUser,
-              rsvpCount: e.rsvpByUser ? e.rsvpCount - 1 : e.rsvpCount + 1,
-            }
-          : e,
-      ),
-    );
-  }, []);
+    toggleCommunityEventRsvp(id);
+  }, [toggleCommunityEventRsvp]);
 
   const handleDeleteEvent = useCallback((id: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+    deleteCommunityEvent(id);
+  }, [deleteCommunityEvent]);
 
   // ── Directory Handlers ───────────────────────────────────────────────────
   const filteredBusinesses = useMemo(() => {
@@ -511,16 +419,12 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
 
   // ── Networking Handlers ──────────────────────────────────────────────────
   const handleAcceptConnection = useCallback((id: string) => {
-    setConnections((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "accepted" as const } : c)),
-    );
-  }, []);
+    setCommunityConnectionStatus(id, "accepted");
+  }, [setCommunityConnectionStatus]);
 
   const handleDeclineConnection = useCallback((id: string) => {
-    setConnections((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "declined" as const } : c)),
-    );
-  }, []);
+    setCommunityConnectionStatus(id, "declined");
+  }, [setCommunityConnectionStatus]);
 
   const handleSharePost = useCallback((id: string) => {
     navigator.clipboard?.writeText(window.location.href).catch(() => {});
@@ -529,16 +433,16 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   }, []);
 
   const handleRequestConnection = useCallback((bizId: string) => {
-    setBusinesses((prev) => prev.map((b) => (b.id === bizId ? { ...b, connected: true } : b)));
+    setCommunityBusinessConnected(bizId, true);
     setSelectedBusiness((prev) => (prev?.id === bizId ? { ...prev, connected: true } : prev));
-  }, []);
+  }, [setCommunityBusinessConnected]);
 
   const handleDisconnect = useCallback((bizId: string) => {
-    setBusinesses((prev) => prev.map((b) => (b.id === bizId ? { ...b, connected: false } : b)));
+    setCommunityBusinessConnected(bizId, false);
     setSelectedBusiness((prev) => (prev?.id === bizId ? { ...prev, connected: false } : prev));
-  }, []);
+  }, [setCommunityBusinessConnected]);
 
-  const handleMessageOpen = useCallback((biz: BusinessProfile) => {
+  const handleMessageOpen = useCallback((biz: CommunityBusiness) => {
     setMessageTarget(biz);
     setMessageText("");
     setMessageSent(false);

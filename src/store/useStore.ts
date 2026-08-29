@@ -28,9 +28,17 @@ import {
   AgentCall,
   AppNotification,
   OwnerEmail,
+  CommunityPost,
+  CommunityComment,
+  CommunityPartnership,
+  CommunityPartnershipStatus,
+  CommunityEvent,
+  CommunityBusiness,
+  CommunityConnection,
+  CommunityConnectionStatus,
 } from '../types';
-import { computeAudit } from '../../ai/src/discovery';
-import type { DiscoveryAnswers } from '../../ai/src/discovery';
+import { hashPassword, verifyPassword, isHashedPassword } from "../lib/password";
+import { computeAudit, type DiscoveryAnswers } from '../../ai/src/discovery';
 import type {
   FinanceAction,
   FinanceApprovalEvent,
@@ -169,6 +177,7 @@ interface StoreState {
   user: { email: string; name: string; accountType: AccountType } | null;
   authView: 'login' | 'signup' | 'forgot' | null;
   introComplete: boolean;
+  entrySeen: boolean;
   users: Record<
     string,
     {
@@ -202,6 +211,7 @@ interface StoreState {
   logout: () => void;
   setAuthView: (view: 'login' | 'signup' | 'forgot' | null) => void;
   setIntroComplete: (v: boolean) => void;
+  setEntrySeen: (v: boolean) => void;
   updateUser: (partial: Partial<{ name: string; email: string }>) => void;
 
   // ── Core ───────────────────────────────────────────────────────────────────
@@ -385,6 +395,30 @@ interface StoreState {
   logEmail: (email: Omit<OwnerEmail, 'id' | 'read' | 'createdAt'>) => void;
   markEmailRead: (id: string) => void;
 
+  // ── Community (created by this account, persisted + synced) ──────────────
+  community: {
+    posts: CommunityPost[];
+    partnerships: CommunityPartnership[];
+    events: CommunityEvent[];
+    businesses: CommunityBusiness[];
+    connections: CommunityConnection[];
+  };
+  addCommunityPost: (post: CommunityPost) => void;
+  updateCommunityPost: (id: string, patch: Partial<CommunityPost>) => void;
+  deleteCommunityPost: (id: string) => void;
+  toggleCommunityPostLike: (id: string) => void;
+  toggleCommunityPostBookmark: (id: string) => void;
+  addCommunityComment: (postId: string, comment: CommunityComment) => void;
+  toggleCommunityCommentLike: (postId: string, commentId: string) => void;
+  addCommunityPartnership: (pt: CommunityPartnership) => void;
+  setCommunityPartnershipStatus: (id: string, status: CommunityPartnershipStatus) => void;
+  deleteCommunityPartnership: (id: string) => void;
+  addCommunityEvent: (evt: CommunityEvent) => void;
+  toggleCommunityEventRsvp: (id: string) => void;
+  deleteCommunityEvent: (id: string) => void;
+  setCommunityBusinessConnected: (id: string, connected: boolean) => void;
+  setCommunityConnectionStatus: (id: string, status: CommunityConnectionStatus) => void;
+
   // ── AI Copilot, Guided Tour & Command Palette ────────────────────────────
   copilotOpen: boolean;
   setCopilotOpen: (v: boolean) => void;
@@ -442,6 +476,7 @@ export const SYNCED_KEYS = [
   "outcomes",
   "notifications",
   "emails",
+  "community",
 ] as const;
 
 // ── Store ────────────────────────────────────────────────────────────────────
@@ -499,6 +534,7 @@ export const useStore = create<StoreState>()(
       user: null,
       authView: null,
       introComplete: false,
+      entrySeen: false,
       users: {},
       loginHistory: [],
       sessions: [],
@@ -541,7 +577,7 @@ export const useStore = create<StoreState>()(
                 name: resolvedName,
                 accountType: resolvedType,
                 createdAt: reserved?.createdAt ?? new Date().toISOString(),
-                password: password ?? reserved?.password,
+                password: password ? hashPassword(password, key) : reserved?.password,
               },
             },
             authView: null,
@@ -552,9 +588,22 @@ export const useStore = create<StoreState>()(
         const key = email.trim().toLowerCase();
         const rec = get().users[key];
         if (!rec) return { ok: false, error: "No account found for this email." };
-        if (rec.password && rec.password !== password) {
-          set((s) => ({ loginHistory: [makeLoginEvent(key, 'failed'), ...s.loginHistory].slice(0, 30) }));
-          return { ok: false, error: "Incorrect password. Try again." };
+        if (rec.password) {
+          let matches: boolean;
+          if (isHashedPassword(rec.password)) {
+            matches = verifyPassword(password, key, rec.password);
+          } else {
+            matches = rec.password === password;
+            if (matches) {
+              set((s) => ({
+                users: { ...s.users, [key]: { ...rec, password: hashPassword(password, key) } },
+              }));
+            }
+          }
+          if (!matches) {
+            set((s) => ({ loginHistory: [makeLoginEvent(key, 'failed'), ...s.loginHistory].slice(0, 30) }));
+            return { ok: false, error: "Incorrect password. Try again." };
+          }
         }
         if (rec.twoFactorCode) return { ok: true, needsTwoFactor: true, name: rec.name };
         return { ok: true, needsTwoFactor: false, name: rec.name };
@@ -583,15 +632,20 @@ export const useStore = create<StoreState>()(
         if (!user) return { ok: false, error: "You must be signed in to change your password." };
         const key = user.email.trim().toLowerCase();
         const rec = get().users[key];
-        if (rec?.password && rec.password !== currentPassword) {
-          return { ok: false, error: "Current password is incorrect." };
+        if (rec?.password) {
+          const currentMatches = isHashedPassword(rec.password)
+            ? verifyPassword(currentPassword, key, rec.password)
+            : rec.password === currentPassword;
+          if (!currentMatches) {
+            return { ok: false, error: "Current password is incorrect." };
+          }
         }
         set((s) => ({
           users: {
             ...s.users,
             [key]: {
               ...(rec ?? { name: user.name, accountType: user.accountType, createdAt: new Date().toISOString() }),
-              password: newPassword,
+              password: hashPassword(newPassword, key),
             },
           },
         }));
@@ -602,7 +656,7 @@ export const useStore = create<StoreState>()(
         const key = email.trim().toLowerCase();
         const rec = get().users[key];
         if (!rec) return { ok: false, error: "No account found for this email." };
-        set((s) => ({ users: { ...s.users, [key]: { ...rec, password: newPassword } } }));
+        set((s) => ({ users: { ...s.users, [key]: { ...rec, password: hashPassword(newPassword, key) } } }));
         return { ok: true };
       },
 
@@ -744,6 +798,7 @@ export const useStore = create<StoreState>()(
         })),
       setAuthView: (view) => set({ authView: view }),
       setIntroComplete: (v) => set({ introComplete: v }),
+      setEntrySeen: (v) => set({ entrySeen: v }),
 
       updateUser: (partial) =>
         set((state) => {
@@ -763,7 +818,7 @@ export const useStore = create<StoreState>()(
       // ── Core State ────────────────────────────────────────────────────────
       currentView: 'dashboard',
       appMode: 'shopping',
-      selectedCurrency: 'TZS',
+      selectedCurrency: 'KES',
       shopView: 'home',
 
       setAppMode: (mode) => set({ appMode: mode }),
@@ -1146,12 +1201,12 @@ export const useStore = create<StoreState>()(
       },
 
       subscription: {
+        // Free Silver tier is permanent — no expiry, no auto-renew.
         plan: 'silver',
         status: 'none',
         startedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        billingPeriod: 'monthly',
-        autoRenew: true,
+        billingPeriod: undefined,
+        autoRenew: false,
       },
 
       downgradeToFree: () =>
@@ -1161,7 +1216,6 @@ export const useStore = create<StoreState>()(
             plan: 'silver',
             status: 'none',
             startedAt: state.subscription.startedAt,
-            expiresAt: new Date().toISOString(),
             billingPeriod: undefined,
             autoRenew: false,
           },
@@ -1387,10 +1441,10 @@ export const useStore = create<StoreState>()(
 
       // ── Dropshipping ────────────────────────────────────────────────────
       dropshipSubscription: {
+        // Free Starter tier is included with the shop indefinitely.
         tier: 'starter',
         status: 'active',
         subscribedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       },
 
       subscribeDropship: (tier) =>
@@ -1961,6 +2015,135 @@ export const useStore = create<StoreState>()(
           ),
         })),
 
+      // ── Community ────────────────────────────────────────────────────────
+      community: {
+        posts: [],
+        partnerships: [],
+        events: [],
+        businesses: [],
+        connections: [],
+      },
+
+      addCommunityPost: (post) =>
+        set((state) => ({
+          community: { ...state.community, posts: [post, ...state.community.posts] },
+        })),
+      updateCommunityPost: (id, patch) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            posts: state.community.posts.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+          },
+        })),
+      deleteCommunityPost: (id) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            posts: state.community.posts.filter((p) => p.id !== id),
+          },
+        })),
+      toggleCommunityPostLike: (id) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            posts: state.community.posts.map((p) =>
+              p.id === id
+                ? { ...p, likedByUser: !p.likedByUser, likes: p.likedByUser ? p.likes - 1 : p.likes + 1 }
+                : p,
+            ),
+          },
+        })),
+      toggleCommunityPostBookmark: (id) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            posts: state.community.posts.map((p) =>
+              p.id === id ? { ...p, bookmarkedByUser: !p.bookmarkedByUser } : p,
+            ),
+          },
+        })),
+      addCommunityComment: (postId, comment) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            posts: state.community.posts.map((p) =>
+              p.id === postId ? { ...p, comments: [...p.comments, comment] } : p,
+            ),
+          },
+        })),
+      toggleCommunityCommentLike: (postId, commentId) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            posts: state.community.posts.map((p) =>
+              p.id === postId
+                ? {
+                    ...p,
+                    comments: p.comments.map((c) =>
+                      c.id === commentId
+                        ? { ...c, likedByUser: !c.likedByUser, likes: c.likedByUser ? c.likes - 1 : c.likes + 1 }
+                        : c,
+                    ),
+                  }
+                : p,
+            ),
+          },
+        })),
+      addCommunityPartnership: (pt) =>
+        set((state) => ({
+          community: { ...state.community, partnerships: [pt, ...state.community.partnerships] },
+        })),
+      setCommunityPartnershipStatus: (id, status) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            partnerships: state.community.partnerships.map((p) => (p.id === id ? { ...p, status } : p)),
+          },
+        })),
+      deleteCommunityPartnership: (id) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            partnerships: state.community.partnerships.filter((p) => p.id !== id),
+          },
+        })),
+      addCommunityEvent: (evt) =>
+        set((state) => ({
+          community: { ...state.community, events: [evt, ...state.community.events] },
+        })),
+      toggleCommunityEventRsvp: (id) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            events: state.community.events.map((e) =>
+              e.id === id
+                ? { ...e, rsvpByUser: !e.rsvpByUser, rsvpCount: e.rsvpByUser ? e.rsvpCount - 1 : e.rsvpCount + 1 }
+                : e,
+            ),
+          },
+        })),
+      deleteCommunityEvent: (id) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            events: state.community.events.filter((e) => e.id !== id),
+          },
+        })),
+      setCommunityBusinessConnected: (id, connected) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            businesses: state.community.businesses.map((b) => (b.id === id ? { ...b, connected } : b)),
+          },
+        })),
+      setCommunityConnectionStatus: (id, status) =>
+        set((state) => ({
+          community: {
+            ...state.community,
+            connections: state.community.connections.map((c) => (c.id === id ? { ...c, status } : c)),
+          },
+        })),
+
       // ── AI Copilot, Guided Tour & Command Palette ────────────────────────
       copilotOpen: false,
       setCopilotOpen: (v) => set({ copilotOpen: v }),
@@ -1998,14 +2181,19 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 9,
+      version: 10,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
+      // v10: open-entry — new visitors explore in guest mode first (entrySeen),
+      // registration is optional until they want to participate. KSh is the
+      // primary currency.
       migrate: (persisted: any) => {
         const base = typeof persisted === 'object' && persisted !== null ? persisted : {};
         return {
           ...base,
+          entrySeen: false,
+          selectedCurrency: 'KES',
           contacts: [],
           transactions: [],
           orders: [],
@@ -2036,9 +2224,8 @@ export const useStore = create<StoreState>()(
             plan: 'silver',
             status: 'none',
             startedAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            billingPeriod: 'monthly',
-            autoRenew: true,
+            billingPeriod: undefined,
+            autoRenew: false,
             ...(base.subscription ?? {}),
           },
         };

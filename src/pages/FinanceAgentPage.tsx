@@ -225,7 +225,7 @@ export default function FinanceAgentPage() {
   const resolvedActions = agentApprovals.slice(0, 12);
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}

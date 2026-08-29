@@ -11,6 +11,7 @@ import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import CursorSpotlight from "../components/three/CursorSpotlight";
+import CloudStorageCard from "../components/shell/CloudStorageCard";
 import { useStore } from "../store/useStore";
 import { MEMBERSHIP_TIERS, formatPrice, CURRENCY_NAMES } from "../data/platform";
 import type { Currency, MembershipTier } from "../types";
@@ -767,7 +768,9 @@ function BillingSection({ currentTier, selectedCurrency, onNavigate }: { current
     destinationBranchCode: payoutBank?.destinationBranchCode ?? "",
   });
 
-  const isActive = subscription.status === "active" && new Date(subscription.expiresAt).getTime() > Date.now();
+  const isActive =
+    subscription.status === "active" &&
+    (!subscription.expiresAt || new Date(subscription.expiresAt).getTime() > Date.now());
 
   const formatDate = (iso: string) => {
     try {
@@ -826,7 +829,7 @@ function BillingSection({ currentTier, selectedCurrency, onNavigate }: { current
             </div>
             <div className="p-3 rounded-[10px] bg-surface/50">
               <p className="text-[11px] text-ink-tertiary font-semibold uppercase tracking-wide">{isActive ? "Renews on" : "Expired"}</p>
-              <p className="text-subhead font-semibold text-ink">{formatDate(subscription.expiresAt)}</p>
+              <p className="text-subhead font-semibold text-ink">{subscription.expiresAt ? formatDate(subscription.expiresAt) : "Never — free plan"}</p>
             </div>
           </div>
         )}
@@ -1323,6 +1326,7 @@ function SupportSection() {
     <>
       <p className="text-title font-bold text-ink">Support</p>
       <div className="space-y-3">
+        <CloudStorageCard />
         <a
           href="https://docs.birichinex.com"
           target="_blank"

@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import NavigationShell from "./components/shell/NavigationShell";
 import ShoppingShell from "./components/shell/ShoppingShell";
 import AuthIntro from "./components/AuthIntro";
+import EntryPage from "./pages/EntryPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
@@ -61,6 +62,7 @@ export default function App() {
   const user = useStore((s) => s.user);
   const authView = useStore((s) => s.authView);
   const introComplete = useStore((s) => s.introComplete);
+  const entrySeen = useStore((s) => s.entrySeen);
 
   const setAppMode = useStore((s) => s.setAppMode);
   const setShopView = useStore((s) => s.setShopView);
@@ -74,6 +76,7 @@ export default function App() {
   const signup = useStore((s) => s.signup);
   const setAuthView = useStore((s) => s.setAuthView);
   const setIntroComplete = useStore((s) => s.setIntroComplete);
+  const setEntrySeen = useStore((s) => s.setEntrySeen);
   const loyalty = useStore((s) => s.loyalty);
   const aiSetupOpen = useStore((s) => s.aiSetupOpen);
   const openAiSetup = useStore((s) => s.openAiSetup);
@@ -87,10 +90,11 @@ export default function App() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const accountType: AccountType = user?.accountType ?? "shopper";
+  const planStillValid =
+    !subscription.expiresAt || new Date(subscription.expiresAt).getTime() > Date.now();
   const hasActiveSubscription =
-    subscription.status === "active" &&
-    new Date(subscription.expiresAt).getTime() > Date.now() &&
-    PAID_PLANS.includes(subscription.plan);
+    subscription.status === "active" && planStillValid && PAID_PLANS.includes(subscription.plan);
+  const isSubscribed = subscription.status !== "cancelled" && subscription.status !== "expired";
 
   // ── Cloud state sync (Supabase) ──────────────────────────────────────────
   useEffect(() => {
@@ -117,10 +121,39 @@ export default function App() {
 
   const handleIntroComplete = useCallback(() => setIntroComplete(true), [setIntroComplete]);
 
-  // --- Navigation ---
-  const handleShopNavigate = (view: string) => {
-    setShopView(view);
+  // The app scrolls inside <main>, not the window – reset the active scroll
+  // container so every navigation lands at the top of the new view.
+  const scrollToTop = useCallback(() => {
     window.scrollTo(0, 0);
+    const main = document.querySelector("main");
+    if (main) main.scrollTop = 0;
+  }, []);
+
+  // --- Navigation ---
+  const handleExplore = useCallback(() => {
+    if (!useStore.getState().user) {
+      setEntrySeen(true);
+      setAuthView(null);
+      setAppMode("shopping");
+      setShopView("home");
+      scrollToTop();
+    }
+  }, [setEntrySeen, setAuthView, setAppMode, setShopView, scrollToTop]);
+
+  // Personalized/transacting shop views require an account — guests see the
+  // sign-in screen instead of the view (registration is always optional).
+  const requiresAccount = useCallback(
+    (view: string) => view === "checkout" || view === "orders" || view === "account" || view === "settings",
+    []
+  );
+
+  const handleShopNavigate = (view: string) => {
+    if (requiresAccount(view)) {
+      if (!useStore.getState().user) setAuthView("login");
+      return;
+    }
+    setShopView(view);
+    scrollToTop();
   };
 
   const handleBusinessNavigate = (view: BirichiNexView) => {
@@ -131,10 +164,14 @@ export default function App() {
     } else {
       setCurrentView(view);
     }
-    window.scrollTo(0, 0);
+    scrollToTop();
   };
 
   const handleToggleMode = () => {
+    if (!user) {
+      setAuthView("signup");
+      return;
+    }
     if (appMode === "shopping") {
       // Going to business
       if (accountType === "business") {
@@ -151,7 +188,7 @@ export default function App() {
       if (hasActiveSubscription) {
         addNotification({
           title: "Subscription active",
-          body: `Your ${subscription.plan} plan runs until ${new Date(subscription.expiresAt).toLocaleDateString()}. You can switch back to shopper once it ends.`,
+          body: `Your ${subscription.plan} plan runs until ${new Date(subscription.expiresAt ?? Date.now()).toLocaleDateString()}. You can switch back to shopper once it ends.`,
           type: "system",
           actionView: "membership",
         });
@@ -160,11 +197,15 @@ export default function App() {
       setAppMode("shopping");
       setShopView("home");
     }
-    window.scrollTo(0, 0);
+    scrollToTop();
   };
 
   // Jump straight to a business tool from the shop home
   const handleOpenBusinessView = (view: BirichiNexView) => {
+    if (!user) {
+      setAuthView("signup");
+      return;
+    }
     if (accountType !== "business") {
       setAccountType("business");
       openAiSetup();
@@ -178,7 +219,7 @@ export default function App() {
     } else {
       setCurrentView(view);
     }
-    window.scrollTo(0, 0);
+    scrollToTop();
   };
 
   // --- AI Discovery Completion ---
@@ -187,7 +228,7 @@ export default function App() {
     setAccountType("business");
     setAppMode("business");
     setCurrentView("dashboard");
-    window.scrollTo(0, 0);
+    scrollToTop();
   }, [closeAiSetup, setAccountType, setAppMode, setCurrentView]);
 
   // --- Auth Handlers ---
@@ -221,7 +262,7 @@ export default function App() {
     return <AuthIntro onComplete={handleIntroComplete} />;
   }
 
-  // --- Auth Pages ---
+  // --- Entry / Auth Pages ---
   if (!user) {
     if (authView === "signup") {
       return <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthView("login")} />;
@@ -229,7 +270,21 @@ export default function App() {
     if (authView === "forgot") {
       return <ForgotPasswordPage onBackToLogin={() => setAuthView("login")} />;
     }
-    return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthView("signup")} onSwitchToForgot={() => setAuthView("forgot")} />;
+    // Explicit sign-in intent (returning member after logout, gated shop views)
+    if (authView === "login") {
+      return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthView("signup")} onSwitchToForgot={() => setAuthView("forgot")} />;
+    }
+    // First contact with the platform — explore before registering.
+    if (!entrySeen) {
+      return (
+        <EntryPage
+          onExplore={handleExplore}
+          onSignIn={() => setAuthView("login")}
+          onCreateAccount={() => setAuthView("signup")}
+        />
+      );
+    }
+    // Returning guest — straight into the platform, no account wall.
   }
 
   // --- AI Discovery Conversation (on-demand — launched from "Our AI") ---
@@ -374,8 +429,8 @@ export default function App() {
         selectedCurrency={selectedCurrency}
         onCurrencyChange={setCurrency}
         cartCount={cartCount}
-        userName={user.name}
-        isSubscribed={true}
+        userName={user?.name ?? "Guest"}
+        isSubscribed={isSubscribed}
         onToggleMode={handleToggleMode}
         onNavigate={handleShopNavigate}
         currentView={shopView}
@@ -393,7 +448,7 @@ export default function App() {
       selectedCurrency={selectedCurrency}
       onCurrencyChange={setCurrency}
       onToggleMode={handleToggleMode}
-      userName={user.name}
+      userName={user?.name ?? "Guest"}
       cartCount={cartCount}
     >
       {renderBusinessPage()}

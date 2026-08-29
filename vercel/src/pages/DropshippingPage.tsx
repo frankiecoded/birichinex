@@ -233,7 +233,9 @@ export default function DropshippingPage() {
                     {currentTierConfig.label} · {currentTierConfig.discount}% discount · {currentTierConfig.deliveryDays}-day delivery
                   </p>
                   <p className="text-caption text-ink-quaternary mt-0.5">
-                    Expires {new Date(dropshipSubscription.expiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    {dropshipSubscription.expiresAt
+                      ? `Expires ${new Date(dropshipSubscription.expiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                      : "Free forever — included with your shop"}
                   </p>
                 </div>
               </div>

@@ -393,8 +393,8 @@ export const EXCHANGE_RATES: Record<Currency, number> = {
 };
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  TZS: "TSh",
   KES: "KSh",
+  TZS: "TSh",
   UGX: "USh",
   USD: "$",
   EUR: "€",
@@ -405,8 +405,8 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
 };
 
 export const CURRENCY_NAMES: Record<Currency, string> = {
-  TZS: "Tanzanian Shilling",
   KES: "Kenyan Shilling",
+  TZS: "Tanzanian Shilling",
   UGX: "Ugandan Shilling",
   USD: "US Dollar",
   EUR: "Euro",
