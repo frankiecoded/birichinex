@@ -51,7 +51,24 @@ export default function ShoppingShell({
     "Shipping Info": "orders",
     Returns: "orders",
     "Track Order": "orders",
-    "Contact Us": "settings",
+    "Contact Us": "contact",
+  };
+
+  const SHOP_FOOTER_COMPANY: Record<string, string> = {
+    "About Us": "about",
+    Careers: "settings",
+    Press: "settings",
+    Sustainability: "settings",
+    Partners: "settings",
+  };
+
+  const SHOP_FOOTER_LEGAL: Record<string, string> = {
+    "Terms of Service": "legal:terms",
+    "Privacy Policy": "legal:privacy",
+    "Cookie Policy": "legal:cookies",
+    "AI Terms & Responsible Use": "legal:ai",
+    "Seller Terms": "legal:seller",
+    "Marketplace Terms": "legal:marketplace",
   };
 
   const handleFooterAction = (view: string) => {
@@ -110,7 +127,7 @@ export default function ShoppingShell({
         <div className="glass-divider mx-8" />
         <div className="bg-night text-white backdrop-blur-sm pb-28">
           <div className="max-w-7xl mx-auto px-4 lg:px-8 py-14">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 mb-12">
               <div>
                 <h4 className="text-subhead font-bold mb-5 text-white/90">Shop</h4>
                 <div className="space-y-2.5">
@@ -142,10 +159,24 @@ export default function ShoppingShell({
               <div>
                 <h4 className="text-subhead font-bold mb-5 text-white/90">Company</h4>
                 <div className="space-y-2.5">
-                  {["About Us", "Careers", "Press", "Sustainability", "Partners"].map((item) => (
+                  {Object.keys(SHOP_FOOTER_COMPANY).map((item) => (
                     <button
                       key={item}
-                      onClick={() => handleFooterAction("settings")}
+                      onClick={() => handleFooterAction(SHOP_FOOTER_COMPANY[item])}
+                      className="block text-caption text-zinc-400 hover:text-white transition-colors duration-200"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-subhead font-bold mb-5 text-white/90">Legal</h4>
+                <div className="space-y-2.5">
+                  {Object.keys(SHOP_FOOTER_LEGAL).map((item) => (
+                    <button
+                      key={item}
+                      onClick={() => handleFooterAction(SHOP_FOOTER_LEGAL[item])}
                       className="block text-caption text-zinc-400 hover:text-white transition-colors duration-200"
                     >
                       {item}

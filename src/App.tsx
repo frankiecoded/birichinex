@@ -49,6 +49,14 @@ import BalesPage from "./pages/shop/BalesPage";
 import DealsPage from "./pages/DealsPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
 import ShopAccountPage from "./pages/shop/ShopAccountPage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+import TermsPage from "./pages/legal/TermsPage";
+import PrivacyPage from "./pages/legal/PrivacyPage";
+import CookiePage from "./pages/legal/CookiePage";
+import AITermsPage from "./pages/legal/AITermsPage";
+import SellerTermsPage from "./pages/legal/SellerTermsPage";
+import MarketplaceTermsPage from "./pages/legal/MarketplaceTermsPage";
 import { BirichiNexView, AccountType, PAID_PLANS } from "./types";
 import { getHubForView } from "../ai/src/navigation";
 import { useStore } from "./store/useStore";
@@ -334,6 +342,38 @@ export default function App() {
 
     if (shopView === "settings") {
       return <SettingsPage onNavigate={(view) => (view === "membership" ? handleOpenBusinessView("membership") : handleShopNavigate(view))} />;
+    }
+
+    if (shopView === "about") {
+      return <AboutPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "contact") {
+      return <ContactPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "legal:terms") {
+      return <TermsPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "legal:privacy") {
+      return <PrivacyPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "legal:cookies") {
+      return <CookiePage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "legal:ai") {
+      return <AITermsPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "legal:seller") {
+      return <SellerTermsPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "legal:marketplace") {
+      return <MarketplaceTermsPage onNavigate={handleShopNavigate} />;
     }
 
     return <ShopHomePage selectedCurrency={selectedCurrency} onNavigate={handleShopNavigate} onAddToCart={addToCart} onOpenAiSetup={openAiSetup} onNavigateBusiness={handleOpenBusinessView} />;
