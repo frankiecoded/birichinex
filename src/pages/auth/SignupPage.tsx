@@ -12,6 +12,7 @@ interface SignupPageProps {
   onSignup: (email: string, name: string, accountType: AccountType, password?: string) => void;
   onSwitchToLogin: () => void;
   onBack: () => void;
+  onNavigate?: (view: string) => void;
 }
 
 const ACCOUNT_OPTIONS: { type: AccountType; title: string; desc: string; icon: typeof ShoppingBag; accent: string }[] = [
@@ -31,13 +32,14 @@ const ACCOUNT_OPTIONS: { type: AccountType; title: string; desc: string; icon: t
   },
 ];
 
-export default function SignupPage({ onSignup, onSwitchToLogin, onBack }: SignupPageProps) {
+export default function SignupPage({ onSignup, onSwitchToLogin, onBack, onNavigate }: SignupPageProps) {
   const [accountType, setAccountType] = useState<AccountType>("shopper");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,11 +55,19 @@ export default function SignupPage({ onSignup, onSwitchToLogin, onBack }: Signup
       setError("Passwords don't match");
       return;
     }
+    if (!agreeTerms) {
+      setError("Please agree to the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       onSignup(email, name, accountType, password);
     }, 800);
+  };
+
+  const openPolicy = (view: string) => {
+    if (onNavigate) onNavigate(view);
   };
 
   return (
@@ -264,6 +274,31 @@ export default function SignupPage({ onSignup, onSwitchToLogin, onBack }: Signup
                   {error}
                 </motion.p>
               )}
+
+              {/* Terms & Privacy consent */}
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={agreeTerms}
+                  onClick={() => setAgreeTerms(!agreeTerms)}
+                  className={`mt-0.5 h-5 w-5 shrink-0 rounded-md border flex items-center justify-center transition-all duration-200 ${
+                    agreeTerms ? "border-brand bg-brand" : "border-white/[0.15] bg-white/[0.03] hover:border-white/[0.25]"
+                  }`}
+                >
+                  {agreeTerms && <Check className="h-3.5 w-3.5 text-[#0a0a12]" strokeWidth={3} />}
+                </button>
+                <p className="text-[12.5px] leading-relaxed text-ink-tertiary">
+                  I agree to the{" "}
+                  <button type="button" onClick={() => openPolicy("legal:terms")} className="font-semibold text-brand-dark hover:text-brand underline decoration-brand/30 underline-offset-2 transition-colors">
+                    Terms of Service
+                  </button>{" "}
+                  and{" "}
+                  <button type="button" onClick={() => openPolicy("legal:privacy")} className="font-semibold text-brand-dark hover:text-brand underline decoration-brand/30 underline-offset-2 transition-colors">
+                    Privacy Policy
+                  </button>.
+                </p>
+              </label>
 
               <motion.div
                 initial={{ opacity: 0, y: 10 }}

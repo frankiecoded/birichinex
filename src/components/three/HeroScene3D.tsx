@@ -2,6 +2,7 @@ import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, MeshDistortMaterial, MeshWobbleMaterial } from "@react-three/drei";
 import * as THREE from "three";
+import useWebGLSupport from "../../hooks/useWebGLSupport";
 
 function HeroTorus() {
   const ref = useRef<THREE.Mesh>(null!);
@@ -140,6 +141,12 @@ interface HeroScene3DProps {
 }
 
 export default function HeroScene3D({ className = "" }: HeroScene3DProps) {
+  const webglSupported = useWebGLSupport();
+
+  if (!webglSupported) {
+    return null;
+  }
+
   return (
     <div className={`absolute inset-0 ${className}`} style={{ pointerEvents: "none" }}>
       <Canvas

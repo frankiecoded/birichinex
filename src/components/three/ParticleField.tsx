@@ -1,6 +1,7 @@
 import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import useWebGLSupport from "../../hooks/useWebGLSupport";
 
 function Particles({ count = 80, color = "#d4af37" }: { count?: number; color?: string }) {
   const mesh = useRef<THREE.InstancedMesh>(null!);
@@ -130,6 +131,12 @@ export default function ParticleField({
   color = "#d4af37",
   showGeometry = true,
 }: ParticleFieldProps) {
+  const webglSupported = useWebGLSupport();
+
+  if (!webglSupported) {
+    return null;
+  }
+
   return (
     <div className={`absolute inset-0 ${className}`} style={{ pointerEvents: "none" }}>
       <Canvas

@@ -16,6 +16,9 @@ interface ShoppingShellProps {
   onNavigate: (view: string) => void;
   currentView: string;
   loyaltyPoints?: number;
+  onOpenAiSetup?: () => void;
+  onSignIn?: () => void;
+  onSignUp?: () => void;
 }
 
 export default function ShoppingShell({
@@ -29,6 +32,9 @@ export default function ShoppingShell({
   onNavigate,
   currentView,
   loyaltyPoints = 0,
+  onOpenAiSetup,
+  onSignIn,
+  onSignUp,
 }: ShoppingShellProps) {
   const [dismissedBanner, setDismissedBanner] = useState(false);
 
@@ -47,9 +53,8 @@ export default function ShoppingShell({
   };
 
   const SHOP_FOOTER_SUPPORT: Record<string, string> = {
-    "Help Center": "settings",
-    "Shipping Info": "orders",
-    Returns: "orders",
+    "Shipping Info": "legal:shipping",
+    Returns: "legal:returns",
     "Track Order": "orders",
     "Contact Us": "contact",
   };
@@ -69,6 +74,8 @@ export default function ShoppingShell({
     "AI Terms & Responsible Use": "legal:ai",
     "Seller Terms": "legal:seller",
     "Marketplace Terms": "legal:marketplace",
+    "Shipping Policy": "legal:shipping",
+    "Returns & Refunds": "legal:returns",
   };
 
   const handleFooterAction = (view: string) => {
@@ -231,6 +238,9 @@ export default function ShoppingShell({
         onNavigate={onNavigate}
         currentView={currentView}
         loyaltyPoints={loyaltyPoints}
+        onOpenAiSetup={onOpenAiSetup}
+        onSignIn={onSignIn}
+        onSignUp={onSignUp}
       />
     </div>
   );

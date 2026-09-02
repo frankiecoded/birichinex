@@ -21,6 +21,9 @@ interface FloatingPillNavProps {
   onNavigate: (view: string) => void;
   currentView: string;
   loyaltyPoints?: number;
+  onOpenAiSetup?: () => void;
+  onSignIn?: () => void;
+  onSignUp?: () => void;
 }
 
 export default function FloatingPillNav({
@@ -33,6 +36,9 @@ export default function FloatingPillNav({
   onNavigate,
   currentView,
   loyaltyPoints = 0,
+  onOpenAiSetup,
+  onSignIn,
+  onSignUp,
 }: FloatingPillNavProps) {
   const [expanded, setExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -268,6 +274,67 @@ export default function FloatingPillNav({
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="mx-5 h-[1px] bg-gradient-to-r from-transparent via-black/[0.06] dark:via-white/[0.08] to-transparent" />
+
+                {/* Explore — persistent public menu */}
+                <div className="px-6 pt-4 pb-3">
+                  <p className="text-[11px] uppercase tracking-wider font-bold text-ink-quaternary mb-2.5">Explore BirichiNex</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => handleNavigate("home")}
+                      className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 border ${
+                        currentView === "home"
+                          ? "bg-emphasis text-on-emphasis border-transparent"
+                          : "bg-white/40 border-white/40 dark:bg-glass/60 dark:border-glass-border text-ink-secondary hover:text-ink hover:bg-white/60 dark:hover:bg-glass/80"
+                      }`}
+                    >
+                      Marketplace
+                    </button>
+                    <button
+                      onClick={() => { setExpanded(false); setActiveCategory(null); onToggleMode(); }}
+                      className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 border bg-white/40 border-white/40 dark:bg-glass/60 dark:border-glass-border text-ink-secondary hover:text-ink hover:bg-white/60 dark:hover:bg-glass/80"
+                    >
+                      BNX OS
+                    </button>
+                    <button
+                      onClick={() => { setExpanded(false); setActiveCategory(null); onOpenAiSetup?.(); }}
+                      className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 border bg-white/40 border-white/40 dark:bg-glass/60 dark:border-glass-border text-ink-secondary hover:text-ink hover:bg-white/60 dark:hover:bg-glass/80"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-brand-dark" /> BNX AI
+                    </button>
+                    <button
+                      onClick={() => { setExpanded(false); setActiveCategory(null); onToggleMode(); }}
+                      className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 border bg-white/40 border-white/40 dark:bg-glass/60 dark:border-glass-border text-ink-secondary hover:text-ink hover:bg-white/60 dark:hover:bg-glass/80"
+                    >
+                      Academy
+                    </button>
+                    <button
+                      onClick={() => handleNavigate("about")}
+                      className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 border bg-white/40 border-white/40 dark:bg-glass/60 dark:border-glass-border text-ink-secondary hover:text-ink hover:bg-white/60 dark:hover:bg-glass/80"
+                    >
+                      About
+                    </button>
+                    <button
+                      onClick={() => handleNavigate("contact")}
+                      className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 border bg-white/40 border-white/40 dark:bg-glass/60 dark:border-glass-border text-ink-secondary hover:text-ink hover:bg-white/60 dark:hover:bg-glass/80"
+                    >
+                      Contact
+                    </button>
+                    <button
+                      onClick={() => { setExpanded(false); setActiveCategory(null); onSignIn?.(); }}
+                      className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 border border-brand/25 text-brand-dark hover:bg-brand/10"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => { setExpanded(false); setActiveCategory(null); onSignUp ? onSignUp() : onToggleMode(); }}
+                      className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[13px] font-bold transition-all duration-200 bg-emphasis text-on-emphasis hover:bg-emphasis/90"
+                    >
+                      Get Started
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mx-5 h-[1px] bg-gradient-to-r from-transparent via-black/[0.06] dark:via-white/[0.08] to-transparent" />

@@ -49,6 +49,7 @@ import type { BusinessRecommendation, RecommendationOutcome, RecommendationStatu
 import { COURSES, DROPSHIP_TIERS, calculateLoyaltyPoints, MEMBERSHIP_TIERS, convertPrice } from '../data/platform';
 import type { TrackedOrder, TrackedShipment, TrackingStatus } from '../data/delivery';
 import type { DailyReflection, WeeklyReview } from '../data/routines';
+import { PORTMETALS_CATALOGUE } from '../data/catalogue';
 
 // ── Document Types ───────────────────────────────────────────────────────────
 
@@ -154,6 +155,8 @@ export interface InventoryItem {
   source: 'manual' | 'dropship';
   postedToMarketplace: boolean;
   marketplacePrice?: { amount: number; currency: Currency };
+  image?: string;
+  specs?: Record<string, string>;
 }
 
 interface TransactionItem {
@@ -2244,13 +2247,15 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 10,
+      version: 11,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
       // v10: open-entry — new visitors explore in guest mode first (entrySeen),
       // registration is optional until they want to participate. KSh is the
       // primary currency.
+      // v11: seed the real Portmetals Africa catalogue so the public marketplace
+      // ships with genuine, orderable stock instead of a zero-state.
       //
       // IMPORTANT: migration receives the stored STATE (not the envelope), and
       // only runs when the stored version differs. It must never destroy real
@@ -2261,12 +2266,32 @@ export const useStore = create<StoreState>()(
         const base = typeof persisted === 'object' && persisted !== null ? persisted : {};
         const from = typeof storedVersion === 'number' ? storedVersion : 0;
         if (from >= 9) {
+          const storedInventory = Array.isArray(base.inventoryItems) ? base.inventoryItems : [];
           return {
             ...base,
             entrySeen: typeof base.entrySeen === 'boolean' ? base.entrySeen : false,
             selectedCurrency: base.selectedCurrency && typeof base.selectedCurrency === 'string'
               ? base.selectedCurrency
               : 'KES',
+            // v11: seed the real Portmetals Africa catalogue into the public
+            // marketplace. Only applied when the store is empty so genuine
+            // user-entered inventory is never overwritten.
+            inventoryItems: storedInventory.length > 0
+              ? storedInventory
+              : PORTMETALS_CATALOGUE,
+            // v11: seed the Portmetals Africa flagship customer account so the
+            // business owner can sign in (sales@portmetalsafrica.com /
+            // PortAfrica2026, deterministic s1$ credential verified then upgraded
+            // in place on first login). Existing accounts are never overwritten.
+            users: {
+              ...(base.users ?? {}),
+              'sales@portmetalsafrica.com': base.users?.['sales@portmetalsafrica.com'] ?? {
+                name: 'Portmetals Africa',
+                accountType: 'business',
+                createdAt: new Date('2026-08-30T09:00:00.000Z').toISOString(),
+                password: 's1$ed4a23f745b5263c7dc3229574cafed20df3e670d60053a69d7b5088af42140f',
+              },
+            },
             businessWallet: base.businessWallet ?? { balance: 0, totalEarned: 0, totalWithdrawn: 0, transactions: [] },
             withdrawals: base.withdrawals ?? [],
             settings: {
@@ -2300,7 +2325,16 @@ export const useStore = create<StoreState>()(
           transactions: [],
           orders: [],
           shipments: [],
-          inventoryItems: [],
+          inventoryItems: PORTMETALS_CATALOGUE,
+          users: {
+            ...(base.users ?? {}),
+            'sales@portmetalsafrica.com': base.users?.['sales@portmetalsafrica.com'] ?? {
+              name: 'Portmetals Africa',
+              accountType: 'business',
+              createdAt: new Date('2026-08-30T09:00:00.000Z').toISOString(),
+              password: 's1$ed4a23f745b5263c7dc3229574cafed20df3e670d60053a69d7b5088af42140f',
+            },
+          },
           documents: [],
           agentCalls: [],
           cart: [],

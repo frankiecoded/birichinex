@@ -2,17 +2,21 @@ import type { Product } from "../types";
 import type { InventoryItem } from "../store/useStore";
 
 export function inventoryItemToProduct(item: InventoryItem): Product {
+  const brand = (item.supplier || "Portmetals Africa").replace(/\s+/g, " ").trim();
+  const specs = item.specs ?? { Unit: item.unit, "Min Stock": String(item.minStock) };
   return {
     id: `inv-${item.id}`,
     name: item.name,
-    description: `${item.category} listing · SKU ${item.sku}`,
+    description: item.specs && Object.keys(item.specs).length > 0
+      ? `${item.category} listing by ${brand} · SKU ${item.sku}`
+      : `${item.category} listing · SKU ${item.sku}`,
     category: item.category,
     price: item.marketplacePrice ?? item.price,
-    images: [],
-    supplier: { id: "self", name: item.supplier || "Shop Inventory", verified: true, rating: 5, location: "" },
+    images: item.image ? [item.image] : [],
+    supplier: { id: "self", name: brand, verified: true, rating: 5, location: "Nairobi, Kenya" },
     grade: "A",
-    origin: item.category,
-    specifications: { SKU: item.sku, Unit: item.unit, "Min Stock": String(item.minStock) },
+    origin: "Imported from Europe",
+    specifications: specs,
     stock: item.stock,
     minOrder: 1,
     createdAt: item.lastRestocked,

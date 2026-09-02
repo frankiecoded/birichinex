@@ -87,17 +87,26 @@ function ProductImageViewer({ product }: { product: Product }) {
         backgroundSize: "40px 40px"
       }} />
 
-      {/* Product Icon — 3D floating */}
-      <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="relative z-10"
-      >
-        <div className="h-28 w-28 rounded-[24px] flex items-center justify-center relative" style={{ background: `${color}12` }}>
-          <div className="absolute inset-0 rounded-[24px] border" style={{ borderColor: `${color}20` }} />
-          <ShoppingBag className="h-12 w-12" style={{ color }} strokeWidth={1.2} />
-        </div>
-      </motion.div>
+      {/* Product Visual — image if available, else 3D floating icon */}
+      {product.images && product.images[0] ? (
+        <img
+          src={product.images[0]}
+          alt={product.name}
+          onError={(e) => { (e.currentTarget.style.display = "none"); }}
+          className="relative z-10 h-full w-full object-cover"
+        />
+      ) : (
+        <motion.div
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="relative z-10"
+        >
+          <div className="h-28 w-28 rounded-[24px] flex items-center justify-center relative" style={{ background: `${color}12` }}>
+            <div className="absolute inset-0 rounded-[24px] border" style={{ borderColor: `${color}20` }} />
+            <ShoppingBag className="h-12 w-12" style={{ color }} strokeWidth={1.2} />
+          </div>
+        </motion.div>
+      )}
 
       {/* Grade badge */}
       <div className="absolute top-6 left-6">

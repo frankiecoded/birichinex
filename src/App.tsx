@@ -61,6 +61,8 @@ import CookiePage from "./pages/legal/CookiePage";
 import AITermsPage from "./pages/legal/AITermsPage";
 import SellerTermsPage from "./pages/legal/SellerTermsPage";
 import MarketplaceTermsPage from "./pages/legal/MarketplaceTermsPage";
+import ShippingPage from "./pages/legal/ShippingPage";
+import ReturnsPage from "./pages/legal/ReturnsPage";
 import { BirichiNexView, AccountType, PAID_PLANS } from "./types";
 import { getHubForView } from "../ai/src/navigation";
 import { useStore } from "./store/useStore";
@@ -288,7 +290,7 @@ export default function App() {
   // --- Entry / Auth Pages ---
   if (!user) {
     if (authView === "signup") {
-      return <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthView("login")} onBack={handleBackFromAuth} />;
+      return <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthView("login")} onBack={handleBackFromAuth} onNavigate={(view) => { setAuthView(null); setEntrySeen(true); setAppMode("shopping"); setShopView(view); scrollToTop(); }} />;
     }
     if (authView === "forgot") {
       return <ForgotPasswordPage onBackToLogin={() => setAuthView("login")} onBack={handleBackFromAuth} />;
@@ -406,6 +408,14 @@ export default function App() {
       return <MarketplaceTermsPage onNavigate={handleShopNavigate} />;
     }
 
+    if (shopView === "legal:shipping") {
+      return <ShippingPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "legal:returns") {
+      return <ReturnsPage onNavigate={handleShopNavigate} />;
+    }
+
     return <ShopHomePage selectedCurrency={selectedCurrency} onNavigate={handleShopNavigate} onAddToCart={addToCart} onOpenAiSetup={openAiSetup} onNavigateBusiness={handleOpenBusinessView} />;
   };
 
@@ -507,6 +517,9 @@ export default function App() {
           onNavigate={handleShopNavigate}
           currentView={shopView}
           loyaltyPoints={loyalty.points}
+          onOpenAiSetup={openAiSetup}
+          onSignIn={() => setAuthView("login")}
+          onSignUp={() => setAuthView("signup")}
         >
           {renderShopPage()}
         </ShoppingShell>

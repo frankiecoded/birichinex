@@ -657,6 +657,114 @@ export const LEGAL_PAGES: Record<string, LegalPageDef> = {
       },
     ],
   },
+
+  shipping: {
+    id: "shipping",
+    route: "legal:shipping",
+    title: "Shipping Policy",
+    kicker: "Shipping & Delivery",
+    summary:
+      "How orders placed on the BirichiNex marketplace are prepared, packed, dispatched and delivered, and the delivery expectations that apply.",
+    effective: "30 August 2026",
+    updated: "30 August 2026",
+    sections: [
+      {
+        heading: "1. Delivery Areas",
+        blocks: [
+          { kind: "p", text: "Products purchased on the BirichiNex marketplace may be delivered to eligible delivery addresses within the delivery areas supported at the time of purchase." },
+          { kind: "p", text: "Where a product or seller does not support delivery to a particular address, this is communicated before the order is confirmed." },
+        ],
+      },
+      {
+        heading: "2. Order Processing",
+        blocks: [
+          { kind: "p", text: "After an order is confirmed and payment is authorized, the relevant seller prepares the order for dispatch." },
+          { kind: "p", text: "Processing may take longer for made-to-order, refurbished, backorder or specially sourced items, and this is communicated where applicable." },
+        ],
+      },
+      {
+        heading: "3. Dispatch and Tracking",
+        blocks: [
+          { kind: "p", text: "Once an order is dispatched, the buyer is provided with the applicable tracking information where tracking is available." },
+          { kind: "p", text: "Estimated delivery dates are provided in good faith but may vary based on the delivery area, carrier and circumstances outside reasonable control." },
+        ],
+      },
+      {
+        heading: "4. Delivery Expectations",
+        blocks: [
+          { kind: "p", text: "Delivery timelines shown at checkout reflect the seller's reasonable estimate and should not be treated as a binding commitment where unforeseen delays occur." },
+          { kind: "p", text: "Should a delivery be significantly delayed, the buyer may contact support through the BirichiNex Contact page." },
+        ],
+      },
+      {
+        heading: "5. Failed Delivery",
+        blocks: [
+          { kind: "p", text: "Where a delivery cannot be completed because the buyer is unavailable or an address is incorrect, the seller may contact the buyer to arrange re-delivery." },
+          { kind: "p", text: "Buyers should ensure delivery details are accurate before confirming an order." },
+        ],
+      },
+      {
+        heading: "6. Shipping Costs",
+        blocks: [
+          { kind: "p", text: "Any shipping or delivery charges are displayed before the buyer confirms the order." },
+        ],
+      },
+    ],
+  },
+
+  returns: {
+    id: "returns",
+    route: "legal:returns",
+    title: "Returns & Refunds",
+    kicker: "Returns & Refunds",
+    summary:
+      "The conditions under which a product purchased on the BirichiNex marketplace may be returned, exchanged or refunded.",
+    effective: "30 August 2026",
+    updated: "30 August 2026",
+    sections: [
+      {
+        heading: "1. Buyer Rights",
+        blocks: [
+          { kind: "p", text: "Buyers may have rights to return, exchange or obtain a refund for products under mandatory consumer-protection law and any additional conditions offered by the seller or BirichiNex." },
+          { kind: "p", text: "Nothing in this policy removes statutory rights that cannot lawfully be excluded under applicable law." },
+        ],
+      },
+      {
+        heading: "2. Eligible Returns",
+        blocks: [
+          { kind: "p", text: "Returns may be accepted where a product is defective, not as described, damaged on receipt or otherwise subject to the seller's published return conditions." },
+        ],
+      },
+      {
+        heading: "3. Requesting a Return",
+        blocks: [
+          { kind: "p", text: "Buyers should request a return or refund through the BirichiNex support/order route, providing the order details and reason." },
+          { kind: "p", text: "The seller or BirichiNex may ask for evidence, including photographs, before arranging a return or refund." },
+        ],
+      },
+      {
+        heading: "4. Condition Requirements",
+        blocks: [
+          { kind: "p", text: "Returned items should generally be in their original condition with any packaging, accessories, documentation and free gifts included, unless the item is defective or damaged." },
+          { kind: "p", text: "Items used or altered beyond reasonable inspection may not qualify for a full refund." },
+        ],
+      },
+      {
+        heading: "5. Refunds",
+        blocks: [
+          { kind: "p", text: "Approved refunds are returned to the original payment method where practicable, within a reasonable period after the return is accepted." },
+          { kind: "p", text: "Refunds will not exceed the amount paid for the returned product unless otherwise required by applicable law." },
+        ],
+      },
+      {
+        heading: "6. Seller and Platform Responsibility",
+        blocks: [
+          { kind: "p", text: "Sellers must cooperate reasonably in resolving legitimate return and refund requests in line with the Seller Terms and applicable consumer rights." },
+          { kind: "p", text: "Where BirichiNex Technologies Limited is itself the seller of a product, the corresponding return and refund conditions apply directly to that transaction." },
+        ],
+      },
+    ],
+  },
 };
 
 export const LEGAL_NAV_ORDER = [
@@ -666,4 +774,6 @@ export const LEGAL_NAV_ORDER = [
   LEGAL_PAGES.ai,
   LEGAL_PAGES.seller,
   LEGAL_PAGES.marketplace,
+  LEGAL_PAGES.shipping,
+  LEGAL_PAGES.returns,
 ];

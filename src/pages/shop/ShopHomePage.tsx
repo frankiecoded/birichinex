@@ -146,23 +146,35 @@ function ProductCard({ product, selectedCurrency, onNavigate, onAddToCart, index
         <div className="relative glass-material rounded-[20px] overflow-hidden h-full flex flex-col border border-glass-border/50 hover:border-glass-border transition-all duration-300">
           {/* Product Visual */}
           <div className="relative h-52 bg-gradient-to-br from-surface-secondary/80 to-surface-tertiary/80 flex items-center justify-center overflow-hidden">
-            {/* Animated gradient background */}
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              style={{
-                background: `radial-gradient(circle at ${glarePos.x}% ${glarePos.y}%, ${categoryColors[product.category] || "#d4af37"}12 0%, transparent 60%)`,
-              }}
-            />
+            {product.images && product.images[0] ? (
+              <img
+                src={product.images[0]}
+                alt={product.name}
+                loading="lazy"
+                onError={(e) => { (e.currentTarget.style.display = "none"); }}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <>
+                {/* Animated gradient background */}
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{
+                    background: `radial-gradient(circle at ${glarePos.x}% ${glarePos.y}%, ${categoryColors[product.category] || "#d4af37"}12 0%, transparent 60%)`,
+                  }}
+                />
 
-            {/* Product icon */}
-            <motion.div
-              className="h-16 w-16 rounded-[18px] flex items-center justify-center relative"
-              style={{ background: `${categoryColors[product.category] || "#d4af37"}12` }}
-              whileHover={{ scale: 1.1, rotate: 3 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              <ShoppingBag className="h-7 w-7" style={{ color: categoryColors[product.category] || "#d4af37" }} strokeWidth={1.5} />
-            </motion.div>
+                {/* Product icon */}
+                <motion.div
+                  className="h-16 w-16 rounded-[18px] flex items-center justify-center relative"
+                  style={{ background: `${categoryColors[product.category] || "#d4af37"}12` }}
+                  whileHover={{ scale: 1.1, rotate: 3 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                >
+                  <ShoppingBag className="h-7 w-7" style={{ color: categoryColors[product.category] || "#d4af37" }} strokeWidth={1.5} />
+                </motion.div>
+              </>
+            )}
 
             {/* Grade badge */}
             <div className="absolute top-3 right-3">
