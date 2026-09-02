@@ -5,11 +5,13 @@ import Button from "../../components/ui/Button";
 import BirichiNexLogo from "../../components/BirichiNexLogo";
 import ParticleField from "../../components/three/ParticleField";
 import MagneticButton from "../../components/three/MagneticButton";
+import ExploreBack from "../../components/auth/ExploreBack";
 import type { AccountType } from "../../types";
 
 interface SignupPageProps {
   onSignup: (email: string, name: string, accountType: AccountType, password?: string) => void;
   onSwitchToLogin: () => void;
+  onBack: () => void;
 }
 
 const ACCOUNT_OPTIONS: { type: AccountType; title: string; desc: string; icon: typeof ShoppingBag; accent: string }[] = [
@@ -29,7 +31,7 @@ const ACCOUNT_OPTIONS: { type: AccountType; title: string; desc: string; icon: t
   },
 ];
 
-export default function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
+export default function SignupPage({ onSignup, onSwitchToLogin, onBack }: SignupPageProps) {
   const [accountType, setAccountType] = useState<AccountType>("shopper");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -84,6 +86,9 @@ export default function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProp
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-[440px]">
+        {/* Continue exploring — no account required */}
+        <ExploreBack onBack={onBack} />
+
         {/* Logo */}
         <motion.div
           className="text-center mb-10"

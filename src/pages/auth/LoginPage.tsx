@@ -5,15 +5,17 @@ import Button from "../../components/ui/Button";
 import BirichiNexLogo from "../../components/BirichiNexLogo";
 import ParticleField from "../../components/three/ParticleField";
 import MagneticButton from "../../components/three/MagneticButton";
+import ExploreBack from "../../components/auth/ExploreBack";
 import { useStore } from "../../store/useStore";
 
 interface LoginPageProps {
   onLogin: (email: string, name: string) => void;
   onSwitchToSignup: () => void;
   onSwitchToForgot: () => void;
+  onBack: () => void;
 }
 
-export default function LoginPage({ onLogin, onSwitchToSignup, onSwitchToForgot }: LoginPageProps) {
+export default function LoginPage({ onLogin, onSwitchToSignup, onSwitchToForgot, onBack }: LoginPageProps) {
   const attemptLogin = useStore((s) => s.attemptLogin);
   const verifyTwoFactor = useStore((s) => s.verifyTwoFactor);
   const [email, setEmail] = useState("");
@@ -88,6 +90,9 @@ export default function LoginPage({ onLogin, onSwitchToSignup, onSwitchToForgot 
 
       {/* Content — scrollable, centered, no clipping */}
       <div className="relative z-10 w-full max-w-[440px]">
+        {/* Continue exploring — no account required */}
+        <ExploreBack onBack={onBack} />
+
         {/* Logo */}
         <motion.div
           className="text-center mb-10"

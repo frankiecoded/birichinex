@@ -5,13 +5,15 @@ import Button from "../../components/ui/Button";
 import BirichiNexLogo from "../../components/BirichiNexLogo";
 import ParticleField from "../../components/three/ParticleField";
 import MagneticButton from "../../components/three/MagneticButton";
+import ExploreBack from "../../components/auth/ExploreBack";
 import { useStore } from "../../store/useStore";
 
 interface ForgotPasswordPageProps {
   onBackToLogin: () => void;
+  onBack: () => void;
 }
 
-export default function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPageProps) {
+export default function ForgotPasswordPage({ onBackToLogin, onBack }: ForgotPasswordPageProps) {
   const resetPassword = useStore((s) => s.resetPassword);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -75,6 +77,9 @@ export default function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPage
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-[440px]">
+        {/* Continue exploring — no account required */}
+        <ExploreBack onBack={onBack} />
+
         {/* Logo */}
         <motion.div
           className="text-center mb-10"

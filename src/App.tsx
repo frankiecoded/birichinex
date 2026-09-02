@@ -270,6 +270,16 @@ export default function App() {
     }
   };
 
+  // Returns a guest from the auth screens to another point of exploration —
+  // no account required, matching the "Explore BirichiNex" promise.
+  const handleBackFromAuth = useCallback(() => {
+    setAuthView(null);
+    setEntrySeen(true);
+    setAppMode("shopping");
+    setShopView("home");
+    scrollToTop();
+  }, [setAuthView, setEntrySeen, setAppMode, setShopView, scrollToTop]);
+
   // --- Intro Animation ---
   if (!introComplete) {
     return <AuthIntro onComplete={handleIntroComplete} />;
@@ -278,14 +288,14 @@ export default function App() {
   // --- Entry / Auth Pages ---
   if (!user) {
     if (authView === "signup") {
-      return <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthView("login")} />;
+      return <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthView("login")} onBack={handleBackFromAuth} />;
     }
     if (authView === "forgot") {
-      return <ForgotPasswordPage onBackToLogin={() => setAuthView("login")} />;
+      return <ForgotPasswordPage onBackToLogin={() => setAuthView("login")} onBack={handleBackFromAuth} />;
     }
     // Explicit sign-in intent (returning member after logout, gated shop views)
     if (authView === "login") {
-      return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthView("signup")} onSwitchToForgot={() => setAuthView("forgot")} />;
+      return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthView("signup")} onSwitchToForgot={() => setAuthView("forgot")} onBack={handleBackFromAuth} />;
     }
     // First contact with the platform — explore before registering.
     if (!entrySeen) {
