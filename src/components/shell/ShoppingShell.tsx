@@ -56,10 +56,10 @@ export default function ShoppingShell({
 
   const SHOP_FOOTER_COMPANY: Record<string, string> = {
     "About Us": "about",
-    Careers: "settings",
-    Press: "settings",
-    Sustainability: "settings",
-    Partners: "settings",
+    Careers: "careers",
+    Press: "press",
+    Sustainability: "sustainability",
+    Partners: "partners",
   };
 
   const SHOP_FOOTER_LEGAL: Record<string, string> = {

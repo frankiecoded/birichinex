@@ -51,6 +51,10 @@ import OrderTrackingPage from "./pages/OrderTrackingPage";
 import ShopAccountPage from "./pages/shop/ShopAccountPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
+import CareersPage from "./pages/CareersPage";
+import PressPage from "./pages/PressPage";
+import SustainabilityPage from "./pages/SustainabilityPage";
+import PartnersPage from "./pages/PartnersPage";
 import TermsPage from "./pages/legal/TermsPage";
 import PrivacyPage from "./pages/legal/PrivacyPage";
 import CookiePage from "./pages/legal/CookiePage";
@@ -350,6 +354,22 @@ export default function App() {
 
     if (shopView === "contact") {
       return <ContactPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "careers") {
+      return <CareersPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "press") {
+      return <PressPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "sustainability") {
+      return <SustainabilityPage onNavigate={handleShopNavigate} />;
+    }
+
+    if (shopView === "partners") {
+      return <PartnersPage onNavigate={handleShopNavigate} />;
     }
 
     if (shopView === "legal:terms") {
