@@ -119,7 +119,8 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { settings, contacts, transactions, inventoryItems, courseProgress, selectedCurrency, audit, agentCalls, wallet, orders, dropshipOrders, loyalty, subscription } = useStore();
+  const { settings, contacts, transactions, courseProgress, selectedCurrency, audit, agentCalls, wallet, orders, dropshipOrders, loyalty, subscription } = useStore();
+  const inventoryItems = useStore((s) => s.getUserInventory());
   const setCopilotOpen = useStore((s) => s.setCopilotOpen);
   const setCopilotPrompt = useStore((s) => s.setCopilotPrompt);
   const [activeHorizon, setActiveHorizon] = useState<ActionPlanHorizon>("now");

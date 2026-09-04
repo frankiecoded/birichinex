@@ -24,7 +24,8 @@ const compactAmount = (n: number): string => {
 
 export default function AnalyticsPage() {
   const [activePeriod, setActivePeriod] = useState<Period>("6M");
-  const { transactions, contacts, inventoryItems, selectedCurrency } = useStore();
+  const { transactions, contacts, selectedCurrency } = useStore();
+  const inventoryItems = useStore((s) => s.getUserInventory());
 
   const chartData = useMemo(() => {
     const now = new Date();

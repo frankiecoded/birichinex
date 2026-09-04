@@ -60,7 +60,7 @@ export default function BNXIntelligenceBoard() {
   const outcomes = useStore((s) => s.outcomes);
   const profile = useStore((s) => s.settings.profile);
   const language = useStore((s) => s.settings.profile.language ?? "en");
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.getUserInventory());
   const transactions = useStore((s) => s.transactions);
   const contacts = useStore((s) => s.contacts);
   const agentCalls = useStore((s) => s.agentCalls);

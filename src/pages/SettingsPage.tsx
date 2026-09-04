@@ -80,7 +80,6 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (view: strin
     { id: "security", icon: Shield, label: "Security & Privacy", description: "Password, MFA, and privacy settings", badge: null },
     { id: "billing", icon: CreditCard, label: "Billing & Membership", description: "Subscription, invoices, and payment methods", badge: TIER_LABELS[currentTier] },
     { id: "appearance", icon: Palette, label: "Appearance", description: "Theme, currency, and display preferences", badge: null },
-    { id: "api", icon: Key, label: "API & Integrations", description: "API keys, webhooks, and third-party connections", badge: null },
     { id: "support", icon: MessageSquare, label: "Support", description: "Help center, contact, and documentation", badge: null },
   ];
 
@@ -170,7 +169,6 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (view: strin
                             onCurrencyChange={setCurrency}
                           />
                         )}
-                        {section.id === "api" && <IntegrationsSection />}
                         {section.id === "support" && <SupportSection />}
                       </GlassCard>
                     </div>

@@ -171,7 +171,7 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
   const audit = useStore((s) => s.audit);
   const contacts = useStore((s) => s.contacts);
   const transactions = useStore((s) => s.transactions);
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.getUserInventory());
   const courseProgress = useStore((s) => s.courseProgress);
   const agentCalls = useStore((s) => s.agentCalls);
   const selectedCurrency = useStore((s) => s.selectedCurrency);

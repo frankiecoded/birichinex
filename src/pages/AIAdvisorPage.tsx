@@ -266,10 +266,11 @@ interface AIAdvisorPageProps {
 
 export default function AIAdvisorPage({ compact = false }: AIAdvisorPageProps) {
   const {
-    inventoryItems, dropshipOrders, transactions, contacts,
+    dropshipOrders, transactions, contacts,
     loyalty, cart, currentTier, selectedCurrency, user, audit,
     aiConversations, createConversation, addMessage, deleteConversation,
   } = useStore();
+  const inventoryItems = useStore((s) => s.getUserInventory());
 
   const [conversations, setConversations] = useState<AdvisorConversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);

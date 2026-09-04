@@ -25,7 +25,7 @@ interface ItemForm {
 const EMPTY_FORM: ItemForm = { name: "", sku: "", category: "", stock: "", minStock: "", price: "", unit: "pcs", supplier: "" };
 
 export default function InventoryPage() {
-  const items = useStore((s) => s.inventoryItems);
+  const items = useStore((s) => s.getUserInventory());
   const addItem = useStore((s) => s.addInventoryItem);
   const updateItem = useStore((s) => s.updateInventoryItem);
   const deleteItem = useStore((s) => s.deleteInventoryItem);

@@ -170,7 +170,7 @@ interface TransactionItem {
 }
 
 interface AppSettings {
-  profile: { name: string; email: string; phone: string; company: string; language?: string; city?: string; country?: string };
+  profile: { name: string; email: string; phone: string; company: string; language?: string; city?: string; country?: string; address?: string; role?: string; businessRegNo?: string; taxId?: string; industry?: string; employeeCount?: string; website?: string; accountStatus?: string };
   notifications: { email: boolean; push: boolean; sms: boolean };
   theme: 'light' | 'dark' | 'system';
   payoutBank: BankAccountDetails | null;
@@ -188,9 +188,17 @@ interface StoreState {
       name: string;
       accountType: AccountType;
       createdAt: string;
+      lastLogin?: string;
       password?: string;
       twoFactorCode?: string;
       recoveryCodes?: string[];
+      role?: string;
+      businessRegNo?: string;
+      taxId?: string;
+      industry?: string;
+      employeeCount?: string;
+      website?: string;
+      inventoryItems?: InventoryItem[];
     }
   >;
   login: (email: string, name: string, accountType?: AccountType) => void;
@@ -263,6 +271,7 @@ interface StoreState {
 
   // ── Inventory ──────────────────────────────────────────────────────────────
   inventoryItems: InventoryItem[];
+  getUserInventory: () => InventoryItem[];
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
   updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
   deleteInventoryItem: (id: string) => void;
@@ -563,6 +572,7 @@ export const useStore = create<StoreState>()(
                 name: resolvedName,
                 accountType: resolvedType,
                 createdAt: reserved?.createdAt ?? new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
               },
             },
             authView: null,
@@ -578,6 +588,7 @@ export const useStore = create<StoreState>()(
           const reserved = state.users[key];
           const resolvedType = reserved?.accountType ?? accountType;
           const resolvedName = reserved?.name ?? name;
+          const hasExistingInventory = reserved?.inventoryItems && reserved.inventoryItems.length > 0;
           return {
             user: { email, name: resolvedName, accountType: resolvedType },
             users: {
@@ -588,6 +599,9 @@ export const useStore = create<StoreState>()(
                 accountType: resolvedType,
                 createdAt: reserved?.createdAt ?? new Date().toISOString(),
                 password: password ? hashPassword(password, key) : reserved?.password,
+                inventoryItems: hasExistingInventory
+                  ? reserved!.inventoryItems
+                  : PORTMETALS_CATALOGUE.map((item) => ({ ...item, id: crypto.randomUUID() })),
               },
             },
             authView: null,
@@ -617,6 +631,9 @@ export const useStore = create<StoreState>()(
           }
         }
         if (rec.twoFactorCode) return { ok: true, needsTwoFactor: true, name: rec.name };
+        set((s) => ({
+          users: { ...s.users, [key]: { ...rec, lastLogin: new Date().toISOString() } },
+        }));
         return { ok: true, needsTwoFactor: false, name: rec.name };
       },
 
@@ -630,8 +647,12 @@ export const useStore = create<StoreState>()(
             set((s) => ({
               users: {
                 ...s.users,
-                [key]: { ...rec, twoFactorCode: hashCredential(trimmed) },
+                [key]: { ...rec, twoFactorCode: hashCredential(trimmed), lastLogin: new Date().toISOString() },
               },
+            }));
+          } else {
+            set((s) => ({
+              users: { ...s.users, [key]: { ...rec, lastLogin: new Date().toISOString() } },
             }));
           }
           return { ok: true };
@@ -1002,46 +1023,87 @@ export const useStore = create<StoreState>()(
       inventoryItems: [],
       inventorySearchQuery: '',
 
+      getUserInventory: () => {
+        const state = get();
+        const key = state.user?.email?.trim().toLowerCase();
+        if (key && state.users[key]?.inventoryItems && state.users[key]!.inventoryItems!.length > 0) {
+          return state.users[key]!.inventoryItems!;
+        }
+        return state.inventoryItems;
+      },
+
       addInventoryItem: (item) =>
-        set((state) => ({
-          inventoryItems: [
-            ...state.inventoryItems,
-            { ...item, id: crypto.randomUUID() },
-          ],
-        })),
+        set((state) => {
+          const newItem = { ...item, id: crypto.randomUUID() };
+          const key = state.user?.email?.trim().toLowerCase();
+          if (key && state.users[key]) {
+            const userInv = state.users[key].inventoryItems ?? [];
+            return {
+              users: {
+                ...state.users,
+                [key]: { ...state.users[key], inventoryItems: [...userInv, newItem] },
+              },
+            };
+          }
+          return { inventoryItems: [...state.inventoryItems, newItem] };
+        }),
 
       updateInventoryItem: (id, updates) =>
-        set((state) => ({
-          inventoryItems: state.inventoryItems.map((item) =>
-            item.id === id ? { ...item, ...updates } : item,
-          ),
-        })),
+        set((state) => {
+          const key = state.user?.email?.trim().toLowerCase();
+          if (key && state.users[key]) {
+            const userInv = state.users[key].inventoryItems ?? [];
+            return {
+              users: {
+                ...state.users,
+                [key]: {
+                  ...state.users[key],
+                  inventoryItems: userInv.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+                },
+              },
+            };
+          }
+          return {
+            inventoryItems: state.inventoryItems.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+          };
+        }),
 
       deleteInventoryItem: (id) =>
-        set((state) => ({
-          inventoryItems: state.inventoryItems.filter((item) => item.id !== id),
-        })),
+        set((state) => {
+          const key = state.user?.email?.trim().toLowerCase();
+          if (key && state.users[key]) {
+            const userInv = state.users[key].inventoryItems ?? [];
+            return {
+              users: {
+                ...state.users,
+                [key]: { ...state.users[key], inventoryItems: userInv.filter((item) => item.id !== id) },
+              },
+            };
+          }
+          return { inventoryItems: state.inventoryItems.filter((item) => item.id !== id) };
+        }),
 
       addToInventoryFromDropship: (productId, productName, category, quantity, unitPrice, supplier) =>
         set((state) => {
-          const existingIndex = state.inventoryItems.findIndex(
+          const key = state.user?.email?.trim().toLowerCase();
+          const currentInv = (key && state.users[key]?.inventoryItems) ? state.users[key]!.inventoryItems! : state.inventoryItems;
+          const existingIndex = currentInv.findIndex(
             (item) => item.name === productName && item.source === 'dropship',
           );
+          let updatedInv: InventoryItem[];
           if (existingIndex >= 0) {
-            const updated = [...state.inventoryItems];
-            const item = updated[existingIndex];
+            updatedInv = [...currentInv];
+            const item = updatedInv[existingIndex];
             const newStock = item.stock + quantity;
-            updated[existingIndex] = {
+            updatedInv[existingIndex] = {
               ...item,
               stock: newStock,
               status: newStock <= 0 ? 'out-of-stock' as const : newStock <= item.minStock ? 'low-stock' as const : 'in-stock' as const,
               lastRestocked: new Date().toISOString(),
             };
-            return { inventoryItems: updated };
-          }
-          return {
-            inventoryItems: [
-              ...state.inventoryItems,
+          } else {
+            updatedInv = [
+              ...currentInv,
               {
                 id: crypto.randomUUID(),
                 name: productName,
@@ -1057,23 +1119,58 @@ export const useStore = create<StoreState>()(
                 source: 'dropship' as const,
                 postedToMarketplace: false,
               },
-            ],
-          };
+            ];
+          }
+          if (key && state.users[key]) {
+            return {
+              users: {
+                ...state.users,
+                [key]: { ...state.users[key], inventoryItems: updatedInv },
+              },
+            };
+          }
+          return { inventoryItems: updatedInv };
         }),
 
       postItemToMarketplace: (id, marketplacePrice) =>
-        set((state) => ({
-          inventoryItems: state.inventoryItems.map((item) =>
-            item.id === id ? { ...item, postedToMarketplace: true, marketplacePrice } : item,
-          ),
-        })),
+        set((state) => {
+          const key = state.user?.email?.trim().toLowerCase();
+          if (key && state.users[key]) {
+            const userInv = state.users[key].inventoryItems ?? [];
+            return {
+              users: {
+                ...state.users,
+                [key]: {
+                  ...state.users[key],
+                  inventoryItems: userInv.map((item) => (item.id === id ? { ...item, postedToMarketplace: true, marketplacePrice } : item)),
+                },
+              },
+            };
+          }
+          return {
+            inventoryItems: state.inventoryItems.map((item) => (item.id === id ? { ...item, postedToMarketplace: true, marketplacePrice } : item)),
+          };
+        }),
 
       removeItemFromMarketplace: (id) =>
-        set((state) => ({
-          inventoryItems: state.inventoryItems.map((item) =>
-            item.id === id ? { ...item, postedToMarketplace: false } : item,
-          ),
-        })),
+        set((state) => {
+          const key = state.user?.email?.trim().toLowerCase();
+          if (key && state.users[key]) {
+            const userInv = state.users[key].inventoryItems ?? [];
+            return {
+              users: {
+                ...state.users,
+                [key]: {
+                  ...state.users[key],
+                  inventoryItems: userInv.map((item) => (item.id === id ? { ...item, postedToMarketplace: false } : item)),
+                },
+              },
+            };
+          }
+          return {
+            inventoryItems: state.inventoryItems.map((item) => (item.id === id ? { ...item, postedToMarketplace: false } : item)),
+          };
+        }),
 
       setInventorySearchQuery: (q) => set({ inventorySearchQuery: q }),
 
@@ -2290,6 +2387,7 @@ export const useStore = create<StoreState>()(
                 accountType: 'business',
                 createdAt: new Date('2026-08-30T09:00:00.000Z').toISOString(),
                 password: 's1$ed4a23f745b5263c7dc3229574cafed20df3e670d60053a69d7b5088af42140f',
+                inventoryItems: PORTMETALS_CATALOGUE.map((item) => ({ ...item })),
               },
             },
             businessWallet: base.businessWallet ?? { balance: 0, totalEarned: 0, totalWithdrawn: 0, transactions: [] },

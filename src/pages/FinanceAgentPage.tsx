@@ -51,7 +51,7 @@ export default function FinanceAgentPage() {
   // ── Store ──────────────────────────────────────────────────────────────
   const wallet = useStore((s) => s.wallet);
   const transactions = useStore((s) => s.transactions);
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.getUserInventory());
   const orders = useStore((s) => s.orders);
   const dropshipOrders = useStore((s) => s.dropshipOrders);
   const loyalty = useStore((s) => s.loyalty);

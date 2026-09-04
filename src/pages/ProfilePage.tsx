@@ -119,9 +119,15 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
     email: settings.profile.email,
     phone: settings.profile.phone,
     company: settings.profile.company,
-    address: "",
+    address: settings.profile.address ?? "",
     city: settings.profile.city ?? "",
     country: settings.profile.country ?? "",
+    role: settings.profile.role ?? "",
+    businessRegNo: settings.profile.businessRegNo ?? "",
+    taxId: settings.profile.taxId ?? "",
+    industry: settings.profile.industry ?? "",
+    employeeCount: settings.profile.employeeCount ?? "",
+    website: settings.profile.website ?? "",
   });
   const [notifForm, setNotifForm] = useState({ ...settings.notifications });
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
@@ -233,6 +239,13 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
         company: profileForm.company,
         city: profileForm.city,
         country: profileForm.country,
+        address: profileForm.address,
+        role: profileForm.role,
+        businessRegNo: profileForm.businessRegNo,
+        taxId: profileForm.taxId,
+        industry: profileForm.industry,
+        employeeCount: profileForm.employeeCount,
+        website: profileForm.website,
       },
     });
     flashSaved("Profile updated");
@@ -316,6 +329,28 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                       <span className="text-[13px] text-ink-tertiary flex items-center gap-1">
                         <Building2 className="h-3.5 w-3.5" /> {profileForm.company}
                       </span>
+                      {profileForm.phone && (
+                        <span className="text-[13px] text-ink-tertiary flex items-center gap-1">
+                          <Phone className="h-3.5 w-3.5" /> {profileForm.phone}
+                        </span>
+                      )}
+                      {profileForm.role && (
+                        <span className="text-[13px] text-ink-tertiary flex items-center gap-1">
+                          <User className="h-3.5 w-3.5" /> {profileForm.role}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 mt-1.5 flex-wrap">
+                      {account?.createdAt && (
+                        <span className="text-[12px] text-ink-quaternary flex items-center gap-1">
+                          Member since {new Date(account.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                      {account?.lastLogin && (
+                        <span className="text-[12px] text-ink-quaternary flex items-center gap-1">
+                          Last login {new Date(account.lastLogin).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -455,6 +490,64 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                     value={profileForm.country}
                     onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
                     placeholder="Country"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>
+                    <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5" /> Role / Title</span>
+                  </label>
+                  <input
+                    className={inputClass}
+                    value={profileForm.role}
+                    onChange={(e) => setProfileForm({ ...profileForm, role: e.target.value })}
+                    placeholder="e.g. Founder, CEO, Manager"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>
+                    <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Business Registration No.</span>
+                  </label>
+                  <input
+                    className={inputClass}
+                    value={profileForm.businessRegNo}
+                    onChange={(e) => setProfileForm({ ...profileForm, businessRegNo: e.target.value })}
+                    placeholder="e.g. PVT-2026-00123"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Tax ID / PIN</label>
+                  <input
+                    className={inputClass}
+                    value={profileForm.taxId}
+                    onChange={(e) => setProfileForm({ ...profileForm, taxId: e.target.value })}
+                    placeholder="Tax identification number"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Industry</label>
+                  <input
+                    className={inputClass}
+                    value={profileForm.industry}
+                    onChange={(e) => setProfileForm({ ...profileForm, industry: e.target.value })}
+                    placeholder="e.g. Electronics, Fashion, Agriculture"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Team Size</label>
+                  <input
+                    className={inputClass}
+                    value={profileForm.employeeCount}
+                    onChange={(e) => setProfileForm({ ...profileForm, employeeCount: e.target.value })}
+                    placeholder="e.g. 1-10, 11-50, 50+"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Website</label>
+                  <input
+                    className={inputClass}
+                    value={profileForm.website}
+                    onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
+                    placeholder="https://yourbusiness.com"
                   />
                 </div>
               </div>
