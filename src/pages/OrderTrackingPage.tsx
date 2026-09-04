@@ -272,6 +272,8 @@ export default function OrderTrackingPage({ onNavigate, scope = "all", embedded 
   const selectedCurrency = useStore((s) => s.selectedCurrency);
   const updateOrderStatus = useStore((s) => s.updateOrderStatus);
   const updateShipment = useStore((s) => s.updateShipment);
+  const user = useStore((s) => s.user);
+  const isLoggedIn = Boolean(user);
 
   const items = useMemo<DisplayItem[]>(() => {
     const list: DisplayItem[] = [];
@@ -458,7 +460,7 @@ export default function OrderTrackingPage({ onNavigate, scope = "all", embedded 
                       <input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search orders..."
+                        placeholder={isLoggedIn ? 'Search orders...' : 'Enter your tracking number'}
                         className="w-full h-10 pl-9 pr-4 rounded-[10px] bg-surface-secondary/60 border border-glass-border text-[13px] text-ink placeholder:text-ink-quaternary outline-none focus:border-[#007AFF]/50 transition-colors"
                       />
                     </div>
@@ -486,7 +488,14 @@ export default function OrderTrackingPage({ onNavigate, scope = "all", embedded 
                     {filteredOrders.length === 0 ? (
                       <div className="p-8 text-center">
                         <Package className="h-10 w-10 text-ink-quaternary mx-auto mb-3" />
-                        <p className="text-[13px] text-ink-tertiary">No packages found</p>
+                        <p className="text-[13px] font-semibold text-ink-tertiary mb-1.5">
+                          {searchQuery ? 'No packages match your search' : 'No packages to track'}
+                        </p>
+                        <p className="text-[11px] text-ink-quaternary leading-relaxed">
+                          {searchQuery
+                            ? 'Try a different tracking number or search term.'
+                            : 'Enter a tracking number above to locate your order in real time.'}
+                        </p>
                       </div>
                     ) : (
                       filteredOrders.map((order) => (

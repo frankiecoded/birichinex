@@ -597,6 +597,48 @@ app.post("/api/payments/checkout", async (req, res) => {
   }
 });
 
+// 1b. Create a checkout (order purchase — shop checkout).
+app.post("/api/payments/order", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { amount, currency, method, email, description, meta } = req.body || {};
+    const amountNum = Number(amount);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+    const curr = String(currency || "KES").toUpperCase();
+    if (!["KES", "TZS", "UGX", "USD"].includes(curr)) {
+      return res.status(400).json({ error: "Unsupported currency" });
+    }
+    const payMethod = String(method || "card").toLowerCase();
+    if (!["card", "mpesa"].includes(payMethod)) {
+      return res.status(400).json({ error: "method must be card or mpesa" });
+    }
+    const customerEmail = String(email || "").trim().slice(0, 120);
+    if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      return res.status(400).json({ error: "Invalid email" });
+    }
+    const desc = String(description || "BirichiNex Marketplace Order").slice(0, 191);
+    const reference = `ord_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
+    const provider = getPaymentProvider();
+    const { redirectUrl } = await provider.createCheckout({
+      reference,
+      amount: amountNum,
+      currency: curr as "USD" | "TZS",
+      description: desc,
+      customerEmail,
+      paymentOptions: payMethod === "mpesa" ? ["mobilemoneyke"] : ["card"],
+      redirectUrl: `${paymentOrigin(req)}/`,
+      meta: { ...(meta || {}), kind: "order" },
+    });
+
+    res.json({ reference, amount: amountNum, currency: curr, mode: provider.mode, redirectUrl });
+  } catch (error: any) {
+    console.error("POST /api/payments/order error:", error);
+    res.status(500).json({ error: "Checkout failed" });
+  }
+});
+
 // 2. Check a checkout's payment status (polled by the client after checkout).
 app.get("/api/payments/status", async (req, res) => {
   try {

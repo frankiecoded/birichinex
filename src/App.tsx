@@ -158,7 +158,7 @@ export default function App() {
   // Personalized/transacting shop views require an account — guests see the
   // sign-in screen instead of the view (registration is always optional).
   const requiresAccount = useCallback(
-    (view: string) => view === "checkout" || view === "orders" || view === "account" || view === "settings",
+    (view: string) => view === "account" || view === "settings",
     []
   );
 

@@ -122,7 +122,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
     }
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     setPayError("");
     setAcctError("");
     if (!user) {
@@ -150,6 +150,36 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
       return;
     }
     setProcessing(true);
+    
+    // For card or M-Pesa, try the real gateway first.
+    if (paymentMethod === "card" || paymentMethod === "mpesa") {
+      try {
+        const first = cart[0];
+        const itemLabel = unitCount > 1 ? `${first.product.name} +${unitCount - 1} more` : first.product.name;
+        const res = await fetch("/api/payments/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: total,
+            currency: selectedCurrency,
+            method: paymentMethod === "mpesa" ? "mpesa" : "card",
+            email: user?.email || shipping.email || undefined,
+            description: `BirichiNex Order — ${itemLabel}`,
+            meta: { itemCount: String(unitCount) },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.redirectUrl) {
+          // Live Flutterwave hosted checkout — redirect to gateway.
+          window.location.href = data.redirectUrl;
+          return;
+        }
+        // Simulation mode or gateway error — fall through to local finalization.
+      } catch {
+        // Offline — continue with local finalization.
+      }
+    }
+
     window.setTimeout(() => finalizeOrder(), 1100);
   };
 
