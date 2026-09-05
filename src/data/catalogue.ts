@@ -121,6 +121,38 @@ const CN_PILLOW = "photo-1584100936595-c0654b55a2e2";
 const CN_HOME = "photo-1524504388940-b1c1722653e1";
 const CN_BRA = "photo-1506629082955-511b1aa562c8";
 const CN_TANK = "photo-1521572163474-6864f9cf17ab";
+// Retail division — European footwear, bags, fashion & formal wear (all verified 200)
+const FT_RUN_RED = "photo-1542291026-7eec264c27ff";
+const FT_RUN_WHITE = "photo-1600185365483-26d7a4cc7519";
+const FT_SNEAK = "photo-1525966222134-fcfa99b8ae77";
+const FT_SLIDE = "photo-1511497584788-876760111969";
+const FT_BOOT_BK = "photo-1608256246200-53e635b5b65f";
+const FT_BOOT_TAN = "photo-1606107557195-0e29a4b5b4aa";
+const FT_HEEL = "photo-1531310197839-ccf54634509e";
+const BG_CLASSIC = "photo-1548036328-c9fa89d128fa";
+const BG_WHITE = "photo-1584917865442-de89df76afd3";
+const BG_PINK = "photo-1590874103328-eac38a683ce7";
+const BG_YELLOW = "photo-1591561954557-26941169b49e";
+const BG_RED = "photo-1594633312681-425c7b97ccd1";
+const BG_WALLET = "photo-1547949003-9792a18a2601";
+const BG_CARD = "photo-1627123424574-724758594e93";
+const WM_DRESS_RED = "photo-1595777457583-95e059d581b8";
+const WM_DRESS_STREET = "photo-1572804013309-59a88b7e92f1";
+const WM_DRESS_NIGHT = "photo-1585487000160-6ebcfceb0d03";
+const WM_BLAZER = "photo-1515372039744-b8f02a3ae446";
+const MN_SHIRT_WHITE = "photo-1620012253295-c15cc3e65df4";
+const MN_SHIRT_DK = "photo-1603252109303-2751441dd157";
+const MN_JEANS = "photo-1542272604-787c3835535d";
+const MN_HOODIE = "photo-1556821840-3a63f95609a7";
+const MN_HOODIE2 = "photo-1620799140408-edc6dcb6d633";
+const MN_JACKET_DENIM = "photo-1551028719-00167b16eac5";
+const MN_JACKET_LEATHER = "photo-1544022613-e87ca75a784a";
+const MN_COAT = "photo-1520975954732-35dd22299614";
+const MN_PANT = "photo-1624378439575-d8705ad7ae80";
+const ST_SUIT_1 = "photo-1594938298603-c8148c4dae35";
+const ST_SUIT_2 = "photo-1617137968427-85924c800a22";
+const ST_SUIT_3 = "photo-1473966968600-fa801b869a1a";
+const ST_BLAZER = "photo-1591047139829-d91aecb6caea";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI-crafted catalogue descriptions, keyed by SKU.
@@ -187,6 +219,7 @@ const CATEGORY_DESC: Record<string, string> = {
   "Ladies Items": "Ladies' fashion from Portmetals' Canada container (MSKU9196899) — hand-checked garments, sized and baled ready for retail.",
   "Misc + Children Items": "Household, kids' and baby bales from Portmetals' Canada container (MSKU9196899) — sorted, graded and packed for volume buyers.",
   "Grade (B) Items": "Grade B bales from Portmetals' Canada container (MSKU9196899) — serviceable seconds, sorted and baled for budget wholesale.",
+  "Formal Wear": "European suits, blazers and formal trousers — quality formal wear for business, weddings, church and special occasions. Ships from Nairobi.",
 };
 
 const lastRestocked = new Date("2026-08-30T10:00:00.000Z").toISOString();
@@ -301,6 +334,35 @@ function container(
   };
 }
 
+// Retail catalogue entry — a single European import (unit: item), priced in the
+// platform's KES base exactly like the wholesale lines (amount = KSh ÷ 0.05) so
+// the marketplace shows the exact retail figure. Prices follow the founder's
+// published retail price bands for Footwear, Bags & Accessories, Fashion and
+// Suits & Formal Wear.
+function retail(
+  name: string,
+  sku: string,
+  category: string,
+  priceKES: number,
+  stock: number,
+  imageIds: string | string[],
+  extra: Record<string, string> = {},
+): InventoryItem {
+  return make({
+    name,
+    sku,
+    category,
+    price: Math.round(priceKES / 0.05),
+    stock,
+    imageIds,
+    source: "retail",
+    unit: "item",
+    currency: "KES",
+    Origin: "Imported from Europe",
+    ...extra,
+  });
+}
+
 /**
  * The published marketplace catalogue. Categories map to the real shop
  * navigation: Fashion → Women's Fashion / Men's Fashion / Footwear / Bags &
@@ -398,6 +460,70 @@ export const PORTMETALS_CATALOGUE: InventoryItem[] = [
   bale("45kg Wholesale Bale", "WM-45", "Wholesale Bales", 700000, 40, BALE_45, { Weight: "45kg", "Est. Pieces": "160–220", "USD Price": "$260", "Best For": "Established retailers" }),
   bale("55kg Premium Business Bale", "WM-55", "Wholesale Bales", 900000, 40, BALE_55, { Weight: "55kg", "Est. Pieces": "200–260", "USD Price": "$335", "Best For": "Multi-stall traders & distributors" }),
   bale("70kg Commercial Bale", "WM-70", "Wholesale Bales", 1200000, 40, BALE_70, { Weight: "70kg", "Est. Pieces": "250–330", "USD Price": "$445", "Best For": "Wholesalers & regional distributors" }),
+
+  // ═══════════ RETAIL — European Footwear (founder price bands) ═══════════
+  retail("ASICS Running Shoes — Performance Series", "PM-RL-ASICS-RUN", "Footwear", 9500, 12, [FT_RUN_RED, FT_RUN_WHITE], { Brand: "ASICS", "Collection": "Performance", "Perfect For": "Running · Gym · Walking · Everyday Comfort", "Features": "Lightweight construction · Premium cushioning · Breathable upper", "Price Band": "KSh 5,000 – 12,000" }),
+  retail("ASICS Gel Cushion Trainer", "PM-RL-ASICS-GEL", "Footwear", 8500, 10, [FT_RUN_WHITE, FT_RUN_RED], { Brand: "ASICS", "Collection": "Performance", "Perfect For": "Running · Gym · Everyday Comfort", "Price Band": "KSh 5,000 – 12,000" }),
+  retail("Saucony Performance Runner", "PM-RL-SAU-RUN", "Footwear", 9000, 10, [FT_RUN_WHITE, FT_SNEAK], { Brand: "Saucony", "Collection": "Performance", "Perfect For": "Trail Running · Hiking · Outdoor Activities", "Price Band": "KSh 6,000 – 12,000" }),
+  retail("Saucony Gore-Tex Trail — Waterproof", "PM-RL-SAU-GTX", "Footwear", 12000, 8, [FT_RUN_RED, FT_RUN_WHITE], { Brand: "Saucony", "Waterproof": "Gore-Tex", "Perfect For": "Trail Running · Hiking · Premium Lifestyle", "Features": "Waterproof Gore-Tex · Superior grip · High durability", "Price Band": "KSh 6,000 – 12,000" }),
+  retail("Nike Performance Running Shoe", "PM-RL-NIKE-RUN", "Footwear", 9000, 12, [FT_RUN_RED, FT_RUN_WHITE], { Brand: "Nike", "Collection": "Performance", "Perfect For": "Running · Gym · Casual Wear", "Features": "Lightweight · Stylish · Comfortable", "Price Band": "KSh 8,000 – 10,000" }),
+  retail("Nike Premium Edition", "PM-RL-NIKE-PRM", "Footwear", 15000, 6, [FT_RUN_WHITE, FT_RUN_RED], { Brand: "Nike", "Collection": "Premium", "Premium Models": "Up to KSh 15,000" }),
+  retail("Karl Kani Modern Streetwear — White", "PM-RL-KK-WHITE", "Footwear", 8500, 8, [FT_SNEAK, FT_RUN_WHITE], { Brand: "Karl Kani", "Collection": "Lifestyle", "Colour": "White", "Perfect For": "Fashion · Everyday Wear · Casual Lifestyle", "Features": "Premium leather finish · Contemporary design", "Price Band": "KSh 5,000 – 12,000" }),
+  retail("Karl Kani Modern Streetwear — Beige", "PM-RL-KK-BEIGE", "Footwear", 8500, 8, [FT_RUN_WHITE, FT_SNEAK], { Brand: "Karl Kani", "Collection": "Lifestyle", "Colour": "Beige", "Perfect For": "Young Professionals · Casual Lifestyle", "Price Band": "KSh 5,000 – 12,000" }),
+  retail("Converse Chuck Taylor — White Canvas", "PM-RL-CONV-CT", "Footwear", 5000, 15, [FT_SNEAK, FT_RUN_WHITE], { Brand: "Converse", "Collection": "Classic", "Colour": "White Canvas", "Perfect For": "Students · Casual Wear · Everyday Fashion", "Price Band": "KSh 3,000 – 7,500" }),
+  retail("Converse Chuck Taylor — Premium", "PM-RL-CONV-PRM", "Footwear", 7500, 10, [FT_SNEAK], { Brand: "Converse", "Collection": "Classic", "Note": "A timeless icon", "Price Band": "KSh 3,000 – 7,500" }),
+  retail("Women's Fashion Boots — Black", "PM-RL-BOOT-BLACK", "Footwear", 10000, 8, [FT_BOOT_BK, FT_BOOT_TAN], { "Collection": "Premium Boots", "Colour": "Black", "Suitable For": "Office · Smart Casual · Evening Wear", "Price Band": "KSh 6,500 – 14,000" }),
+  retail("Women's Fashion Boots — Cream", "PM-RL-BOOT-CREAM", "Footwear", 10000, 8, [FT_BOOT_TAN, FT_BOOT_BK], { "Collection": "Premium Boots", "Colour": "Cream", "Suitable For": "Office · Lifestyle Fashion", "Price Band": "KSh 6,500 – 14,000" }),
+  retail("Women's Fashion Boots — Beige", "PM-RL-BOOT-BEIGE", "Footwear", 12500, 6, [FT_BOOT_TAN], { "Collection": "Premium Boots", "Colour": "Beige", "Suitable For": "Evening Wear · Lifestyle Fashion", "Price Band": "KSh 6,500 – 14,000" }),
+  retail("Women's Evening Heels", "PM-RL-WM-HEELS", "Footwear", 8500, 8, [FT_HEEL, FT_BOOT_BK], { "Collection": "Women's Fashion", "Suitable For": "Office · Evening Wear · Special Occasions", "Price Band": "KSh 6,500 – 14,000" }),
+  retail("Premium Slides — Classic", "PM-RL-SLIDES-CLASSIC", "Footwear", 3500, 20, [FT_SLIDE], { "Collection": "Summer", "Colours": "Blue · Cream · White · Stone", "Perfect For": "Holidays · Home · Beach · Casual Wear", "Price Band": "KSh 2,000 – 5,000" }),
+  retail("Premium Slides — Beach Edition", "PM-RL-SLIDES-BEACH", "Footwear", 2500, 20, [FT_SLIDE], { "Collection": "Summer", "Colours": "Stone · Cream", "Perfect For": "Holidays · Beach · Casual Wear", "Price Band": "KSh 2,000 – 5,000" }),
+
+  // ═══════════ RETAIL — European Bags & Accessories (founder price guide) ═══════════
+  retail("Card Holder & Coin Purse", "PM-RL-BAG-CARD", "Bags & Accessories", 750, 30, [BG_CARD, BG_WALLET], { "Guide": "KSh 500 – 1,000", "Type": "Card Holders & Coin Purses" }),
+  retail("Small Wallet", "PM-RL-BAG-SMALL-WL", "Bags & Accessories", 1500, 25, [BG_WALLET, BG_CARD], { "Guide": "KSh 1,000 – 2,000", "Type": "Wallets" }),
+  retail("Premium Wallet", "PM-RL-BAG-PRM-WL", "Bags & Accessories", 2100, 20, [BG_WALLET, BG_RED], { "Guide": "KSh 1,200 – 3,000", "Type": "Premium Wallets" }),
+  retail("Mini Bag", "PM-RL-BAG-MINI", "Bags & Accessories", 2500, 15, [BG_PINK, BG_CLASSIC], { "Guide": "KSh 1,500 – 3,500", "Type": "Mini Bags", "Colours": "Multi" }),
+  retail("Crossbody Bag", "PM-RL-BAG-CROSS", "Bags & Accessories", 3500, 12, [BG_CLASSIC, BG_YELLOW], { "Guide": "KSh 2,500 – 4,500", "Type": "Crossbody Bags" }),
+  retail("Everyday Handbag", "PM-RL-BAG-EVERYDAY", "Bags & Accessories", 4000, 10, [BG_WHITE, BG_PINK], { "Guide": "KSh 3,000 – 5,000", "Type": "Everyday Handbags" }),
+  retail("Premium Fashion Handbag", "PM-RL-BAG-PRM", "Bags & Accessories", 5500, 10, [BG_YELLOW, BG_WHITE], { "Guide": "KSh 4,000 – 7,000", "Type": "Premium Fashion Handbags" }),
+  retail("Signature Collection Bag", "PM-RL-BAG-SIGN", "Bags & Accessories", 8000, 6, [BG_RED, BG_CLASSIC], { "Guide": "KSh 6,000 – 10,000", "Collection": "Signature" }),
+  retail("Luxury Designer Handbag", "PM-RL-BAG-LUX", "Bags & Accessories", 15000, 4, [BG_PINK, BG_RED], { "Guide": "KSh 12,000+", "Collection": "Luxury", "Qty": "Exceptional premium pieces" }),
+
+  // ═══════════ RETAIL — Women's Fashion (founder price guide) ═══════════
+  retail("Fashion Top / Blouse", "PM-RL-WM-TOP", "Women's Fashion", 1000, 40, [BALE_BLOUSE, WM_DRESS_RED], { "Guide": "KSh 500 – 1,500", "Category": "Fashion Tops & Blouses" }),
+  retail("Casual Dress", "PM-RL-WM-CASUAL-DRESS", "Women's Fashion", 1400, 25, [WM_DRESS_RED, WM_DRESS_STREET], { "Guide": "KSh 800 – 2,000", "Category": "Casual Dresses" }),
+  retail("Maxi Dress", "PM-RL-WM-MAXI", "Women's Fashion", 1800, 15, [WM_DRESS_STREET, WM_DRESS_NIGHT], { "Guide": "KSh 1,500 – 5,000", "Category": "Maxi Dresses" }),
+  retail("Evening Dress", "PM-RL-WM-EVENING", "Women's Fashion", 3500, 10, [WM_DRESS_NIGHT, WM_DRESS_RED], { "Guide": "KSh 1,500 – 5,000", "Category": "Evening Dresses" }),
+  retail("Office Dress", "PM-RL-WM-OFFICE", "Women's Fashion", 3000, 12, [WM_BLAZER, WM_DRESS_NIGHT], { "Guide": "KSh 1,500 – 5,000", "Category": "Office Dresses" }),
+  retail("Premium Dress", "PM-RL-WM-PRM-DRESS", "Women's Fashion", 4500, 8, [WM_DRESS_NIGHT, WM_DRESS_STREET], { "Guide": "KSh 1,500 – 5,000", "Category": "Premium Dresses" }),
+  retail("Fashion Jacket", "PM-RL-WM-JACKET", "Women's Fashion", 2500, 12, [MN_JACKET_LEATHER, MN_COAT], { "Guide": "KSh 1,500 – 4,000", "Category": "Fashion Jackets" }),
+  retail("Fitted Jeans", "PM-RL-WM-JEANS", "Women's Fashion", 1300, 20, [MN_JEANS, BALE_JEANS], { "Guide": "KSh 800 – 1,800", "Category": "Jeans" }),
+  retail("Leggings", "PM-RL-WM-LEGGINGS", "Women's Fashion", 800, 30, [BALE_LEGGINGS, CN_TANK], { "Guide": "KSh 500 – 1,200", "Category": "Leggings" }),
+  retail("Knitwear / Cardigan", "PM-RL-WM-KNIT", "Women's Fashion", 1200, 18, [MN_COAT, BALE_BLOUSE], { "Guide": "KSh 800 – 2,000", "Category": "Knitwear" }),
+  retail("Hoodie / Sweatshirt", "PM-RL-WM-HOODIE", "Women's Fashion", 1000, 20, [MN_HOODIE, MN_HOODIE2], { "Guide": "KSh 500 – 1,500", "Category": "Hoodies & Sweatshirts" }),
+  retail("Jumpsuit", "PM-RL-WM-JUMP", "Women's Fashion", 2200, 10, [WM_DRESS_STREET, WM_DRESS_NIGHT], { "Guide": "KSh 1,500 – 3,500", "Category": "Jumpsuits" }),
+
+  // ═══════════ RETAIL — Men's Fashion (founder price guide) ═══════════
+  retail("Business Shirt", "PM-RL-MN-BIZ-SHIRT", "Men's Fashion", 1400, 20, [MN_SHIRT_WHITE, BALE_SHIRT], { "Guide": "KSh 1,000 – 1,800", "Category": "Business Shirts" }),
+  retail("Formal / Check Shirt", "PM-RL-MN-CHECK", "Men's Fashion", 1200, 20, [MN_SHIRT_DK, MN_SHIRT_WHITE], { "Guide": "KSh 1,000 – 1,800", "Category": "Formal & Check Shirts" }),
+  retail("Casual / Polo Shirt", "PM-RL-MN-POLO", "Men's Fashion", 1200, 25, [BALE_SHIRT, MN_SHIRT_DK], { "Guide": "KSh 1,000 – 1,800", "Category": "Casual & Polo Shirts" }),
+  retail("T-Shirt", "PM-RL-MN-TEE", "Men's Fashion", 800, 40, [BALE_TEE, CN_TANK], { "Guide": "KSh 500 – 1,200", "Category": "T-Shirts" }),
+  retail("Denim Jeans", "PM-RL-MN-JEANS", "Men's Fashion", 1300, 20, [MN_JEANS, BALE_JEANS], { "Guide": "KSh 800 – 1,800", "Category": "Jeans" }),
+  retail("Chinos / Casual Trousers", "PM-RL-MN-CHINO", "Men's Fashion", 1300, 15, [MN_PANT, BALE_PANTS], { "Guide": "KSh 800 – 1,800", "Category": "Chinos & Trousers" }),
+  retail("Casual Shorts", "PM-RL-MN-SHORTS", "Men's Fashion", 900, 25, [BALE_SHORTS], { "Guide": "KSh 500 – 1,500", "Category": "Shorts" }),
+  retail("Hoodie", "PM-RL-MN-HOODIE", "Men's Fashion", 1200, 18, [MN_HOODIE, MN_HOODIE2, BALE_HOODIE], { "Guide": "KSh 500 – 2,000", "Category": "Hoodies" }),
+  retail("Denim Jacket", "PM-RL-MN-DENIM-JACKET", "Men's Fashion", 2100, 12, [MN_JACKET_DENIM, MN_COAT], { "Guide": "KSh 1,200 – 3,000", "Category": "Jackets" }),
+  retail("Casual Blazer", "PM-RL-MN-BLAZER", "Men's Fashion", 3000, 10, [ST_BLAZER, ST_SUIT_3], { "Guide": "KSh 1,500 – 3,000", "Category": "Blazers" }),
+
+  // ═══════════ RETAIL — Suits & Formal Wear (founder price guide) ═══════════
+  retail("Business Suit", "PM-RL-ST-BIZ", "Formal Wear", 8000, 8, [ST_SUIT_1, ST_SUIT_2], { "Guide": "KSh 4,000 – 12,000", "Occasion": "Business" }),
+  retail("Executive Suit", "PM-RL-ST-EXEC", "Formal Wear", 10000, 6, [ST_SUIT_2, ST_SUIT_1], { "Guide": "KSh 4,000 – 12,000", "Occasion": "Executive" }),
+  retail("Slim Fit Suit", "PM-RL-ST-SLIM", "Formal Wear", 8500, 8, [ST_SUIT_3, ST_SUIT_2], { "Guide": "KSh 4,000 – 12,000", "Fit": "Slim Fit" }),
+  retail("Wedding Suit", "PM-RL-ST-WED", "Formal Wear", 12000, 5, [ST_SUIT_2, ST_SUIT_3], { "Guide": "KSh 4,000 – 12,000", "Occasion": "Weddings & Special Occasions" }),
+  retail("Suit Jacket", "PM-RL-ST-JACKET", "Formal Wear", 6000, 8, [ST_SUIT_1, ST_BLAZER], { "Guide": "KSh 4,000 – 12,000", "Category": "Suit Jackets" }),
+  retail("Waistcoat", "PM-RL-ST-WAIST", "Formal Wear", 4500, 8, [ST_SUIT_3, ST_SUIT_1], { "Guide": "KSh 4,000 – 12,000", "Category": "Waistcoats" }),
+  retail("Formal Trousers", "PM-RL-ST-TROUSERS", "Formal Wear", 4000, 12, [MN_PANT, ST_SUIT_2], { "Guide": "KSh 4,000 – 12,000", "Category": "Formal Trousers" }),
 ];
 
 

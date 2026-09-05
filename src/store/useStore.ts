@@ -2347,7 +2347,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 14,
+      version: 15,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
@@ -2370,6 +2370,11 @@ export const useStore = create<StoreState>()(
       // 558 bales — as unpriced, unposted inventory on top of the published
       // range. Container items load into the Portmetals account inventory for
       // on-site pricing; the live marketplace range is unchanged.
+      // v15: launch the retail division — European Footwear, Bags & Accessories,
+      // Women's/Men's Fashion and Suits & Formal Wear at the founder's exact
+      // retail price bands, listed live alongside the bale & tech catalogue.
+      // The shared marketplace catalogue and Portmetals showcase account are
+      // re-seeded with the full published range.
       //
       // IMPORTANT: migration receives the stored STATE (not the envelope), and
       // only runs when the stored version differs. It must never destroy real
@@ -2393,6 +2398,7 @@ export const useStore = create<StoreState>()(
             // v12: the shared marketplace catalogue is always refreshed with the
             // current published range (images, AI descriptions, flagship).
             // v14: + the full Canada container manifest (unpriced, unposted).
+            // v15: + live retail division (footwear, bags, fashion, formal wear).
             inventoryItems: PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item })),
             // v11: seed the Portmetals Africa flagship customer account so the
             // business owner can sign in (sales@portmetalsafrica.com /

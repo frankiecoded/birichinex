@@ -49,6 +49,9 @@ function ProductImageViewer({ product }: { product: Product }) {
     Laptops: "#007AFF",
     Smartphones: "#5856D6",
     Audio: "#FF375F",
+    Footwear: "#0A84FF",
+    "Bags & Accessories": "#00C7BE",
+    "Formal Wear": "#5E5CE6",
   };
 
   const color = categoryColors[product.category] || "#d4af37";
