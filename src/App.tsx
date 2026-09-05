@@ -63,7 +63,7 @@ import SellerTermsPage from "./pages/legal/SellerTermsPage";
 import MarketplaceTermsPage from "./pages/legal/MarketplaceTermsPage";
 import ShippingPage from "./pages/legal/ShippingPage";
 import ReturnsPage from "./pages/legal/ReturnsPage";
-import { BirichiNexView, AccountType, PAID_PLANS } from "./types";
+import { BirichiNexView, AccountType } from "./types";
 import { getHubForView } from "../ai/src/navigation";
 import { useStore } from "./store/useStore";
 import { pullSnapshot, pushSnapshot, subscribeToSync } from "./lib/sync";
@@ -99,16 +99,11 @@ export default function App() {
   const auditCompleted = useStore((s) => s.auditCompleted);
   const subscription = useStore((s) => s.subscription);
   const setAccountType = useStore((s) => s.setAccountType);
-  const addNotification = useStore((s) => s.addNotification);
   const theme = useStore((s) => s.settings.theme);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const accountType: AccountType = user?.accountType ?? "shopper";
-  const planStillValid =
-    !subscription.expiresAt || new Date(subscription.expiresAt).getTime() > Date.now();
-  const hasActiveSubscription =
-    subscription.status === "active" && planStillValid && PAID_PLANS.includes(subscription.plan);
   const isSubscribed = subscription.status !== "cancelled" && subscription.status !== "expired";
 
   // ── Cloud state sync (Supabase) ──────────────────────────────────────────
@@ -199,16 +194,7 @@ export default function App() {
         openAiSetup();
       }
     } else {
-      // Going to shopping
-      if (hasActiveSubscription) {
-        addNotification({
-          title: "Subscription active",
-          body: `Your ${subscription.plan} plan runs until ${new Date(subscription.expiresAt ?? Date.now()).toLocaleDateString()}. You can switch back to shopper once it ends.`,
-          type: "system",
-          actionView: "membership",
-        });
-        return;
-      }
+      // Going to shopping — always allowed; the storefront stays browsable regardless of plan
       setAppMode("shopping");
       setShopView("home");
     }
