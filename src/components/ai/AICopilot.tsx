@@ -769,11 +769,12 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
 
   const runChip = (chip: string) => send(chip);
 
-  const { w: vw, h: vh } = useViewport();
-  const btnTop = pos ? pos.top : Math.max(0, vh - 20 - 56);
+  const { w: vw, h: vh, bottomInset } = useViewport();
+  const cornerBottom = 20 + bottomInset;
+  const btnTop = pos ? pos.top : Math.max(0, vh - cornerBottom - 56);
   const btnLeft = pos ? pos.left : Math.max(0, vw - 20 - 56);
   const spaceUp = Math.max(0, btnTop - 16);
-  const spaceDown = Math.max(0, vh - btnTop - 56 - 16);
+  const spaceDown = Math.max(0, vh - bottomInset - btnTop - 56 - 16);
   const floatingOpenUp = spaceUp >= spaceDown;
   const panelW = Math.min(420, Math.max(240, vw - 40));
   const floatingPanelLeft = Math.min(Math.max(8, btnLeft + 56 - panelW), Math.max(8, vw - panelW - 8));
@@ -796,7 +797,7 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
       {/* Floating Orb */}
       <div
         className={`fixed bottom-5 right-5 select-none ${guideActive ? "z-[96]" : "z-40"}`}
-        style={{ left: pos?.left, top: pos?.top, right: pos ? "auto" : undefined, bottom: pos ? "auto" : undefined }}
+        style={{ left: pos?.left, top: pos?.top, right: pos ? "auto" : undefined, bottom: pos ? "auto" : `${cornerBottom}px` }}
       >
         <div className="relative">
           <AnimatePresence>

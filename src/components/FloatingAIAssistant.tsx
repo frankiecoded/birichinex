@@ -29,11 +29,12 @@ export default function FloatingAIAssistant() {
   const hasPaidPlan = subscription.status === "active" && ["silver", "gold", "platinum"].includes(subscription.plan);
 
   const { pos, dragging, onPointerDown, onClick } = useDraggableFloat();
-  const { w: vw, h: vh } = useViewport();
-  const btnTop = pos ? pos.top : Math.max(0, vh - 24 - 56);
+  const { w: vw, h: vh, bottomInset } = useViewport();
+  const cornerBottom = 24 + bottomInset;
+  const btnTop = pos ? pos.top : Math.max(0, vh - cornerBottom - 56);
   const btnLeft = pos ? pos.left : Math.max(0, vw - 24 - 56);
   const spaceUp = Math.max(0, btnTop - 16);
-  const spaceDown = Math.max(0, vh - btnTop - 56 - 16);
+  const spaceDown = Math.max(0, vh - bottomInset - btnTop - 56 - 16);
   const openUp = spaceUp >= spaceDown;
   const panelW = Math.min(380, Math.max(200, vw - 32));
   const panelLeft = Math.min(Math.max(8, btnLeft + 56 - panelW), Math.max(8, vw - panelW - 8));
@@ -95,7 +96,7 @@ export default function FloatingAIAssistant() {
   return (
     <div
       className="fixed z-[60] select-none"
-      style={{ left: pos?.left, top: pos?.top, right: pos ? "auto" : "1.5rem", bottom: pos ? "auto" : "1.5rem" }}
+      style={{ left: pos?.left, top: pos?.top, right: pos ? "auto" : "1.5rem", bottom: pos ? "auto" : `${cornerBottom}px` }}
     >
       {/* Launcher */}
       <button

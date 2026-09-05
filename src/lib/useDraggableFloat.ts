@@ -15,6 +15,18 @@ interface DragState {
 
 const DRAG_THRESHOLD = 4;
 
+function getBottomInset() {
+  try {
+    const vv = window.visualViewport;
+    if (vv && typeof vv.height === "number" && window.innerHeight - vv.height > 0) {
+      return Math.max(0, window.innerHeight - vv.height);
+    }
+  } catch {
+    /* visualViewport unsupported */
+  }
+  return 0;
+}
+
 export function useDraggableFloat() {
   const [pos, setPos] = useState<Pos | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -42,8 +54,12 @@ export function useDraggableFloat() {
       if (!d.moved && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) d.moved = true;
       const w = rect.width || 56;
       const h = rect.height || 56;
+      const inset = getBottomInset();
       const left = Math.min(Math.max(0, d.left + dx), Math.max(0, window.innerWidth - w));
-      const top = Math.min(Math.max(0, d.top + dy), Math.max(0, window.innerHeight - h));
+      const top = Math.min(
+        Math.max(0, d.top + dy),
+        Math.max(0, window.innerHeight - inset - h),
+      );
       setPos({ left, top });
     };
 
@@ -78,15 +94,21 @@ export function useViewport() {
   const [size, setSize] = useState(() => ({
     w: typeof window !== "undefined" ? window.innerWidth : 0,
     h: typeof window !== "undefined" ? window.innerHeight : 0,
+    bottomInset: typeof window !== "undefined" ? getBottomInset() : 0,
   }));
 
   useEffect(() => {
-    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    const onResize = () =>
+      setSize({ w: window.innerWidth, h: window.innerHeight, bottomInset: getBottomInset() });
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("scroll", onResize);
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("scroll", onResize);
     };
   }, []);
 

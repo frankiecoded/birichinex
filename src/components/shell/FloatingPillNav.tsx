@@ -5,6 +5,7 @@ import {
   X, Globe, User, Home, Sparkles, Tag, Package, Star
 } from "lucide-react";
 import { Currency } from "../../types";
+import { useViewport } from "../../lib/useDraggableFloat";
 
 const SHOP_CATEGORIES = [
   { id: "fashion", label: "Fashion", icon: "👗", subcategories: ["Men's Fashion", "Women's Fashion", "Kids", "Sportswear", "Leather", "Jackets", "T-Shirts", "Handbags"] },
@@ -40,6 +41,7 @@ export default function FloatingPillNav({
   onSignIn,
   onSignUp,
 }: FloatingPillNavProps) {
+  const { bottomInset } = useViewport();
   const [expanded, setExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -124,7 +126,7 @@ export default function FloatingPillNav({
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             onClick={() => setExpanded(true)}
             className="fixed z-[999] left-1/2 -translate-x-1/2 cursor-pointer group"
-            style={{ bottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}
+            style={{ bottom: `calc(${24 + bottomInset}px + env(safe-area-inset-bottom, 0px))` }}
           >
             <div className="relative">
               <div className="absolute -inset-4 rounded-full bg-brand/20 blur-2xl opacity-40 group-hover:opacity-70 transition-opacity duration-600" />
@@ -187,7 +189,7 @@ export default function FloatingPillNav({
               exit={{ opacity: 0, y: 20, scale: 0.9 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="fixed z-[999] left-1/2 -translate-x-1/2 w-[calc(100vw-24px)] max-w-[800px]"
-              style={{ bottom: "max(28px, env(safe-area-inset-bottom, 28px))" }}
+              style={{ bottom: `calc(${28 + bottomInset}px + env(safe-area-inset-bottom, 0px))` }}
             >
               <div className="
                 rounded-[28px]
