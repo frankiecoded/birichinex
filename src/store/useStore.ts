@@ -156,6 +156,9 @@ export interface InventoryItem {
   postedToMarketplace: boolean;
   marketplacePrice?: { amount: number; currency: Currency };
   image?: string;
+  images?: string[];
+  description?: string;
+  aiDescription?: boolean;
   specs?: Record<string, string>;
 }
 
@@ -2344,7 +2347,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 11,
+      version: 12,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
@@ -2353,6 +2356,11 @@ export const useStore = create<StoreState>()(
       // primary currency.
       // v11: seed the real Portmetals Africa catalogue so the public marketplace
       // ships with genuine, orderable stock instead of a zero-state.
+      // v12: refresh the shared catalogue with per-item product photography,
+      // AI-crafted descriptions and the flagship MacBook Pro listing. The
+      // platform-owned marketplace catalogue is replaced wholesale; per-user
+      // inventory (users[*].inventoryItems) is preserved except for the
+      // Portmetals showcase account, which is re-seeded with the live range.
       //
       // IMPORTANT: migration receives the stored STATE (not the envelope), and
       // only runs when the stored version differs. It must never destroy real
@@ -2364,31 +2372,35 @@ export const useStore = create<StoreState>()(
         const from = typeof storedVersion === 'number' ? storedVersion : 0;
         if (from >= 9) {
           const storedInventory = Array.isArray(base.inventoryItems) ? base.inventoryItems : [];
+          const storedUsers = base.users && typeof base.users === 'object' ? base.users : {};
+          const pmAccount = storedUsers['sales@portmetalsafrica.com'];
+          const newPmInventory = PORTMETALS_CATALOGUE.map((item) => ({ ...item }));
           return {
             ...base,
             entrySeen: typeof base.entrySeen === 'boolean' ? base.entrySeen : false,
             selectedCurrency: base.selectedCurrency && typeof base.selectedCurrency === 'string'
               ? base.selectedCurrency
               : 'KES',
-            // v11: seed the real Portmetals Africa catalogue into the public
-            // marketplace. Only applied when the store is empty so genuine
-            // user-entered inventory is never overwritten.
-            inventoryItems: storedInventory.length > 0
-              ? storedInventory
-              : PORTMETALS_CATALOGUE,
+            // v12: the shared marketplace catalogue is always refreshed with the
+            // current published range (images, AI descriptions, flagship).
+            inventoryItems: PORTMETALS_CATALOGUE.map((item) => ({ ...item })),
             // v11: seed the Portmetals Africa flagship customer account so the
             // business owner can sign in (sales@portmetalsafrica.com /
             // PortAfrica2026, deterministic s1$ credential verified then upgraded
             // in place on first login). Existing accounts are never overwritten.
+            // v12: re-seed the showcase account inventory with the live catalogue
+            // so the tech range + flagship reach the Portmetals store.
             users: {
-              ...(base.users ?? {}),
-              'sales@portmetalsafrica.com': base.users?.['sales@portmetalsafrica.com'] ?? {
-                name: 'Portmetals Africa',
-                accountType: 'business',
-                createdAt: new Date('2026-08-30T09:00:00.000Z').toISOString(),
-                password: 's1$ed4a23f745b5263c7dc3229574cafed20df3e670d60053a69d7b5088af42140f',
-                inventoryItems: PORTMETALS_CATALOGUE.map((item) => ({ ...item })),
-              },
+              ...storedUsers,
+              'sales@portmetalsafrica.com': pmAccount
+                ? { ...pmAccount, inventoryItems: newPmInventory }
+                : {
+                    name: 'Portmetals Africa',
+                    accountType: 'business',
+                    createdAt: new Date('2026-08-30T09:00:00.000Z').toISOString(),
+                    password: 's1$ed4a23f745b5263c7dc3229574cafed20df3e670d60053a69d7b5088af42140f',
+                    inventoryItems: newPmInventory,
+                  },
             },
             businessWallet: base.businessWallet ?? { balance: 0, totalEarned: 0, totalWithdrawn: 0, transactions: [] },
             withdrawals: base.withdrawals ?? [],

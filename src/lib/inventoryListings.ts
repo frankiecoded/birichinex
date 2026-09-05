@@ -4,15 +4,21 @@ import type { InventoryItem } from "../store/useStore";
 export function inventoryItemToProduct(item: InventoryItem): Product {
   const brand = (item.supplier || "Portmetals Africa").replace(/\s+/g, " ").trim();
   const specs = item.specs ?? { Unit: item.unit, "Min Stock": String(item.minStock) };
+  const fallbackDesc = item.specs && Object.keys(item.specs).length > 0
+    ? `${item.category} listing by ${brand} · SKU ${item.sku}`
+    : `${item.category} listing · SKU ${item.sku}`;
+  const images = item.images && item.images.length > 0
+    ? item.images
+    : item.image
+      ? [item.image]
+      : [];
   return {
     id: `inv-${item.id}`,
     name: item.name,
-    description: item.specs && Object.keys(item.specs).length > 0
-      ? `${item.category} listing by ${brand} · SKU ${item.sku}`
-      : `${item.category} listing · SKU ${item.sku}`,
+    description: item.description && item.description.trim().length > 0 ? item.description : fallbackDesc,
     category: item.category,
     price: item.marketplacePrice ?? item.price,
-    images: item.image ? [item.image] : [],
+    images,
     supplier: { id: "self", name: brand, verified: true, rating: 5, location: "Nairobi, Kenya" },
     grade: "A",
     origin: "Imported from Europe",

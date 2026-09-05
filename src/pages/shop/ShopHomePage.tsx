@@ -236,14 +236,14 @@ function ProductCard({ product, selectedCurrency, onNavigate, onAddToCart, index
 export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart, onOpenAiSetup, onNavigateBusiness }: ShopHomePageProps) {
   const accountType = useStore((s) => s.user?.accountType ?? "shopper");
   const inventoryItems = useStore((s) => s.inventoryItems);
-  const contacts = useStore((s) => s.contacts);
   const orders = useStore((s) => s.orders);
+  const users = useStore((s) => s.users);
   const profile = useStore((s) => s.settings.profile);
   const liveListings = postedInventoryToProducts(inventoryItems);
   const featuredProducts = liveListings.slice(0, 4);
   const heroStats = [
     { label: "Products", value: String(liveListings.length), icon: ShoppingBag },
-    { label: "Customers", value: String(contacts.length), icon: Shield },
+    { label: "Customers", value: String(Math.max(0, Object.keys(users).length)), icon: Shield },
     { label: "Orders", value: String(orders.length), icon: TrendingUp },
     { label: "Stock Units", value: inventoryItems.reduce((n, i) => n + i.stock, 0).toLocaleString(), icon: Award },
   ];

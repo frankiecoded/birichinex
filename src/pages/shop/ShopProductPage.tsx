@@ -1,9 +1,9 @@
 import { useState, useRef, MouseEvent } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   ShoppingBag, Star, MapPin, Shield, ChevronRight,
   Truck, RotateCcw, CheckCircle, Plus, Minus, ArrowLeft,
-  Share2, Heart, Package, Award
+  Share2, Heart, Package, Award, Sparkles, Loader2
 } from "lucide-react";
 import GlassCard from "../../components/ui/GlassCard";
 import Badge from "../../components/ui/Badge";
@@ -29,6 +29,7 @@ function ProductImageViewer({ product }: { product: Product }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState("perspective(800px) rotateX(0deg) rotateY(0deg)");
   const [glarePos, setGlarePos] = useState({ x: 50, y: 50 });
+  const [activeIdx, setActiveIdx] = useState(0);
 
   const categoryColors: Record<string, string> = {
     "Men's Fashion": "#007AFF",
@@ -43,6 +44,8 @@ function ProductImageViewer({ product }: { product: Product }) {
   };
 
   const color = categoryColors[product.category] || "#d4af37";
+  const images = (product.images && product.images.length > 0 ? product.images : []).filter(Boolean);
+  const activeImage = images[Math.min(activeIdx, Math.max(0, images.length - 1))] || "";
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!containerRef.current) return;
@@ -63,78 +66,113 @@ function ProductImageViewer({ product }: { product: Product }) {
   };
 
   return (
-    <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="aspect-square rounded-[28px] flex items-center justify-center relative overflow-hidden border border-glass-border/30 cursor-crosshair"
-      style={{
-        background: `linear-gradient(135deg, ${color}08 0%, ${color}03 50%, transparent 100%)`,
-        transform,
-        transition: "transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)",
-        transformStyle: "preserve-3d",
-      }}
-    >
-      {/* Ambient glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 h-40 w-40 rounded-full blur-[80px]" style={{ background: `${color}15` }} />
-        <div className="absolute bottom-1/4 right-1/4 h-32 w-32 rounded-full blur-[60px]" style={{ background: `${color}10` }} />
-      </div>
-
-      {/* Grid pattern */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: `linear-gradient(${color}30 1px, transparent 1px), linear-gradient(90deg, ${color}30 1px, transparent 1px)`,
-        backgroundSize: "40px 40px"
-      }} />
-
-      {/* Product Visual — image if available, else 3D floating icon */}
-      {product.images && product.images[0] ? (
-        <img
-          src={product.images[0]}
-          alt={product.name}
-          onError={(e) => { (e.currentTarget.style.display = "none"); }}
-          className="relative z-10 h-full w-full object-cover"
-        />
-      ) : (
-        <motion.div
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="relative z-10"
-        >
-          <div className="h-28 w-28 rounded-[24px] flex items-center justify-center relative" style={{ background: `${color}12` }}>
-            <div className="absolute inset-0 rounded-[24px] border" style={{ borderColor: `${color}20` }} />
-            <ShoppingBag className="h-12 w-12" style={{ color }} strokeWidth={1.2} />
-          </div>
-        </motion.div>
-      )}
-
-      {/* Grade badge */}
-      <div className="absolute top-6 left-6">
-        <Badge variant="brand" size="md">{product.grade}</Badge>
-      </div>
-
-      {/* Origin badge */}
-      <div className="absolute top-6 right-6">
-        <div className="glass-material rounded-full px-3 py-1.5 flex items-center gap-1.5">
-          <MapPin className="h-3 w-3 text-brand" strokeWidth={1.5} />
-          <span className="text-caption font-semibold text-ink">{product.origin}</span>
-        </div>
-      </div>
-
-      {/* Specular glare */}
+    <div className="space-y-3">
       <div
-        className="absolute inset-0 pointer-events-none rounded-[28px]"
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className="aspect-square rounded-[28px] flex items-center justify-center relative overflow-hidden border border-glass-border/30 cursor-crosshair"
         style={{
-          background: `radial-gradient(circle at ${glarePos.x}% ${glarePos.y}%, rgba(255,255,255,0.2) 0%, transparent 50%)`,
-          mixBlendMode: "screen",
-          transition: "opacity 0.3s ease",
+          background: `linear-gradient(135deg, ${color}08 0%, ${color}03 50%, transparent 100%)`,
+          transform,
+          transition: "transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)",
+          transformStyle: "preserve-3d",
         }}
-      />
+      >
+        {/* Ambient glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 h-40 w-40 rounded-full blur-[80px]" style={{ background: `${color}15` }} />
+          <div className="absolute bottom-1/4 right-1/4 h-32 w-32 rounded-full blur-[60px]" style={{ background: `${color}10` }} />
+        </div>
 
-      {/* Edge highlight */}
-      <div className="absolute inset-0 rounded-[28px] pointer-events-none" style={{
-        boxShadow: `inset 0 1px 0 0 rgba(255,255,255,0.3), inset 0 -1px 0 0 rgba(0,0,0,0.05)`
-      }} />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `linear-gradient(${color}30 1px, transparent 1px), linear-gradient(90deg, ${color}30 1px, transparent 1px)`,
+          backgroundSize: "40px 40px"
+        }} />
+
+        {/* Product Visual — image if available, else 3D floating icon */}
+        {activeImage ? (
+          <img
+            key={activeImage}
+            src={activeImage}
+            alt={product.name}
+            onError={(e) => { (e.currentTarget.style.display = "none"); }}
+            className="relative z-10 h-full w-full object-cover"
+          />
+        ) : (
+          <motion.div
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="relative z-10"
+          >
+            <div className="h-28 w-28 rounded-[24px] flex items-center justify-center relative" style={{ background: `${color}12` }}>
+              <div className="absolute inset-0 rounded-[24px] border" style={{ borderColor: `${color}20` }} />
+              <ShoppingBag className="h-12 w-12" style={{ color }} strokeWidth={1.2} />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Grade badge */}
+        <div className="absolute top-6 left-6">
+          <Badge variant="brand" size="md">{product.grade}</Badge>
+        </div>
+
+        {/* Origin badge */}
+        <div className="absolute top-6 right-6">
+          <div className="glass-material rounded-full px-3 py-1.5 flex items-center gap-1.5">
+            <MapPin className="h-3 w-3 text-brand" strokeWidth={1.5} />
+            <span className="text-caption font-semibold text-ink">{product.origin}</span>
+          </div>
+        </div>
+
+        {/* Image counter */}
+        {images.length > 1 && (
+          <div className="absolute bottom-4 right-4 glass-material rounded-full px-3 py-1">
+            <span className="text-[11px] font-bold text-ink">{activeIdx + 1} / {images.length}</span>
+          </div>
+        )}
+
+        {/* Specular glare */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-[28px]"
+          style={{
+            background: `radial-gradient(circle at ${glarePos.x}% ${glarePos.y}%, rgba(255,255,255,0.2) 0%, transparent 50%)`,
+            mixBlendMode: "screen",
+            transition: "opacity 0.3s ease",
+          }}
+        />
+
+        {/* Edge highlight */}
+        <div className="absolute inset-0 rounded-[28px] pointer-events-none" style={{
+          boxShadow: `inset 0 1px 0 0 rgba(255,255,255,0.3), inset 0 -1px 0 0 rgba(0,0,0,0.05)`
+        }} />
+      </div>
+
+      {/* Thumbnail gallery */}
+      {images.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {images.map((src, i) => (
+            <button
+              key={src + i}
+              onClick={() => setActiveIdx(i)}
+              className={`relative h-16 w-16 shrink-0 rounded-[12px] overflow-hidden border transition-all duration-200 ${
+                i === activeIdx
+                  ? "border-brand ring-2 ring-brand/20"
+                  : "border-glass-border/30 opacity-60 hover:opacity-100"
+              }`}
+              style={{ background: `${color}08` }}
+            >
+              <img
+                src={src}
+                alt={`${product.name} view ${i + 1}`}
+                onError={(e) => { (e.currentTarget.style.display = "none"); }}
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -162,6 +200,31 @@ export default function ShopProductPage({ productId, selectedCurrency, onNavigat
   const product = allProducts.find((p) => p.id === productId);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [aiDescription, setAiDescription] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleGenerateAI = async () => {
+    if (!product) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await fetch("/api/ai/description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: product.name, category: product.category, specs: product.specifications }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Unable to generate description");
+      const text = String(data?.description ?? "").trim();
+      if (!text) throw new Error("Empty description returned");
+      setAiDescription(text);
+    } catch (err: any) {
+      setAiError(err?.message || "Unable to generate description");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   if (!product) {
     return (
@@ -235,7 +298,47 @@ export default function ShopProductPage({ productId, selectedCurrency, onNavigat
             </div>
           </div>
 
-          <p className="text-body text-ink-secondary leading-relaxed">{product.description}</p>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={aiDescription ?? "default"}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-brand" strokeWidth={1.5} />
+                  <p className="text-caption font-bold text-ink-secondary uppercase tracking-wide">AI-generated description</p>
+                </div>
+                {!aiDescription && (
+                  <Badge variant="brand" size="sm" dot>Pre-written by AI</Badge>
+                )}
+              </div>
+              <p className="text-body text-ink-secondary leading-relaxed">{aiDescription ?? product.description}</p>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleGenerateAI}
+              disabled={aiLoading}
+              className="inline-flex items-center gap-1.5 text-caption font-semibold text-brand-dark hover:text-brand transition-colors disabled:opacity-50"
+            >
+              {aiLoading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 animate-pulse" strokeWidth={1.5} />
+                  Regenerate description with AI
+                </>
+              )}
+            </button>
+            {aiError && <span className="text-caption text-error">{aiError}</span>}
+          </div>
 
           <div className="glass-divider" />
 

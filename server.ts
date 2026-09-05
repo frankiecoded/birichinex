@@ -1081,6 +1081,76 @@ app.get("/api/ai/mode", async (_req, res) => {
   res.json({ live: provider !== "local" });
 });
 
+// AI product description generator — writes a warm, professional marketplace
+// listing for a given product using Gemini. Falls back to a local template so
+// the storefront button always returns something useful.
+const DESCRIPTION_MODEL = process.env.GEMINI_DESC_MODEL || "gemini-3.5-flash";
+
+app.post("/api/ai/description", async (req, res) => {
+  try {
+    if (applyRateLimit(req, res)) return;
+    const { name, category, specs } = req.body || {};
+    const productName = String(name || "").trim();
+    if (!productName) return res.status(400).json({ error: "No product name provided" });
+
+    const specLines = specs && typeof specs === "object"
+      ? Object.entries(specs).map(([k, v]) => `${k}: ${v}`).join(", ")
+      : "";
+    const fallback = `A premium ${category ? String(category) : "quality"} listing from Portmetals Africa. ${productName} is hand-checked, restored to visible grade condition and ready for immediate dispatch from Nairobi with a full warranty.${specLines ? ` Key specs — ${specLines}.` : ""}`;
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.json({ description: fallback, live: false, provider: "template" });
+    }
+
+    const prompt = [
+      "Write one compelling professional product description — literally no more than 3 sentences.",
+      `Product: ${productName}`,
+      category ? `Category: ${category}` : "",
+      specLines ? `Specifications: ${specLines}` : "",
+      "Restrictions: one paragraph, plain text, no markdown, no headers, no bullet lists, no emojis, do not mention AI.",
+      "Content: warm and specific. Highlight quality assurance, warranty and Nairobi dispatch naturally.",
+      "Never invent specifications that are not listed above.",
+    ].filter(Boolean).join(" ");
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    const gemRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(DESCRIPTION_MODEL)}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 512,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      },
+    );
+    if (!gemRes.ok) {
+      const body = await gemRes.text();
+      console.warn("Gemini description error", gemRes.status, body.slice(0, 200));
+      return res.json({ description: fallback, live: false, provider: "template" });
+    }
+    const data = await gemRes.json();
+    const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
+    // Thinking models emit reasoning as thought parts — keep only the final text.
+    const answer = parts
+      .filter((p: any) => !p.thought && typeof p?.text === "string")
+      .map((p: any) => p.text)
+      .join(" ")
+      .replace(/\*\*/g, "")
+      .trim();
+    const text = answer || parts.map((p: any) => p.text ?? "").join(" ").trim();
+    if (!text) return res.json({ description: fallback, live: false, provider: "template" });
+    res.json({ description: text, live: true, provider: "gemini" });
+  } catch (error: any) {
+    console.error("Error in /api/ai/description:", error);
+    res.status(500).json({ error: "Description generation failed" });
+  }
+});
+
 // Gemini TTS (Google AI Studio, free tier) — the copilot's voice. The Gemini
 // assistant uses the same neural voices, so this sounds like Gemini for free.
 const MAX_TTS_CHARS = 500;
