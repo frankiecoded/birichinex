@@ -292,6 +292,17 @@ export default function NavigationShell({
 
               <div className="glass-divider mx-3" />
 
+              <div className="px-3 pt-3">
+                <button
+                  onClick={onToggleMode}
+                  className="w-full flex items-center justify-center gap-2 h-11 rounded-[12px] bg-brand text-ink font-bold text-subhead hover:bg-brand/90 active:scale-[0.99] transition-all duration-200 shadow-[0_4px_14px_rgba(212,175,55,0.25)]"
+                >
+                  <ShoppingBag className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                  Back to Shop
+                  <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
+                </button>
+              </div>
+
               <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
                 {NAV_GROUPS.map((group) => {
                   const items = NAV_ITEMS.filter((i) => i.group === group.id);
@@ -315,17 +326,6 @@ export default function NavigationShell({
                   );
                 })}
               </nav>
-
-              <div className="p-3 border-t border-glass-border/30">
-                <button
-                  onClick={onToggleMode}
-                  className="w-full flex items-center justify-center gap-2 h-10 rounded-[12px] bg-brand/10 text-brand-dark text-subhead font-semibold hover:bg-brand/20 transition-all duration-200 border border-brand/15"
-                >
-                  <ShoppingBag className="h-4 w-4" strokeWidth={1.5} />
-                  Back to Shop
-                  <ArrowUpRight className="h-3.5 w-3.5 opacity-50" />
-                </button>
-              </div>
             </motion.aside>
           </>
         )}
@@ -515,11 +515,12 @@ export default function NavigationShell({
             <motion.button
               onClick={onToggleMode}
               whileTap={{ scale: 0.95 }}
-              className="hidden sm:flex items-center gap-1.5 h-11 px-3.5 rounded-[10px] bg-brand/10 text-brand-dark text-subhead font-semibold hover:bg-brand/20 transition-all duration-200 border border-brand/15 hover:border-brand/25"
+              className="flex items-center justify-center gap-1.5 h-11 px-2.5 sm:px-3.5 rounded-[10px] bg-brand/10 text-brand-dark text-subhead font-semibold hover:bg-brand/20 transition-all duration-200 border border-brand/15 hover:border-brand/25"
+              title="Back to shop"
             >
-              <ShoppingBag className="h-3.5 w-3.5" strokeWidth={1.5} />
-              Shop
-              <ArrowUpRight className="h-3 w-3 opacity-50" />
+              <ShoppingBag className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Shop</span>
+              <ArrowUpRight className="hidden sm:block h-3 w-3 opacity-50" />
             </motion.button>
           </div>
         </header>
