@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Package, Search, Filter, Plus, ArrowUpRight, ArrowDownRight, Trash2, X, Store, ShoppingBag, Globe, Settings2, Minus } from "lucide-react";
+import { Package, Search, Plus, ArrowUpRight, ArrowDownRight, Trash2, X, Store, ShoppingBag, Globe, Settings2, Minus, ImagePlus, Link2, Loader2 } from "lucide-react";
 import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
@@ -10,6 +10,7 @@ import { useStore } from "../store/useStore";
 import type { InventoryItem } from "../store/useStore";
 import { formatPrice } from "../data/platform";
 import type { Currency } from "../types";
+import { uploadImages } from "../lib/upload";
 
 interface ItemForm {
   name: string;
@@ -20,9 +21,16 @@ interface ItemForm {
   price: string;
   unit: string;
   supplier: string;
+  images: string;
 }
 
-const EMPTY_FORM: ItemForm = { name: "", sku: "", category: "", stock: "", minStock: "", price: "", unit: "pcs", supplier: "" };
+const EMPTY_FORM: ItemForm = { name: "", sku: "", category: "", stock: "", minStock: "", price: "", unit: "pcs", supplier: "", images: "" };
+
+const parseImageList = (raw: string): string[] =>
+  raw
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 export default function InventoryPage() {
   const items = useStore((s) => s.getUserInventory());
@@ -41,10 +49,39 @@ export default function InventoryPage() {
   const [postPrice, setPostPrice] = useState("");
   const [adjustItem, setAdjustItem] = useState<InventoryItem | null>(null);
   const [adjustForm, setAdjustForm] = useState({ stock: "", minStock: "", price: "" });
+  const [adjustImages, setAdjustImages] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const addFileRef = useRef<HTMLInputElement>(null);
+  const adjustFileRef = useRef<HTMLInputElement>(null);
+
+  const appendUploaded = async (files: FileList | null, target: "add" | "adjust") => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const urls = await uploadImages(Array.from(files));
+      if (target === "add") {
+        setForm((f) => ({ ...f, images: [f.images, urls.join("\n")].filter(Boolean).join("\n") }));
+      } else {
+        setAdjustImages((prev) => [...prev, ...urls]);
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      if (target === "add" && addFileRef.current) addFileRef.current.value = "";
+      if (target === "adjust" && adjustFileRef.current) adjustFileRef.current.value = "";
+    }
+  };
 
   const openAdjust = (item: InventoryItem) => {
     setAdjustItem(item);
     setAdjustForm({ stock: String(item.stock), minStock: String(item.minStock), price: String(item.price.amount) });
+    setAdjustImages(item.images && item.images.length > 0 ? [...item.images] : item.image ? [item.image] : []);
+    setNewImageUrl("");
+    setUploadError("");
   };
 
   const saveAdjust = () => {
@@ -62,8 +99,17 @@ export default function InventoryPage() {
       price: { amount: price, currency: adjustItem.price.currency },
       status,
       lastRestocked: new Date().toISOString(),
+      image: adjustImages[0],
+      images: adjustImages,
     });
     setAdjustItem(null);
+  };
+
+  const addImageUrlToAdjust = () => {
+    const url = newImageUrl.trim();
+    if (!url) return;
+    setAdjustImages((prev) => [...prev, url]);
+    setNewImageUrl("");
   };
 
   const filtered = useMemo(() => {
@@ -101,6 +147,7 @@ export default function InventoryPage() {
     const stockNum = parseInt(form.stock, 10) || 0;
     const minStockNum = parseInt(form.minStock, 10) || 0;
     const priceNum = parseFloat(form.price) || 0;
+    const images = parseImageList(form.images);
     addItem({
       name: form.name.trim(),
       sku: form.sku.trim() || `PM-${Date.now()}`,
@@ -114,6 +161,8 @@ export default function InventoryPage() {
       lastRestocked: new Date().toISOString(),
       source: 'manual',
       postedToMarketplace: false,
+      image: images[0],
+      images,
     });
     setForm(EMPTY_FORM);
     setModalOpen(false);
@@ -216,8 +265,12 @@ export default function InventoryPage() {
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-[10px] bg-surface-secondary/80 flex items-center justify-center shrink-0">
-                          <Package className="h-4 w-4 text-ink-tertiary" strokeWidth={1.5} />
+                        <div className="h-9 w-9 rounded-[10px] bg-surface-secondary/80 flex items-center justify-center shrink-0 overflow-hidden">
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <Package className="h-4 w-4 text-ink-tertiary" strokeWidth={1.5} />
+                          )}
                         </div>
                         <div>
                           <span className="text-subhead font-semibold text-ink">{item.name}</span>
@@ -256,18 +309,18 @@ export default function InventoryPage() {
                         {!item.postedToMarketplace ? (
                           <button
                             onClick={() => { setPostModalItem(item.id); setPostPrice(String(item.price.amount)); }}
-                            className="h-8 px-2.5 rounded-[8px] flex items-center gap-1.5 text-caption font-semibold text-brand-dark hover:bg-brand/10 transition-colors"
+                            className="h-8 px-3 rounded-[8px] flex items-center gap-1.5 text-caption font-semibold text-white bg-brand hover:bg-brand-dark transition-colors shadow-sm"
                           >
-                            <ShoppingBag className="h-3.5 w-3.5" strokeWidth={1.5} />
-                            <span className="hidden sm:inline">Sell</span>
+                            <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2} />
+                            <span>Publish</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => removeItemFromMarketplace(item.id)}
-                            className="h-8 px-2.5 rounded-[8px] flex items-center gap-1.5 text-caption font-semibold text-error hover:bg-error/10 transition-colors"
+                            className="h-8 px-3 rounded-[8px] flex items-center gap-1.5 text-caption font-semibold text-error hover:bg-error/10 transition-colors"
                           >
                             <Globe className="h-3.5 w-3.5" strokeWidth={1.5} />
-                            <span className="hidden sm:inline">Unlist</span>
+                            <span>Unlist</span>
                           </button>
                         )}
                         <button
@@ -397,6 +450,51 @@ export default function InventoryPage() {
                       />
                     </div>
                   </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-caption text-ink-secondary font-semibold">Product Images</label>
+                      <div className="flex items-center gap-2">
+                        {uploading && <Loader2 className="h-3.5 w-3.5 text-brand animate-spin" strokeWidth={2} />}
+                        <button
+                          type="button"
+                          onClick={() => addFileRef.current?.click()}
+                          disabled={uploading}
+                          className="flex items-center gap-1.5 text-caption font-semibold text-brand-dark hover:text-brand transition-colors disabled:opacity-50"
+                        >
+                          <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          Upload photos
+                        </button>
+                      </div>
+                    </div>
+                    <input
+                      ref={addFileRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => appendUploaded(e.target.files, "add")}
+                    />
+                    <textarea
+                      rows={2}
+                      value={form.images}
+                      onChange={(e) => setForm((f) => ({ ...f, images: e.target.value }))}
+                      className="w-full px-3 py-2 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-caption text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 resize-y"
+                      placeholder="Paste image URLs — one per line or comma-separated"
+                    />
+                    {uploadError && <p className="text-caption text-error mt-1">{uploadError}</p>}
+                    {parseImageList(form.images).length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {parseImageList(form.images).map((src, idx) => (
+                          <img
+                            key={`${src}-${idx}`}
+                            src={src}
+                            alt=""
+                            className="h-12 w-12 rounded-[8px] object-cover border border-glass-border"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-3 pt-2">
                     <Button type="button" variant="ghost" className="flex-1" onClick={() => setModalOpen(false)}>
                       Cancel
@@ -489,7 +587,7 @@ export default function InventoryPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2 }}
-              className="relative w-full max-w-sm bg-surface-primary border border-glass-border rounded-[16px] shadow-2xl overflow-hidden p-6 space-y-5"
+              className="relative w-full max-w-lg bg-surface-primary border border-glass-border rounded-[16px] shadow-2xl overflow-hidden p-6 space-y-5 max-h-[85vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -497,13 +595,77 @@ export default function InventoryPage() {
                     <Settings2 className="h-4 w-4 text-info" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <h3 className="text-subhead font-bold text-ink">Adjust Stock</h3>
+                    <h3 className="text-subhead font-bold text-ink">Edit Item</h3>
                     <p className="text-caption text-ink-tertiary">{adjustItem.name}</p>
                   </div>
                 </div>
                 <button onClick={() => setAdjustItem(null)} className="h-8 w-8 rounded-full bg-surface-secondary/80 flex items-center justify-center hover:bg-surface-secondary transition-colors">
                   <X className="h-4 w-4 text-ink-secondary" />
                 </button>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-caption text-ink-secondary font-semibold">Product Images</label>
+                  <div className="flex items-center gap-2.5">
+                    {uploading && <Loader2 className="h-3.5 w-3.5 text-brand animate-spin" strokeWidth={2} />}
+                    <button
+                      type="button"
+                      onClick={() => adjustFileRef.current?.click()}
+                      disabled={uploading}
+                      className="flex items-center gap-1.5 text-caption font-semibold text-brand-dark hover:text-brand transition-colors disabled:opacity-50"
+                    >
+                      <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      Upload photos
+                    </button>
+                  </div>
+                </div>
+                <input
+                  ref={adjustFileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => appendUploaded(e.target.files, "adjust")}
+                />
+                {adjustImages.length > 0 && (
+                  <div className="flex gap-2 flex-wrap mb-2">
+                    {adjustImages.map((src, idx) => (
+                      <div key={`${src}-${idx}`} className="relative group">
+                        <img src={src} alt="" className="h-16 w-16 rounded-[10px] object-cover border border-glass-border" />
+                        <button
+                          type="button"
+                          onClick={() => setAdjustImages((prev) => prev.filter((_, i) => i !== idx))}
+                          className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-scrim border border-glass-border text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove image"
+                        >
+                          <X className="h-3 w-3" strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {adjustImages.length === 0 && (
+                  <div className="h-16 rounded-[10px] border border-dashed border-glass-border flex items-center justify-center text-caption text-ink-quaternary mb-2">
+                    No images yet — upload or paste a URL below
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <div className="flex-1 flex items-center gap-2 h-10 px-3 bg-surface-secondary/60 border border-glass-border rounded-[10px] focus-within:ring-2 focus-within:ring-brand/30">
+                    <Link2 className="h-3.5 w-3.5 text-ink-quaternary shrink-0" strokeWidth={1.5} />
+                    <input
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addImageUrlToAdjust(); } }}
+                      className="w-full bg-transparent text-caption text-ink placeholder:text-ink-quaternary focus:outline-none"
+                      placeholder="Paste an image URL"
+                    />
+                  </div>
+                  <Button type="button" variant="secondary" onClick={addImageUrlToAdjust} disabled={!newImageUrl.trim()}>
+                    Add
+                  </Button>
+                </div>
+                {uploadError && <p className="text-caption text-error mt-1">{uploadError}</p>}
               </div>
 
               <div>

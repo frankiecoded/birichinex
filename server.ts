@@ -7,6 +7,7 @@ import express from "express";
 import path from "path";
 import http from "http";
 import crypto from "crypto";
+import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
@@ -154,6 +155,70 @@ app.use((req, res, next) => {
   Object.entries(isHttps ? HTTPS_SECURITY_HEADERS : SECURITY_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
   next();
 });
+
+// ─── Inventory image uploads ─────────────────────────────────────────────────
+// Files are saved to a local `/uploads` directory (server-side generated
+// names only — client-controlled filenames are never used) and served
+// same-origin, which the CSP img-src already allows. Items store the returned
+// `/uploads/…` URL in their `image` / `images` fields.
+const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(process.cwd(), "uploads");
+try {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch (err) {
+  console.error("[uploads] failed to create directory:", err);
+}
+app.use("/uploads", express.static(UPLOAD_DIR, { maxAge: "7d", immutable: true }));
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const UPLOAD_BUDGET_BYTES = 20 * 1024 * 1024; // per IP per 5-minute window
+const UPLOAD_BUDGET_MS = 5 * 60 * 1000;
+const uploadBudgets = new Map<string, { bytes: number; resetAt: number }>();
+
+function sniffImageExt(buf: Buffer): string | null {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
+  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex"))) return "png";
+  if (buf.length >= 12 && buf.subarray(0, 4).toString("latin1") === "RIFF" && buf.subarray(8, 12).toString("latin1") === "WEBP") return "webp";
+  if (buf.length >= 6 && buf.subarray(0, 4).toString("latin1") === "GIF8") return "gif";
+  return null;
+}
+
+app.post(
+  "/api/upload",
+  express.raw({ type: () => true, limit: "12mb" }),
+  (req, res) => {
+    const body: Buffer = req.body;
+    if (!Buffer.isBuffer(body) || body.length === 0) {
+      return res.status(400).json({ error: "No file data received." });
+    }
+    if (body.length > MAX_UPLOAD_BYTES) {
+      return res.status(413).json({ error: "File too large. Maximum is 10 MB per image." });
+    }
+    const ip = clientIp(req);
+    const now = Date.now();
+    const budget = uploadBudgets.get(ip);
+    if (!budget || budget.resetAt <= now) {
+      uploadBudgets.set(ip, { bytes: 0, resetAt: now + UPLOAD_BUDGET_MS });
+    }
+    const active = uploadBudgets.get(ip)!;
+    if (active.bytes + body.length > UPLOAD_BUDGET_BYTES) {
+      return res.status(429).json({ error: "Upload limit reached for now. Please try again in a few minutes." });
+    }
+    active.bytes += body.length;
+    const ext = sniffImageExt(body);
+    if (!ext) {
+      return res.status(415).json({ error: "Unsupported image type. Upload JPEG, PNG, WebP or GIF." });
+    }
+    const name = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}.${ext}`;
+    const dest = path.join(UPLOAD_DIR, name);
+    try {
+      fs.writeFileSync(dest, body, { flag: "wx" });
+    } catch (err) {
+      console.error("[uploads] write failed:", err);
+      return res.status(500).json({ error: "Could not save the uploaded image." });
+    }
+    res.json({ url: `/uploads/${name}`, size: body.length });
+  },
+);
 
 const PORT = Number(process.env.PORT) || 3000;
 
