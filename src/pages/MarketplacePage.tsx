@@ -23,7 +23,7 @@ interface MarketplacePageProps {
 
 export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
   const { selectedCurrency, addToCart, cart, removeFromCart, clearCart, addOrder, earnPointsFromPurchase, addNotification, user, wallet, spendWalletFunds } = useStore();
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.marketplaceItems());
   const profile = useStore((s) => s.settings.profile);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");

@@ -275,6 +275,8 @@ interface StoreState {
   // ── Inventory ──────────────────────────────────────────────────────────────
   inventoryItems: InventoryItem[];
   getUserInventory: () => InventoryItem[];
+  marketplaceItems: () => InventoryItem[];
+  portmetalsMarketplaceItems: () => InventoryItem[];
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
   updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
   deleteInventoryItem: (id: string) => void;
@@ -1033,6 +1035,42 @@ export const useStore = create<StoreState>()(
           return state.users[key]!.inventoryItems!;
         }
         return [];
+      },
+
+      marketplaceItems: () => {
+        const state = get();
+        const seen = new Set<string>();
+        const out: InventoryItem[] = [];
+        const push = (items: InventoryItem[] | undefined) => {
+          if (!Array.isArray(items)) return;
+          for (const item of items) {
+            if (item.postedToMarketplace && !seen.has(item.id)) {
+              seen.add(item.id);
+              out.push(item);
+            }
+          }
+        };
+        push(state.inventoryItems);
+        for (const u of Object.values(state.users)) push(u?.inventoryItems);
+        return out;
+      },
+
+      portmetalsMarketplaceItems: () => {
+        const state = get();
+        const seen = new Set<string>();
+        const out: InventoryItem[] = [];
+        const push = (items: InventoryItem[] | undefined) => {
+          if (!Array.isArray(items)) return;
+          for (const item of items) {
+            if (item.postedToMarketplace && !seen.has(item.id)) {
+              seen.add(item.id);
+              out.push(item);
+            }
+          }
+        };
+        push(state.inventoryItems);
+        push(state.users['sales@portmetalsafrica.com']?.inventoryItems);
+        return out;
       },
 
       addInventoryItem: (item) =>

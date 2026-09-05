@@ -541,7 +541,6 @@ export default function App() {
       >
         {renderBusinessPage()}
       </NavigationShell>
-      <FloatingAIAssistant />
     </>
   );
 }

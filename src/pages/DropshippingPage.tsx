@@ -62,8 +62,6 @@ const ORDER_FILTER_MAP: Record<string, DropshipOrderStatus[]> = {
   cancelled: ["cancelled", "refunded"],
 };
 
-const ALL_CATEGORIES: string[] = [];
-
 export default function DropshippingPage() {
   const dropshipSubscription = useStore((s) => s.dropshipSubscription);
   const subscribeDropship = useStore((s) => s.subscribeDropship);
@@ -94,9 +92,46 @@ export default function DropshippingPage() {
     [dropshipSubscription.tier]
   );
 
+  const portmetalsItems = useStore((s) => s.portmetalsMarketplaceItems());
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of portmetalsItems) set.add(item.category);
+    return ["all", ...Array.from(set)];
+  }, [portmetalsItems]);
+
   const filteredProducts = useMemo(() => {
-    return [] as DropshipProduct[];
-  }, [searchQuery, categoryFilter]);
+    const q = searchQuery.trim().toLowerCase();
+    return portmetalsItems
+      .filter((item) => {
+        if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
+        if (q && !(`${item.name} ${item.category} ${item.sku}`.toLowerCase().includes(q))) return false;
+        return true;
+      })
+      .map<DropshipProduct>((item) => {
+        const retailPrice = item.marketplacePrice ?? item.price;
+        const dropshipPrice = {
+          amount: Math.max(1, Math.round(retailPrice.amount * (1 - currentTierConfig.discount / 100))),
+          currency: retailPrice.currency,
+        };
+        return {
+          id: `dp-${item.id}`,
+          sourceProductId: `inv-${item.id}`,
+          name: item.name,
+          category: item.category,
+          retailPrice,
+          dropshipPrice,
+          discount: currentTierConfig.discount,
+          stock: item.stock,
+          images: item.images && item.images.length > 0 ? item.images : item.image ? [item.image] : [],
+          description: item.description && item.description.trim().length > 0
+            ? item.description
+            : `${item.category} listing · SKU ${item.sku}`,
+          origin: "Imported from Europe",
+          grade: "A",
+        };
+      });
+  }, [portmetalsItems, searchQuery, categoryFilter, currentTierConfig.discount]);
 
   const filteredOrders = useMemo(() => {
     if (orderStatusFilter === "all") return dropshipOrders;
@@ -108,10 +143,10 @@ export default function DropshippingPage() {
   const stats = useMemo(() => {
     const totalOrders = dropshipOrders.length;
     const totalRevenue = dropshipOrders.reduce((sum, o) => sum + o.total.amount, 0);
-    const activeProducts = 0;
+    const activeProducts = portmetalsItems.length;
     const discount = currentTierConfig.discount;
     return { totalOrders, totalRevenue, activeProducts, discount };
-  }, [dropshipOrders, currentTierConfig]);
+  }, [dropshipOrders, currentTierConfig, portmetalsItems]);
 
   const handleSubscribe = (tier: DropshippingTier) => {
     subscribeDropship(tier);
@@ -126,7 +161,7 @@ export default function DropshippingPage() {
       category: product.category,
       price: product.retailPrice,
       images: product.images,
-      supplier: { id: "sup-dropship", name: "BirichiNex Supplier Network", verified: true, rating: 4.8, location: "" },
+      supplier: { id: "portmetals", name: "Portmetals Africa", verified: true, rating: 5, location: "Nairobi, Kenya" },
       grade: product.grade,
       origin: product.origin,
       specifications: {},
@@ -160,7 +195,7 @@ export default function DropshippingPage() {
         product.category,
         qty,
         product.dropshipPrice,
-        "BirichiNex Dropship",
+        "Portmetals Africa",
       );
     } else {
       // Customer sale — the retail price minus drop cost accrues to the
@@ -203,7 +238,7 @@ export default function DropshippingPage() {
           <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.08)_0%,transparent_70%)] blur-[40px] pointer-events-none" />
           <h1 className="text-headline text-gradient-brand">Dropshipping Hub</h1>
           <p className="text-callout text-ink-tertiary mt-2">
-            Source from the BirichiNex supplier network at discounted prices and start selling instantly
+            Source from the Portmetals Africa catalogue at discounted prices and start selling instantly
           </p>
           <div className="mt-3">
             <Badge variant="brand" size="md" dot>
@@ -409,18 +444,125 @@ export default function DropshippingPage() {
           className="mt-8"
         >
           <h2 className="text-title font-bold text-ink mb-1">Product Catalog</h2>
-          <p className="text-caption text-ink-tertiary mb-5">Products you can dropship appear here once suppliers list them</p>
+          <p className="text-caption text-ink-tertiary mb-5">
+            Dropship items sourced exclusively from the Portmetals Africa marketplace — the catalog's verified supplier
+          </p>
 
-          <GlassCard padding="lg">
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-ink-quaternary/40 mx-auto mb-3" strokeWidth={1} />
-              <p className="text-subhead font-bold text-ink">Catalog coming soon</p>
-              <p className="text-caption text-ink-tertiary mt-1 max-w-sm mx-auto leading-relaxed">
-                When suppliers publish products on BirichiNex, they land here with wholesale pricing,
-                discount bands, and stock counts — ready to add to your store or buy to keep in stock.
-              </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-quaternary" strokeWidth={1.5} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products, categories, SKUs…"
+                className="w-full h-11 pl-10 pr-4 rounded-[12px] bg-surface/72 border border-glass-border text-ink text-subhead placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30"
+              />
             </div>
-          </GlassCard>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide flex-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3.5 h-9 rounded-[10px] text-caption font-semibold whitespace-nowrap transition-all ${
+                    categoryFilter === cat
+                      ? "bg-emphasis text-on-emphasis shadow-sm"
+                      : "bg-surface-secondary/60 text-ink-tertiary hover:bg-surface-secondary"
+                  }`}
+                >
+                  {cat === "all" ? "All" : cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <GlassCard padding="lg">
+              <div className="text-center py-12">
+                <Package className="h-12 w-12 text-ink-quaternary/40 mx-auto mb-3" strokeWidth={1} />
+                <p className="text-subhead font-bold text-ink">No dropship items yet</p>
+                <p className="text-caption text-ink-tertiary mt-1 max-w-sm mx-auto leading-relaxed">
+                  Portmetals Africa posts products to the marketplace, they appear immediately here with
+                  tier discounts, stock counts, and one-click dropshipping.
+                </p>
+              </div>
+            </GlassCard>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((p) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <TiltCard intensity={5}>
+                    <GlassCard padding="none" hover className="h-full flex flex-col overflow-hidden">
+                      <div className="relative h-44 bg-surface-secondary/50 overflow-hidden">
+                        {p.images.length > 0 ? (
+                          <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-10 w-10 text-ink-quaternary/40" strokeWidth={1} />
+                          </div>
+                        )}
+                        <div className="absolute top-2.5 left-2.5">
+                          <Badge variant="brand" size="sm">{p.category}</Badge>
+                        </div>
+                        <div className="absolute top-2.5 right-2.5">
+                          <Badge variant="success" size="sm">
+                            <Percent className="h-3 w-3" /> {p.discount}% off
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="p-4 flex flex-col flex-1">
+                        <h4 className="text-subhead font-bold text-ink line-clamp-1">{p.name}</h4>
+                        <p className="text-caption text-ink-tertiary line-clamp-1 mt-0.5">{p.description}</p>
+
+                        <div className="flex items-end gap-2 mt-3">
+                          <span className="text-title font-bold text-ink leading-none">
+                            {formatPrice(p.dropshipPrice.amount, selectedCurrency)}
+                          </span>
+                          <span className="text-caption text-ink-quaternary line-through leading-none pb-0.5">
+                            {formatPrice(p.retailPrice.amount, selectedCurrency)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 mt-2 text-caption text-ink-tertiary">
+                          <Store className="h-3.5 w-3.5 text-success" strokeWidth={1.5} />
+                          <span className="font-semibold text-ink-secondary">Portmetals Africa</span>
+                          <span className="text-ink-quaternary">·</span>
+                          <span>{p.stock} in stock</span>
+                        </div>
+
+                        <div className="flex gap-2 mt-4 pt-2 border-t border-glass-border/40">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            fullWidth
+                            onClick={() => handleAddToDropship(p)}
+                          >
+                            Add to Cart
+                          </Button>
+                          <Button
+                            variant="brand"
+                            size="sm"
+                            fullWidth
+                            icon={<ShoppingCart className="h-3.5 w-3.5" />}
+                            onClick={() => setCheckoutModal(p)}
+                          >
+                            Dropship
+                          </Button>
+                        </div>
+                      </div>
+                    </GlassCard>
+                  </TiltCard>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         <motion.div

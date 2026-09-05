@@ -206,7 +206,7 @@ function SpecCard({ label, value, index }: { label: string; value: string; index
 }
 
 export default function ShopProductPage({ productId, selectedCurrency, onNavigate, onAddToCart }: ShopProductPageProps) {
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.marketplaceItems());
   const allProducts = postedInventoryToProducts(inventoryItems);
   const product = allProducts.find((p) => p.id === productId);
   const [quantity, setQuantity] = useState(1);

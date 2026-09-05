@@ -193,7 +193,7 @@ export default function ShopCategoryPage({ categoryPath, selectedCurrency, onNav
   const ecosystemId = decodeURIComponent(parts[1] ?? "");
   const subcategory = parts[2] ? decodeURIComponent(parts[2]) : undefined;
 
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.marketplaceItems());
   const allProducts = postedInventoryToProducts(inventoryItems);
   const ecosystemLabel = subcategory || ecosystemId || "Catalog";
 

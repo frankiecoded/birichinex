@@ -246,7 +246,7 @@ function ProductCard({ product, selectedCurrency, onNavigate, onAddToCart, index
 
 export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart, onOpenAiSetup, onNavigateBusiness }: ShopHomePageProps) {
   const accountType = useStore((s) => s.user?.accountType ?? "shopper");
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.marketplaceItems());
   const orders = useStore((s) => s.orders);
   const users = useStore((s) => s.users);
   const profile = useStore((s) => s.settings.profile);

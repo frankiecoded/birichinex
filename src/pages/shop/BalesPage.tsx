@@ -164,7 +164,7 @@ function TierCard({ product, selectedCurrency, onAddToCart, index }: {
 // ── Main Page ──────────────────────────────────────────────────────────────
 
 export default function BalesPage({ selectedCurrency, onNavigate, onAddToCart }: BalesPageProps) {
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.marketplaceItems());
   const allProducts = postedInventoryToProducts(inventoryItems);
   const tiers = allProducts.filter((p) => p.category === "Wholesale Bales");
 

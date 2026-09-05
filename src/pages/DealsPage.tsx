@@ -172,7 +172,7 @@ function DealCard({ deal, currency, onShop, index }: { deal: Deal; currency: Cur
 }
 
 export default function DealsPage({ onNavigate }: DealsPageProps) {
-  const inventoryItems = useStore((s) => s.inventoryItems);
+  const inventoryItems = useStore((s) => s.marketplaceItems());
   const selectedCurrency = useStore((s) => s.selectedCurrency);
   const [active, setActive] = useState<DealKind | "all">("all");
 
