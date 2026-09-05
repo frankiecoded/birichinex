@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Sparkles, X, ArrowUpRight, HelpCircle, Compass, Bot, ArrowRight, Mic, Volume2, AudioLines, Check, RotateCcw, ShieldCheck, Zap } from "lucide-react";
 import { useStore } from "../../store/useStore";
+import { useDraggableFloat } from "../../lib/useDraggableFloat";
 import { BirichiNexView } from "../../types";
 import { getViewLabel } from "../../../ai/src/navigation";
 import { PAGE_KNOWLEDGE, respondToQuery, viewChips, CopilotAction } from "../../../ai/src/knowledge";
@@ -181,6 +182,8 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
   const wallet = useStore((s) => s.wallet);
   const dropshipOrders = useStore((s) => s.dropshipOrders);
   const loyalty = useStore((s) => s.loyalty);
+
+  const { pos, dragging, onPointerDown, onClick } = useDraggableFloat();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -766,6 +769,9 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
 
   const runChip = (chip: string) => send(chip);
 
+  const floatingOpenUp = !pos || pos.top > (typeof window !== "undefined" ? window.innerHeight * 0.5 : 0);
+  const floatingOpenRight = !pos || pos.left > 440;
+
   // External prompt (from Dashboard briefing buttons, etc.) → opens copilot and asks it.
   useEffect(() => {
     if (!copilotPrompt) return;
@@ -781,7 +787,10 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
   return (
     <>
       {/* Floating Orb */}
-      <div className={`fixed bottom-5 right-5 ${guideActive ? "z-[96]" : "z-40"}`}>
+      <div
+        className={`fixed bottom-5 right-5 select-none ${guideActive ? "z-[96]" : "z-40"}`}
+        style={{ left: pos?.left, top: pos?.top, right: pos ? "auto" : undefined, bottom: pos ? "auto" : undefined }}
+      >
         <div className="relative">
           <AnimatePresence>
             {open && (
@@ -791,7 +800,9 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 24, scale: 0.96 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute bottom-[72px] right-0 w-[min(420px,calc(100vw-2.5rem))] glass-sheet rounded-[28px] overflow-hidden flex flex-col"
+                className={`absolute w-[min(420px,calc(100vw-2.5rem))] glass-sheet rounded-[28px] overflow-hidden flex flex-col ${
+                  floatingOpenUp ? "bottom-[72px]" : "top-[calc(100%+16px)]"
+                } ${floatingOpenRight ? "right-0" : "left-0"}`}
                 style={{ height: "min(600px, calc(100vh - 7.5rem))" }}
               >
                 {/* Header */}
@@ -1125,11 +1136,12 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
           {/* Orb button */}
           <motion.button
             id="guide-copilot"
-            onClick={() => setOpen(!open)}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
+            onClick={onClick(() => setOpen(!open))}
+            onPointerDown={onPointerDown}
+            whileHover={dragging ? undefined : { scale: 1.08 }}
+            whileTap={dragging ? undefined : { scale: 0.92 }}
             aria-label="Open AI copilot"
-            className="relative h-14 w-14 rounded-full focus-ring"
+            className={`relative h-14 w-14 rounded-full focus-ring touch-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
           >
             <span className="absolute inset-0 rounded-full copilot-orb-ring" />
             <span className="absolute inset-0 rounded-full copilot-orb" />

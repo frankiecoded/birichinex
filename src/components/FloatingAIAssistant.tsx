@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, X, Send, Loader2, ShieldCheck, UserPlus, Boxes } from "lucide-react";
 import { useStore } from "../store/useStore";
+import { useDraggableFloat } from "../lib/useDraggableFloat";
 import { chatFree } from "../../ai/src/api-client";
 import type { ChatMessage } from "../../ai/src/api-client";
 
@@ -26,6 +27,10 @@ export default function FloatingAIAssistant() {
   const user = useStore((s) => s.user);
   const subscription = useStore((s) => s.subscription);
   const hasPaidPlan = subscription.status === "active" && ["silver", "gold", "platinum"].includes(subscription.plan);
+
+  const { pos, dragging, onPointerDown, onClick } = useDraggableFloat();
+  const openUp = !pos || pos.top > (typeof window !== "undefined" ? window.innerHeight * 0.5 : 0);
+  const openRight = !pos || pos.left > 420;
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<WidgetMsg[]>([
@@ -81,15 +86,19 @@ export default function FloatingAIAssistant() {
   const openSignup = () => useStore.getState().setAuthView("signup");
 
   return (
-    <>
+    <div
+      className="fixed z-[60] select-none"
+      style={{ left: pos?.left, top: pos?.top, right: pos ? "auto" : "1.5rem", bottom: pos ? "auto" : "1.5rem" }}
+    >
       {/* Launcher */}
       <button
-        onClick={() => {
+        onClick={onClick(() => {
           setOpen((v) => !v);
           if (!open) setTimeout(() => inputRef.current?.focus(), 60);
-        }}
+        })}
+        onPointerDown={onPointerDown}
         aria-label="Ask Amani"
-        className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-light text-white shadow-xl shadow-black/20 transition-transform hover:scale-105 active:scale-95"
+        className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-light text-white shadow-xl shadow-black/20 transition-transform hover:scale-105 active:scale-95 touch-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
       >
         {open ? <X className="h-6 w-6" strokeWidth={2} /> : <Sparkles className="h-6 w-6" strokeWidth={2} />}
         {!open && hasReply && (
@@ -104,7 +113,9 @@ export default function FloatingAIAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed bottom-24 right-6 z-[60] flex h-[560px] max-h-[calc(100vh-8rem)] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-surface-secondary bg-surface shadow-2xl shadow-black/25"
+            className={`absolute flex h-[560px] max-h-[calc(100vh-8rem)] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-surface-secondary bg-surface shadow-2xl shadow-black/25 ${
+              openUp ? "bottom-[72px]" : "top-[calc(100%+16px)]"
+            } ${openRight ? "right-0" : "left-0"}`}
           >
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-surface-secondary/60 bg-surface-secondary/50 px-4 py-3">
@@ -213,6 +224,6 @@ export default function FloatingAIAssistant() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
