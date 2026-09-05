@@ -194,6 +194,8 @@ export default function FloatingPillNav({
                 bg-white/65 backdrop-blur-3xl saturate-[180%] brightness-[1.08] dark:bg-glass dark:brightness-100
                 border border-white/50 dark:border-glass-border
                 shadow-[0_8px_64px_rgba(0,0,0,0.12),0_2px_16px_rgba(0,0,0,0.06),0_0_0_0.5px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(255,255,255,0.3)]
+                max-h-[calc(100dvh-44px)]
+                overflow-y-auto overscroll-contain scrollbar-hide
               ">
                 <div className="flex items-center gap-4 px-6 pt-5 pb-4">
                   <button onClick={() => handleNavigate("home")} className="flex items-center gap-2.5 shrink-0 group">
@@ -239,7 +241,7 @@ export default function FloatingPillNav({
 
                 <div className="mx-5 h-[1px] bg-gradient-to-r from-transparent via-black/[0.06] dark:via-white/[0.08] to-transparent" />
 
-                <div className="flex items-center gap-1.5 px-5 pt-4 pb-3 overflow-x-auto scrollbar-hide">
+                <div className="grid grid-cols-4 gap-1.5 px-5 pt-4 pb-3 sm:flex sm:items-center sm:gap-1.5 sm:overflow-x-auto sm:scrollbar-hide">
                   {navItems.map((item) => {
                     const isActive = currentView === item.id || currentView.startsWith(`${item.id}:`);
                     const Icon = item.icon;
@@ -254,22 +256,26 @@ export default function FloatingPillNav({
                               handleNavigate(item.id);
                             }
                           }}
-                          className={`relative flex items-center gap-2 h-12 px-4 rounded-[14px] text-[15px] font-semibold transition-all duration-200 shrink-0 ${
+                          className={`relative w-full sm:w-auto flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-0 sm:h-12 px-1 sm:px-4 rounded-[14px] text-[11px] sm:text-[15px] font-semibold transition-all duration-200 shrink-0 ${
                             isActive
                               ? "bg-emphasis text-on-emphasis shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
                               : "text-ink-secondary hover:text-ink hover:bg-white/50 dark:hover:bg-glass/60"
                           }`}
                         >
-                          <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
-                          <span>{item.label}</span>
-                          {item.hasSub && (
-                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${activeCategory === item.id ? "rotate-180" : ""}`} />
-                          )}
-                          {item.badge ? (
-                            <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-brand text-[10px] font-bold text-ink flex items-center justify-center">
-                              {item.badge}
-                            </span>
-                          ) : null}
+                          <span className="relative">
+                            <Icon className="h-[19px] w-[19px] sm:h-[18px] sm:w-[18px]" strokeWidth={1.6} />
+                            {item.badge ? (
+                              <span className="absolute -top-1.5 -right-2 h-[18px] min-w-[18px] px-0.5 rounded-full bg-brand text-[9px] font-bold text-ink flex items-center justify-center">
+                                {item.badge}
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className="flex items-center gap-0.5 sm:gap-1">
+                            <span className="truncate">{item.label}</span>
+                            {item.hasSub && (
+                              <ChevronDown className={`h-3 w-3 hidden sm:block sm:h-4 sm:w-4 transition-transform duration-200 ${activeCategory === item.id ? "rotate-180" : ""}`} />
+                            )}
+                          </span>
                         </button>
                       </div>
                     );
@@ -339,13 +345,13 @@ export default function FloatingPillNav({
 
                 <div className="mx-5 h-[1px] bg-gradient-to-r from-transparent via-black/[0.06] dark:via-white/[0.08] to-transparent" />
 
-                <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-5">
-                  <div className="flex items-center gap-1 bg-white/40 p-1 rounded-[12px] border border-white/40 dark:bg-glass/60 dark:border-glass-border">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-4 pb-5">
+                  <div className="grid grid-cols-4 gap-1 sm:flex sm:items-center sm:gap-1 bg-white/40 p-1 rounded-[12px] border border-white/40 dark:bg-glass/60 dark:border-glass-border">
                     {(["KES", "TZS", "UGX", "USD"] as Currency[]).map((curr) => (
                       <button
                         key={curr}
                         onClick={() => onCurrencyChange(curr)}
-                        className={`px-3 py-1.5 rounded-[9px] text-[11px] font-bold tracking-wider transition-all duration-200 ${
+                        className={`px-2 sm:px-3 py-1.5 rounded-[9px] text-[11px] font-bold tracking-wider transition-all duration-200 ${
                           selectedCurrency === curr
                             ? "bg-emphasis text-on-emphasis shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
                             : "text-ink-tertiary hover:text-ink hover:bg-white/50 dark:hover:bg-glass/60"
@@ -356,7 +362,7 @@ export default function FloatingPillNav({
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ml-auto">
                     <button
                       onClick={() => setWishlisted(!wishlisted)}
                       aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
