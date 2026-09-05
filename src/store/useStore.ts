@@ -604,7 +604,7 @@ export const useStore = create<StoreState>()(
                 password: password ? hashPassword(password, key) : reserved?.password,
                 inventoryItems: hasExistingInventory
                   ? reserved!.inventoryItems
-                  : PORTMETALS_CATALOGUE.map((item) => ({ ...item, id: crypto.randomUUID() })),
+                  : [],
               },
             },
             authView: null,
@@ -1029,10 +1029,10 @@ export const useStore = create<StoreState>()(
       getUserInventory: () => {
         const state = get();
         const key = state.user?.email?.trim().toLowerCase();
-        if (key && state.users[key]?.inventoryItems && state.users[key]!.inventoryItems!.length > 0) {
+        if (key && state.users[key]?.inventoryItems) {
           return state.users[key]!.inventoryItems!;
         }
-        return state.inventoryItems;
+        return [];
       },
 
       addInventoryItem: (item) =>
@@ -2347,7 +2347,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 15,
+      version: 16,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
@@ -2375,6 +2375,14 @@ export const useStore = create<StoreState>()(
       // retail price bands, listed live alongside the bale & tech catalogue.
       // The shared marketplace catalogue and Portmetals showcase account are
       // re-seeded with the full published range.
+      // v16: per-account inventory isolation — every business account now owns
+      // its inventory and NOTHING else. New signups start empty (v16 stops the
+      // runtime seed of the Portmetals retail catalogue into new accounts), and
+      // getUserInventory() no longer falls back to the shared marketplace feed.
+      // This migration purges catalogue copies that earlier builds already baked
+      // into non-Portmetals accounts: items matching a known catalogue entry by
+      // image+name+price+category+unit are dropped; genuinely hand-added items
+      // and the Portmetals showcase account are left untouched.
       //
       // IMPORTANT: migration receives the stored STATE (not the envelope), and
       // only runs when the stored version differs. It must never destroy real
@@ -2389,6 +2397,26 @@ export const useStore = create<StoreState>()(
           const storedUsers = base.users && typeof base.users === 'object' ? base.users : {};
           const pmAccount = storedUsers['sales@portmetalsafrica.com'];
           const newPmInventory = PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item }));
+          // v16: purge catalogue copies that older builds seeded into non-Portmetals
+          // accounts. An item only matches when image+name+price+category+unit are
+          // identical to a published catalogue entry — hand-added inventory survives.
+          const catalogueKeys = new Set(
+            PORTMETALS_CATALOGUE.map((i) => [i.image ?? '', i.name, i.price, i.category, i.unit ?? ''].join('|')),
+          );
+          const cleanedUsers = Object.fromEntries(
+            Object.entries(storedUsers as Record<string, unknown>).map(([email, u]) => {
+              const rec = u as { inventoryItems?: InventoryItem[] };
+              if (email === 'sales@portmetalsafrica.com' || !Array.isArray(rec.inventoryItems) || rec.inventoryItems.length === 0) {
+                return [email, u];
+              }
+              const kept = rec.inventoryItems.filter(
+                (i) => !catalogueKeys.has([i.image ?? '', i.name, i.price, i.category, i.unit ?? ''].join('|')),
+              );
+              return kept.length === rec.inventoryItems.length
+                ? [email, u]
+                : [email, { ...rec, inventoryItems: kept }];
+            }),
+          );
           return {
             ...base,
             entrySeen: typeof base.entrySeen === 'boolean' ? base.entrySeen : false,
@@ -2407,7 +2435,7 @@ export const useStore = create<StoreState>()(
             // v12: re-seed the showcase account inventory with the live catalogue
             // so the tech range + flagship reach the Portmetals store.
             users: {
-              ...storedUsers,
+              ...cleanedUsers,
               'sales@portmetalsafrica.com': pmAccount
                 ? { ...pmAccount, inventoryItems: newPmInventory }
                 : {
@@ -2459,6 +2487,7 @@ export const useStore = create<StoreState>()(
               accountType: 'business',
               createdAt: new Date('2026-08-30T09:00:00.000Z').toISOString(),
               password: 's1$ed4a23f745b5263c7dc3229574cafed20df3e670d60053a69d7b5088af42140f',
+              inventoryItems: PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item })),
             },
           },
           documents: [],
