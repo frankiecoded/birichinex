@@ -111,6 +111,16 @@ const BALE_30 = "photo-1441984904996-e0b6ba687e04";
 const BALE_45 = "photo-1553413077-190dd305871c";
 const BALE_55 = "photo-1489987707025-afc232f7ea0f";
 const BALE_70 = "photo-1540575467063-178a50c2df87";
+// Canada container (MSKU9196899) — household, accessories & kids lines
+const CN_BEDDING = "photo-1540518614846-7eded433c457";
+const CN_TOWEL = "photo-1517705008128-361805f42e86";
+const CN_CAP = "photo-1521369909029-2afed882baee";
+const CN_BAG = "photo-1553062407-98eeb64c6a62";
+const CN_SOCKS = "photo-1586350977771-b3b0abd50c82";
+const CN_PILLOW = "photo-1584100936595-c0654b55a2e2";
+const CN_HOME = "photo-1524504388940-b1c1722653e1";
+const CN_BRA = "photo-1506629082955-511b1aa562c8";
+const CN_TANK = "photo-1521572163474-6864f9cf17ab";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI-crafted catalogue descriptions, keyed by SKU.
@@ -173,6 +183,10 @@ const CATEGORY_DESC: Record<string, string> = {
   "Bags & Accessories": "Australian and European-sorted bags and accessories, condition-checked and retail-ready.",
   "Refurbished": "Professionally refurbished hardware — cleaned, tested and graded by Portmetals engineers.",
   "Wholesale Bales": "Compressed wholesale bales — sorted, graded and baled for volume buyers across East Africa.",
+  "Mens Items": "Men's bales straight from Portmetals' own Canada container (MSKU9196899) — hand-sorted garments, graded and baled for East African retail.",
+  "Ladies Items": "Ladies' fashion from Portmetals' Canada container (MSKU9196899) — hand-checked garments, sized and baled ready for retail.",
+  "Misc + Children Items": "Household, kids' and baby bales from Portmetals' Canada container (MSKU9196899) — sorted, graded and packed for volume buyers.",
+  "Grade (B) Items": "Grade B bales from Portmetals' Canada container (MSKU9196899) — serviceable seconds, sorted and baled for budget wholesale.",
 };
 
 const lastRestocked = new Date("2026-08-30T10:00:00.000Z").toISOString();
@@ -252,6 +266,38 @@ function make(o: {
     description,
     aiDescription: true,
     specs: specs as Record<string, string>,
+  };
+}
+
+// Canada container line item (manifest MSKU9196899) — exact names, bale
+// quantities and weight-per-bale straight from the founder's manifest PDF.
+// Unpriced (0) and NOT posted to the marketplace yet: these load into the
+// Portmetals account inventory so the owner sets selling prices on-site, then
+// lists them. categories mirror the manifest's own grouping.
+function container(
+  name: string,
+  sku: string,
+  category: string,
+  qty: number,
+  weight: string,
+  imageId: string,
+): InventoryItem {
+  return {
+    ...make({
+      name,
+      sku,
+      category,
+      price: 0,
+      stock: qty,
+      imageIds: [imageId],
+      source: "bales",
+      unit: "bale",
+      currency: "KES",
+      Container: "MSKU9196899",
+      "Weight per Bale": weight,
+      Origin: "Canada container",
+    }),
+    postedToMarketplace: false,
   };
 }
 
@@ -352,4 +398,139 @@ export const PORTMETALS_CATALOGUE: InventoryItem[] = [
   bale("45kg Wholesale Bale", "WM-45", "Wholesale Bales", 700000, 40, BALE_45, { Weight: "45kg", "Est. Pieces": "160–220", "USD Price": "$260", "Best For": "Established retailers" }),
   bale("55kg Premium Business Bale", "WM-55", "Wholesale Bales", 900000, 40, BALE_55, { Weight: "55kg", "Est. Pieces": "200–260", "USD Price": "$335", "Best For": "Multi-stall traders & distributors" }),
   bale("70kg Commercial Bale", "WM-70", "Wholesale Bales", 1200000, 40, BALE_70, { Weight: "70kg", "Est. Pieces": "250–330", "USD Price": "$445", "Best For": "Wholesalers & regional distributors" }),
+];
+
+
+/**
+ * Canada container manifest (MSKU9196899) — the founder's full, exact
+ * shipping inventory: 114 lines, 558 bales (Mens 151 · Ladies 124 ·
+ * Misc + Children 261 · Grade B 22). Names, bale quantities and weight per
+ * bale are transcribed verbatim from Portmetals_Canada_Bale_Inventory.
+ * Container items load unpriced and unposted (postedToMarketplace: false) so
+ * the owner can set selling prices on-site before listing them.
+ */
+export const PORTMETALS_CONTAINER: InventoryItem[] = [
+  container("MSKU9196899 · Anorak Jackets", "CAN-M-ANORAK-JACKETS", "Mens Items", 5, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Boxer Shorts", "CAN-M-BOXER-SHORTS", "Mens Items", 1, "100 lbs (≈45 kg)", CN_TANK),
+  container("MSKU9196899 · Cargo Pants", "CAN-M-CARGO-PANTS", "Mens Items", 1, "100 pcs", BALE_PANTS),
+  container("MSKU9196899 · Cargo Shorts", "CAN-M-CARGO-SHORTS", "Mens Items", 1, "100 lbs (≈45 kg)", BALE_SHORTS),
+  container("MSKU9196899 · Cotton pants", "CAN-M-COTTON-PANTS", "Mens Items", 5, "100 pcs", BALE_PANTS),
+  container("MSKU9196899 · Cotton shirts L/S S/S", "CAN-M-COTTON-SHIRTS-LS-SS", "Mens Items", 8, "200 pcs", BALE_SHIRT),
+  container("MSKU9196899 · Cotton t-shirt roundneck", "CAN-M-T-SHIRT-ROUNDNECK", "Mens Items", 20, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Collar T-Shirts", "CAN-M-COLLAR-T-SHIRTS", "Mens Items", 5, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Denim Jackets", "CAN-M-DENIM-JACKETS", "Mens Items", 5, "100 lbs (≈45 kg)", BALE_JEANS),
+  container("MSKU9196899 · Denim Jeans", "CAN-M-DENIM-JEANS", "Mens Items", 11, "100 pcs", BALE_JEANS),
+  container("MSKU9196899 · Flannel Shirts", "CAN-M-FLANNEL-SHIRTS", "Mens Items", 3, "100 lbs (≈45 kg)", BALE_FLANEL),
+  container("MSKU9196899 · Fleece Jackets", "CAN-M-FLEECE-JACKETS", "Mens Items", 5, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Hawaian Shirts", "CAN-M-HAWAIAN-SHIRTS", "Mens Items", 1, "100 lbs (≈45 kg)", BALE_SHIRT),
+  container("MSKU9196899 · Hooded sweat shirts", "CAN-M-HOODED-SWEAT-SHIRTS", "Mens Items", 15, "100 lbs (≈45 kg)", BALE_HOODIE),
+  container("MSKU9196899 · Sweat Shirts", "CAN-M-SWEAT-SHIRTS", "Mens Items", 4, "100 lbs (≈45 kg)", BALE_HOODIE),
+  container("MSKU9196899 · Jogging Pants / Elastic Bottom", "CAN-M-JOGGING-PANTS-ELASTIC-BOTTOM", "Mens Items", 7, "100 lbs (≈45 kg)", BALE_JOG),
+  container("MSKU9196899 · Light Zipper Jackets", "CAN-M-LIGHT-ZIPPER-JACKETS", "Mens Items", 10, "100 lbs (≈45 kg)", BALE_ZIPPER),
+  container("MSKU9196899 · Mens dress pants", "CAN-M-MENS-DRESS-PANTS", "Mens Items", 5, "100 pcs", BALE_PALAZZO),
+  container("MSKU9196899 · Mens Tropical Pants", "CAN-M-MENS-TROPICAL-PANTS", "Mens Items", 1, "100 pcs", BALE_PANTS),
+  container("MSKU9196899 · Nylon Track Pants", "CAN-M-NYLON-TRACK-PANTS", "Mens Items", 2, "100 lbs (≈45 kg)", BALE_PANTS),
+  container("MSKU9196899 · Ski Jackets", "CAN-M-SKI-JACKETS", "Mens Items", 5, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Sports Shorts", "CAN-M-SPORTS-SHORTS", "Mens Items", 6, "100 lbs (≈45 kg)", BALE_SPORTS),
+  container("MSKU9196899 · Sports T-shirts", "CAN-M-SPORTS-T-SHIRTS", "Mens Items", 11, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Sports Hooded Sweatshirt", "CAN-M-SPORTS-HOODED-SWEATSHIRT", "Mens Items", 2, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Track Suits", "CAN-M-TRACK-SUITS", "Mens Items", 8, "100 lbs (≈45 kg)", BALE_HOODIE),
+  container("MSKU9196899 · Mens Underwear", "CAN-M-MENS-UNDERWEAR", "Mens Items", 2, "100 lbs (≈45 kg)", CN_TANK),
+  container("MSKU9196899 · White Shirts", "CAN-M-WHITE-SHIRTS", "Mens Items", 1, "100 lbs (≈45 kg)", BALE_SHIRT),
+  container("MSKU9196899 · Work Shirts", "CAN-M-WORK-SHIRTS", "Mens Items", 1, "200 pcs", BALE_SHIRT),
+  container("MSKU9196899 · Body Suits", "CAN-L-BODY-SUITS", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_BLOUSE),
+  container("MSKU9196899 · Cotton Dresses", "CAN-L-COTTON-DRESSES", "Ladies Items", 3, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Cotton Skirts", "CAN-L-COTTON-SKIRTS", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_BLOUSE),
+  container("MSKU9196899 · Denim Dress", "CAN-L-DENIM-DRESS", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_JEANS),
+  container("MSKU9196899 · Fashion Mini Dresses", "CAN-L-FASHION-MINI-DRESSES", "Ladies Items", 5, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Girls Fashion Jacket", "CAN-L-GIRLS-FASHION-JACKET", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Hawaain Pants", "CAN-L-HAWAAIN-PANTS", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_PANTS),
+  container("MSKU9196899 · Ladies cotton pants", "CAN-L-LADIES-COTTON-PANTS", "Ladies Items", 5, "200 pcs", BALE_PANTS),
+  container("MSKU9196899 · Ladies Fashion sweaters", "CAN-L-LADIES-FASHION-SWEATERS", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_HOODIE),
+  container("MSKU9196899 · Ladies Dress Pants", "CAN-L-LADIES-DRESS-PANTS", "Ladies Items", 3, "200 pcs", BALE_PALAZZO),
+  container("MSKU9196899 · Ladies Polo Dresses", "CAN-L-LADIES-POLO-DRESSES", "Ladies Items", 3, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Ladies Poly Blouse", "CAN-L-LADIES-POLY-BLOUSE", "Ladies Items", 10, "100 lbs (≈45 kg)", BALE_BLOUSE),
+  container("MSKU9196899 · Ladies Poly Dresses", "CAN-L-LADIES-POLY-DRESSES", "Ladies Items", 4, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Ladies Poly Pants", "CAN-L-LADIES-POLY-PANTS", "Ladies Items", 1, "200 pcs", BALE_PANTS),
+  container("MSKU9196899 · Ladies Trench coat", "CAN-L-LADIES-TRENCH-COAT", "Ladies Items", 2, "100 lbs (≈45 kg)", BALE_LEATHER_LADIES),
+  container("MSKU9196899 · Ladies t.shirt", "CAN-L-LADIES-T-SHIRT", "Ladies Items", 5, "100 lbs (≈45 kg)", BALE_SHIRT),
+  container("MSKU9196899 · Ladies t.shirt L/S", "CAN-L-T-SHIRT-LS", "Ladies Items", 2, "100 lbs (≈45 kg)", BALE_SHIRT),
+  container("MSKU9196899 · Ladies Tank Top", "CAN-L-LADIES-TANK-TOP", "Ladies Items", 2, "100 lbs (≈45 kg)", CN_TANK),
+  container("MSKU9196899 · Ladies Ripped Jeans", "CAN-L-LADIES-RIPPED-JEANS", "Ladies Items", 11, "100 lbs (≈45 kg)", BALE_JEANS),
+  container("MSKU9196899 · Leggings", "CAN-L-LEGGINGS", "Ladies Items", 10, "100 lbs (≈45 kg)", BALE_LEGGINGS),
+  container("MSKU9196899 · Mix Blouses", "CAN-L-MIX-BLOUSES", "Ladies Items", 10, "100 lbs (≈45 kg)", BALE_BLOUSE),
+  container("MSKU9196899 · Mix dresses", "CAN-L-MIX-DRESSES", "Ladies Items", 10, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Mix skirt", "CAN-L-MIX-SKIRT", "Ladies Items", 4, "100 lbs (≈45 kg)", BALE_BLOUSE),
+  container("MSKU9196899 · Mummy Jeans", "CAN-L-MUMMY-JEANS", "Ladies Items", 5, "100 lbs (≈45 kg)", BALE_JEANS),
+  container("MSKU9196899 · Office Dresses", "CAN-L-OFFICE-DRESSES", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Palazzo Pants", "CAN-L-PALAZZO-PANTS", "Ladies Items", 2, "100 lbs (≈45 kg)", BALE_PALAZZO),
+  container("MSKU9196899 · Silk Poly Dresses", "CAN-L-SILK-POLY-DRESSES", "Ladies Items", 4, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Skinny Jeans", "CAN-L-SKINNY-JEANS", "Ladies Items", 5, "100 lbs (≈45 kg)", BALE_JEANS),
+  container("MSKU9196899 · Skinny Pants", "CAN-L-SKINNY-PANTS", "Ladies Items", 2, "100 lbs (≈45 kg)", BALE_PANTS),
+  container("MSKU9196899 · Jumpsuits", "CAN-L-JUMPSUITS", "Ladies Items", 1, "100 lbs (≈45 kg)", BALE_PALAZZO),
+  container("MSKU9196899 · Sports Bra", "CAN-L-SPORTS-BRA", "Ladies Items", 4, "100 lbs (≈45 kg)", BALE_SPORTS),
+  container("MSKU9196899 · Party Dresses", "CAN-L-PARTY-DRESSES", "Ladies Items", 1, "100 pcs", BALE_DRESS),
+  container("MSKU9196899 · Office Blazers", "CAN-L-OFFICE-BLAZERS", "Ladies Items", 2, "100 pcs", BALE_LEATHER_LADIES),
+  container("MSKU9196899 · Ladies Long Cardigans", "CAN-L-LADIES-LONG-CARDIGANS", "Ladies Items", 1, "200 pcs", BALE_HOODIE),
+  container("MSKU9196899 · Baby Beddings", "CAN-C-BABY-BEDDINGS", "Misc + Children Items", 5, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Baby Blankets", "CAN-C-BABY-BLANKETS", "Misc + Children Items", 7, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Baby Sleepers", "CAN-C-BABY-SLEEPERS", "Misc + Children Items", 7, "100 lbs (≈45 kg)", BALE_BABY),
+  container("MSKU9196899 · Bath Mats", "CAN-C-BATH-MATS", "Misc + Children Items", 2, "100 lbs (≈45 kg)", CN_TOWEL),
+  container("MSKU9196899 · Bedsheets", "CAN-C-BEDSHEETS", "Misc + Children Items", 5, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Bed Covers", "CAN-C-BED-COVERS", "Misc + Children Items", 8, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Bill Caps", "CAN-C-BILL-CAPS", "Misc + Children Items", 1, "100 lbs (≈45 kg)", CN_CAP),
+  container("MSKU9196899 · Blankets", "CAN-C-BLANKETS", "Misc + Children Items", 10, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Boys denim jeans", "CAN-C-BOYS-DENIM-JEANS", "Misc + Children Items", 6, "150 pcs", BALE_JEANS),
+  container("MSKU9196899 · Children Jackets", "CAN-C-CHILDREN-JACKETS", "Misc + Children Items", 5, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Boys Shirts", "CAN-C-BOYS-SHIRTS", "Misc + Children Items", 2, "100 lbs (≈45 kg)", BALE_SHIRT),
+  container("MSKU9196899 · Bras", "CAN-C-BRAS", "Misc + Children Items", 7, "100 lbs (≈45 kg)", CN_BRA),
+  container("MSKU9196899 · Children Rummage", "CAN-C-CHILDREN-RUMMAGE", "Misc + Children Items", 28, "100 lbs (≈45 kg)", BALE_30),
+  container("MSKU9196899 · Children Fleece Jacket", "CAN-C-CHILDREN-FLEECE-JACKET", "Misc + Children Items", 1, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Children Hooded Sweat Shirts", "CAN-C-CHILDREN-HOODED-SWEAT-SHIRTS", "Misc + Children Items", 1, "100 lbs (≈45 kg)", BALE_HOODIE),
+  container("MSKU9196899 · Children Joggings 2 PC", "CAN-C-CHILDREN-JOGGINGS-2-PC", "Misc + Children Items", 1, "100 lbs (≈45 kg)", BALE_JOG),
+  container("MSKU9196899 · Light Baby Rummage", "CAN-C-LIGHT-BABY-RUMMAGE", "Misc + Children Items", 30, "100 lbs (≈45 kg)", BALE_BABY),
+  container("MSKU9196899 · Children Medium rummage", "CAN-C-CHILDREN-MEDIUM-RUMMAGE", "Misc + Children Items", 33, "100 lbs (≈45 kg)", BALE_30),
+  container("MSKU9196899 · Children Pants", "CAN-C-CHILDREN-PANTS", "Misc + Children Items", 2, "100 lbs (≈45 kg)", BALE_PANTS),
+  container("MSKU9196899 · Children Shorts", "CAN-C-CHILDREN-SHORTS", "Misc + Children Items", 2, "100 lbs (≈45 kg)", BALE_SHORTS),
+  container("MSKU9196899 · Children Sweaters", "CAN-C-CHILDREN-SWEATERS", "Misc + Children Items", 1, "100 lbs (≈45 kg)", BALE_HOODIE),
+  container("MSKU9196899 · Children T-shirts L/s", "CAN-C-CHILDREN-T-SHIRTS-L-S", "Misc + Children Items", 1, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Children T-shirts", "CAN-C-CHILDREN-T-SHIRTS", "Misc + Children Items", 3, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Comforters", "CAN-C-COMFORTERS", "Misc + Children Items", 15, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Curtains", "CAN-C-CURTAINS", "Misc + Children Items", 8, "100 lbs (≈45 kg)", CN_HOME),
+  container("MSKU9196899 · Fitted Bed Sheets", "CAN-C-FITTED-BED-SHEETS", "Misc + Children Items", 5, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Flannel Bed sheets", "CAN-C-FLANNEL-BED-SHEETS", "Misc + Children Items", 4, "100 lbs (≈45 kg)", BALE_FLANEL),
+  container("MSKU9196899 · Girls dresses", "CAN-C-GIRLS-DRESSES", "Misc + Children Items", 1, "100 lbs (≈45 kg)", BALE_DRESS),
+  container("MSKU9196899 · Gloves", "CAN-C-GLOVES", "Misc + Children Items", 1, "100 lbs (≈45 kg)", CN_CAP),
+  container("MSKU9196899 · Household rummage", "CAN-C-HOUSEHOLD-RUMMAGE", "Misc + Children Items", 40, "100 lbs (≈45 kg)", BALE_30),
+  container("MSKU9196899 · Pillow Case", "CAN-C-PILLOW-CASE", "Misc + Children Items", 1, "100 lbs (≈45 kg)", CN_PILLOW),
+  container("MSKU9196899 · Lace Curtains", "CAN-C-LACE-CURTAINS", "Misc + Children Items", 2, "100 lbs (≈45 kg)", CN_HOME),
+  container("MSKU9196899 · Ladies Underwear", "CAN-C-LADIES-UNDERWEAR", "Misc + Children Items", 1, "100 lbs (≈45 kg)", CN_BRA),
+  container("MSKU9196899 · Mixed Caps", "CAN-C-MIXED-CAPS", "Misc + Children Items", 1, "100 lbs (≈45 kg)", CN_CAP),
+  container("MSKU9196899 · School Bags", "CAN-C-SCHOOL-BAGS", "Misc + Children Items", 2, "100 lbs (≈45 kg)", CN_BAG),
+  container("MSKU9196899 · Silk Nightwear", "CAN-C-SILK-NIGHTWEAR", "Misc + Children Items", 1, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Socks Paired", "CAN-C-SOCKS-PAIRED", "Misc + Children Items", 3, "100 lbs (≈45 kg)", CN_SOCKS),
+  container("MSKU9196899 · Textile Pieces", "CAN-C-TEXTILE-PIECES", "Misc + Children Items", 1, "100 lbs (≈45 kg)", CN_HOME),
+  container("MSKU9196899 · Towel", "CAN-C-TOWEL", "Misc + Children Items", 1, "100 lbs (≈45 kg)", CN_TOWEL),
+  container("MSKU9196899 · White bed sheets", "CAN-C-WHITE-BED-SHEETS", "Misc + Children Items", 2, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Wool Caps", "CAN-C-WOOL-CAPS", "Misc + Children Items", 4, "100 lbs (≈45 kg)", CN_CAP),
+  container("MSKU9196899 · Children Shorts", "CAN-B-CHILDREN-SHORTS", "Grade (B) Items", 1, "100 lbs (≈45 kg)", BALE_SHORTS),
+  container("MSKU9196899 · Children T-shirts", "CAN-B-CHILDREN-T-SHIRTS", "Grade (B) Items", 2, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Coloured Bedsheets", "CAN-B-COLOURED-BEDSHEETS", "Grade (B) Items", 1, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Comforters", "CAN-B-COMFORTERS", "Grade (B) Items", 1, "100 lbs (≈45 kg)", CN_BEDDING),
+  container("MSKU9196899 · Leggings", "CAN-B-LEGGINGS", "Grade (B) Items", 3, "100 lbs (≈45 kg)", BALE_LEGGINGS),
+  container("MSKU9196899 · Men's Cargo Pants", "CAN-B-MEN-S-CARGO-PANTS", "Grade (B) Items", 1, "100 pcs", BALE_PANTS),
+  container("MSKU9196899 · Men's Denim Pants", "CAN-B-MEN-S-DENIM-PANTS", "Grade (B) Items", 3, "100 pcs", BALE_JEANS),
+  container("MSKU9196899 · Mens Shirts", "CAN-B-MENS-SHIRTS", "Grade (B) Items", 3, "200 pcs", BALE_SHIRT),
+  container("MSKU9196899 · Mens T-shirts #2", "CAN-B-MENS-T-SHIRTS-2", "Grade (B) Items", 3, "100 lbs (≈45 kg)", BALE_TEE),
+  container("MSKU9196899 · Skinny Jeans", "CAN-B-SKINNY-JEANS", "Grade (B) Items", 3, "100 lbs (≈45 kg)", BALE_JEANS),
+  container("MSKU9196899 · Sports Shorts", "CAN-B-SPORTS-SHORTS", "Grade (B) Items", 1, "100 lbs (≈45 kg)", BALE_SPORTS),
+];
+
+
+/** The whole live inventory: the published marketplace range + the full
+ * Canada container manifest. Feeds the shared catalogue and the Portmetals
+ * showcase account on store re-seed. */
+export const PORTMETALS_FULL_CATALOGUE: InventoryItem[] = [
+  ...PORTMETALS_CATALOGUE,
+  ...PORTMETALS_CONTAINER,
 ];

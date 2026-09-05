@@ -49,7 +49,7 @@ import type { BusinessRecommendation, RecommendationOutcome, RecommendationStatu
 import { COURSES, DROPSHIP_TIERS, calculateLoyaltyPoints, MEMBERSHIP_TIERS, convertPrice } from '../data/platform';
 import type { TrackedOrder, TrackedShipment, TrackingStatus } from '../data/delivery';
 import type { DailyReflection, WeeklyReview } from '../data/routines';
-import { PORTMETALS_CATALOGUE } from '../data/catalogue';
+import { PORTMETALS_CATALOGUE, PORTMETALS_FULL_CATALOGUE } from '../data/catalogue';
 
 // ── Document Types ───────────────────────────────────────────────────────────
 
@@ -2347,7 +2347,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 13,
+      version: 14,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
@@ -2366,6 +2366,10 @@ export const useStore = create<StoreState>()(
       // wholesale bale tiers (25kg–70kg) surfaced as the dedicated volume
       // division. Technology listings stay live. The shared catalogue is again
       // replaced wholesale; the Portmetals showcase account is re-seeded.
+      // v14: add the full Canada container manifest (MSKU9196899) — 114 lines,
+      // 558 bales — as unpriced, unposted inventory on top of the published
+      // range. Container items load into the Portmetals account inventory for
+      // on-site pricing; the live marketplace range is unchanged.
       //
       // IMPORTANT: migration receives the stored STATE (not the envelope), and
       // only runs when the stored version differs. It must never destroy real
@@ -2379,7 +2383,7 @@ export const useStore = create<StoreState>()(
           const storedInventory = Array.isArray(base.inventoryItems) ? base.inventoryItems : [];
           const storedUsers = base.users && typeof base.users === 'object' ? base.users : {};
           const pmAccount = storedUsers['sales@portmetalsafrica.com'];
-          const newPmInventory = PORTMETALS_CATALOGUE.map((item) => ({ ...item }));
+          const newPmInventory = PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item }));
           return {
             ...base,
             entrySeen: typeof base.entrySeen === 'boolean' ? base.entrySeen : false,
@@ -2388,7 +2392,8 @@ export const useStore = create<StoreState>()(
               : 'KES',
             // v12: the shared marketplace catalogue is always refreshed with the
             // current published range (images, AI descriptions, flagship).
-            inventoryItems: PORTMETALS_CATALOGUE.map((item) => ({ ...item })),
+            // v14: + the full Canada container manifest (unpriced, unposted).
+            inventoryItems: PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item })),
             // v11: seed the Portmetals Africa flagship customer account so the
             // business owner can sign in (sales@portmetalsafrica.com /
             // PortAfrica2026, deterministic s1$ credential verified then upgraded

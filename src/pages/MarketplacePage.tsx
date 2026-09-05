@@ -37,8 +37,8 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
   const [checkoutError, setCheckoutError] = useState("");
   const [placing, setPlacing] = useState(false);
 
-  const CATEGORIES = ["All", ...new Set(inventoryItems.map((i) => i.category))];
   const catalogProducts = postedInventoryToProducts(inventoryItems);
+  const CATEGORIES = ["All", ...new Set(catalogProducts.map((p) => p.category))];
 
   const filtered = catalogProducts.filter((p) => {
     const matchesCategory = category === "All" || p.category === category;
