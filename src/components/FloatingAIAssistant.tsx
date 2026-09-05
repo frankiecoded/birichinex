@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, X, Send, Loader2, ShieldCheck, UserPlus, Boxes } from "lucide-react";
 import { useStore } from "../store/useStore";
-import { useDraggableFloat } from "../lib/useDraggableFloat";
+import { useDraggableFloat, useViewport } from "../lib/useDraggableFloat";
 import { chatFree } from "../../ai/src/api-client";
 import type { ChatMessage } from "../../ai/src/api-client";
 
@@ -29,8 +29,15 @@ export default function FloatingAIAssistant() {
   const hasPaidPlan = subscription.status === "active" && ["silver", "gold", "platinum"].includes(subscription.plan);
 
   const { pos, dragging, onPointerDown, onClick } = useDraggableFloat();
-  const openUp = !pos || pos.top > (typeof window !== "undefined" ? window.innerHeight * 0.5 : 0);
-  const openRight = !pos || pos.left > 420;
+  const { w: vw, h: vh } = useViewport();
+  const btnTop = pos ? pos.top : Math.max(0, vh - 24 - 56);
+  const btnLeft = pos ? pos.left : Math.max(0, vw - 24 - 56);
+  const spaceUp = Math.max(0, btnTop - 16);
+  const spaceDown = Math.max(0, vh - btnTop - 56 - 16);
+  const openUp = spaceUp >= spaceDown;
+  const panelW = Math.min(380, Math.max(200, vw - 32));
+  const panelLeft = Math.min(Math.max(8, btnLeft + 56 - panelW), Math.max(8, vw - panelW - 8));
+  const panelHeight = Math.max(160, Math.min(560, openUp ? spaceUp : spaceDown));
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<WidgetMsg[]>([
@@ -113,9 +120,10 @@ export default function FloatingAIAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className={`absolute flex h-[560px] max-h-[calc(100vh-8rem)] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-surface-secondary bg-surface shadow-2xl shadow-black/25 ${
-              openUp ? "bottom-[72px]" : "top-[calc(100%+16px)]"
-            } ${openRight ? "right-0" : "left-0"}`}
+            className={`absolute flex w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-surface-secondary bg-surface shadow-2xl shadow-black/25 ${
+              openUp ? "bottom-[calc(100%+16px)]" : "top-[calc(100%+16px)]"
+            }`}
+            style={{ height: panelHeight, maxHeight: panelHeight, left: panelLeft }}
           >
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-surface-secondary/60 bg-surface-secondary/50 px-4 py-3">
