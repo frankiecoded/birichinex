@@ -68,10 +68,13 @@ export default function ShopCartPage({ cart, selectedCurrency, onNavigate, onRem
     Accessories: "#AF52DE",
     Kids: "#30D158",
     Sportswear: "#FF9500",
+    "T-Shirts": "#FF2D55",
+    Jackets: "#5E5CE6",
+    Handbags: "#00C7BE",
+    "Wholesale Bales": "#FF9500",
     Laptops: "#007AFF",
     Smartphones: "#5856D6",
     Audio: "#FF375F",
-    "Wholesale Bales": "#FF9500",
   };
 
   return (

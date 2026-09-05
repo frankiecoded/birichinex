@@ -2347,7 +2347,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 12,
+      version: 13,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
@@ -2361,6 +2361,11 @@ export const useStore = create<StoreState>()(
       // platform-owned marketplace catalogue is replaced wholesale; per-user
       // inventory (users[*].inventoryItems) is preserved except for the
       // Portmetals showcase account, which is re-seeded with the live range.
+      // v13: rebuild the marketplace to the founder's ORIGINAL bale catalogue —
+      // the 22 bale grades (original figures, KSh default currency) plus the 5
+      // wholesale bale tiers (25kg–70kg) surfaced as the dedicated volume
+      // division. Technology listings stay live. The shared catalogue is again
+      // replaced wholesale; the Portmetals showcase account is re-seeded.
       //
       // IMPORTANT: migration receives the stored STATE (not the envelope), and
       // only runs when the stored version differs. It must never destroy real

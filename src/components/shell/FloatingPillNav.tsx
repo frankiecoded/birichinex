@@ -7,7 +7,7 @@ import {
 import { Currency } from "../../types";
 
 const SHOP_CATEGORIES = [
-  { id: "fashion", label: "Fashion", icon: "👗", subcategories: ["Men's Fashion", "Women's Fashion", "Kids", "Sportswear", "Leather", "Accessories"] },
+  { id: "fashion", label: "Fashion", icon: "👗", subcategories: ["Men's Fashion", "Women's Fashion", "Kids", "Sportswear", "Leather", "Jackets", "T-Shirts", "Handbags"] },
   { id: "technology", label: "Technology", icon: "💻", subcategories: ["Laptops", "Smartphones", "Audio", "Accessories", "Refurbished"] },
 ];
 

@@ -1,17 +1,19 @@
+import type { Currency } from "../types";
 import type { InventoryItem } from "../store/useStore";
 
 /**
  * Portmetals Africa — Flagship customer catalogue.
  *
- * This is the real, verified inventory shipped to the marketplace. Tech SKUs
- * carry genuine unit prices and live stock (parenthesised counts). Fashion,
- * footwear and bags are priced against the agreed retail guides and are
- * presented as live, orderable items. Wholesale bales remain their own B2B
- * division within the BirichiNex ecosystem.
+ * This is the real, verified inventory shipped to the marketplace. Technology
+ * SKUs carry genuine unit prices and live stock. The marketplace has been
+ * rebuilt to the founder's ORIGINAL bale catalogue — 22 bale grades plus 5
+ * wholesale bale tiers (25kg–70kg) — priced at the exact original figures,
+ * displayed as KSh (the platform default currency). Wholesale bales are also
+ * surfaced on the dedicated "Bales" page as their own volume-pricing tier.
  *
  * Every listing carries real product photography (verified Unsplash CDN),
- * a category that matches the shop navigation, live stock units, an authentic
- * European origin and an AI-crafted catalogue description.
+ * a category that matches the shop navigation, live stock units and an
+ * AI-crafted catalogue description.
  */
 
 const img = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1000&q=80`;
@@ -82,6 +84,33 @@ const AUD_C = "photo-1588423771073-b8903fbb85b5";
 const AUD_D = "photo-1524678606370-a47ad25cb82a";
 // Phone case
 const CASE_A = "photo-1601581875039-e899893d520c";
+// Bale catalogue — men's / women's / kids / accessories
+const BALE_SHIRT = "photo-1596755094514-f87e34085b2c";
+const BALE_PANTS = "photo-1624623278318-a93f702e8607";
+const BALE_JEANS = "photo-1541099649105-f69ad21f3246";
+const BALE_FLANEL = "photo-1509551388413-e18d0ac5d495";
+const BALE_BLOUSE = "photo-1567401893414-76b7b1e5a7a5";
+const BALE_SHORTS = "photo-1595950653106-6c9ebd614d3a";
+const BALE_DRESS = "photo-1595777457583-95e059d581b8";
+const BALE_PALAZZO = "photo-1566150905458-1bf1fc113f0d";
+const BALE_ANORAK = "photo-1551028719-00167b16eac5";
+const BALE_HOODIE = "photo-1624378439575-d8705ad7ae80";
+const BALE_BABY = "photo-1551537482-f2075a1d41f2";
+const BALE_CHILDREN = "photo-1551537482-f2075a1d41f2";
+const BALE_JOG = "photo-1576871337622-98d48d1cf531";
+const BALE_LEGGINGS = "photo-1618354691373-d851c5c3a990";
+const BALE_TEE = "photo-1503341504253-dff4815485f1";
+const BALE_SPORTS = "photo-1591047139829-d91aecb6caea";
+const BALE_HANDBAG = "photo-1560243563-062bfc001d68";
+const BALE_LEATHER = "photo-1544441893-675973e31985";
+const BALE_LEATHER_LADIES = "photo-1539533018447-63fcce2678e3";
+const BALE_ZIPPER = "photo-1512436991641-6745cdb1723f";
+// Wholesale bales (compressed, branded wrap)
+const BALE_25 = "photo-1520453803296-c39eabe2dab4";
+const BALE_30 = "photo-1441984904996-e0b6ba687e04";
+const BALE_45 = "photo-1553413077-190dd305871c";
+const BALE_55 = "photo-1489987707025-afc232f7ea0f";
+const BALE_70 = "photo-1540575467063-178a50c2df87";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI-crafted catalogue descriptions, keyed by SKU.
@@ -130,13 +159,20 @@ const DESCRIPTIONS: Record<string, string> = {
   "PM-IT-ACC-I13CASE": "A tough, stylish case for the iPhone 13 Pro — shock-absorbent corners and a raised lip for screen protection. Brand new.",
 };
 
-// Common-category fallback descriptions for fashion & footwear lines.
+// Common-category fallback descriptions for fashion, footwear & bale lines.
 const CATEGORY_DESC: Record<string, string> = {
-  "Footwear": "Premium European-sorted footwear, hand-checked for quality and built for everyday wear. Ships from Nairobi.",
-  "Women's Fashion": "Curated women's fashion from our European lots — garment-checked, sized and retail-ready.",
   "Men's Fashion": "Men's essentials from our European lots — crisp, sized and retail-ready.",
+  "Women's Fashion": "Curated women's fashion from our European lots — garment-checked, sized and retail-ready.",
+  "Jackets": "Jackets and outerwear from our European lots — hand-sorted, condition-checked and retail-ready.",
+  "Kids": "Kids' clothing and rummage packs from our Canadian container lots — high-grade, pre-washed and retail-ready.",
+  "Sportswear": "Sportswear and activewear from our European lots — sorted, graded and retail-ready.",
+  "Handbags": "Handbags and accessories from our wholesale lots — condition-checked and retail-ready.",
+  "T-Shirts": "T-shirts and knit basics from our European lots — pressed, sized and retail-ready.",
+  "Leather": "Premium leather pieces from our Canadian container lots — hand-sorted with no tearing.",
+  "Footwear": "Premium European-sorted footwear, hand-checked for quality and built for everyday wear. Ships from Nairobi.",
   "Bags & Accessories": "Australian and European-sorted bags and accessories, condition-checked and retail-ready.",
   "Refurbished": "Professionally refurbished hardware — cleaned, tested and graded by Portmetals engineers.",
+  "Wholesale Bales": "Compressed wholesale bales — sorted, graded and baled for volume buyers across East Africa.",
 };
 
 const lastRestocked = new Date("2026-08-30T10:00:00.000Z").toISOString();
@@ -153,15 +189,31 @@ function tech(
   return make({ name, sku, category, price, stock, imageIds, source: "technology", ...extra });
 }
 
-function fashion(
+// Bale catalogue entry — a wholesale bale of one clothing grade, priced from
+// the founder's original TZS figures. The amount is stored in the platform's
+// TZS base so the default KSh display shows the exact original value
+// (amount = KES figure ÷ 0.05, see EXCHANGE_RATES in data/platform.ts).
+function bale(
   name: string,
   sku: string,
   category: string,
-  price: number,
+  priceKES: number,
   stock: number,
   imageId: string,
+  extra: Record<string, string> = {},
 ): InventoryItem {
-  return make({ name, sku: "FASH-" + sku, category, price, stock, imageIds: [imageId], source: "fashion" });
+  return make({
+    name,
+    sku: "BALE-" + sku,
+    category,
+    price: Math.round(priceKES / 0.05),
+    stock,
+    imageIds: [imageId],
+    source: "bales",
+    unit: "bale",
+    currency: "KES",
+    ...extra,
+  });
 }
 
 function make(o: {
@@ -172,9 +224,11 @@ function make(o: {
   stock: number;
   imageIds: string | string[];
   source: string;
-  [k: string]: string | number | string[];
+  unit?: string;
+  currency?: Currency;
+  [k: string]: string | number | string[] | undefined;
 }): InventoryItem {
-  const { name, sku, category, price, stock, imageIds, source, ...specs } = o;
+  const { name, sku, category, price, stock, imageIds, source, unit = "item", currency = "KES", ...specs } = o;
   const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
   const images = ids.map(img);
   const description = DESCRIPTIONS[sku] ?? CATEGORY_DESC[category] ?? `${category} listing · SKU ${sku}`;
@@ -185,14 +239,14 @@ function make(o: {
     category,
     stock,
     minStock: Math.max(1, Math.round(stock * 0.2)),
-    price: { amount: price, currency: "KES" },
-    unit: "item",
+    price: { amount: price, currency },
+    unit,
     status: stock > 0 ? "in-stock" : "out-of-stock",
     supplier: SUPPLIER,
     lastRestocked,
     source: "manual",
     postedToMarketplace: true,
-    marketplacePrice: { amount: price, currency: "KES" },
+    marketplacePrice: { amount: price, currency },
     image: images[0],
     images,
     description,
@@ -264,42 +318,38 @@ export const PORTMETALS_CATALOGUE: InventoryItem[] = [
   tech("AirPods (Gen 1) — Refurbished", "PM-IT-ACC-AIRPODS", "Audio", 3000, 20, [AUD_A, AUD_B, AUD_D], { "Grade": "A", "Warranty": "6 Months" }),
   tech("iPhone 13 Pro Case", "PM-IT-ACC-I13CASE", "Accessories", 500, 10, [CASE_A, CHG_H], { "Condition": "New" }),
 
-  // ═══════════ FOOTWEAR — Performance ═══════════
-  fashion("ASICS Gel Running Shoes", "ASICS-RUN", "Footwear", 8000, 6, "photo-1542291026-7eec264c27ff"),
-  fashion("ASICS Everyday Comfort Trainers", "ASICS-COM", "Footwear", 6000, 8, "photo-1542291026-7eec264c27ff"),
-  fashion("Saucony Trail Runner (Waterproof)", "SAUC-TRAIL", "Footwear", 9000, 5, "photo-1539185441755-769473a23570"),
-  fashion("Nike Performance Running", "NIKE-RUN", "Footwear", 8000, 10, "photo-1542291026-7eec264c27ff"),
+  // ═══════════ BALE CATALOGUE — Original Price Guide (KSh) ═══════════
+  // Prices below are the founder's original per-bale figures, displayed as KSh
+  // (the marketplace default). Stock counts are drawn from the Portmetals
+  // container manifest (MSKU9196899) where the grade maps cleanly.
+  // Men's
+  bale("Men Cotton Shirt Bale", "MS-COTTON", "Men's Fashion", 27000, 8, BALE_SHIRT, { Bale: "45kg / 55kg", "Est. Pieces": "55–65", "Resale Potential": "Sell individually at KSh 45–50 each", "Target Customer": "Market vendors & kiosk retailers" }),
+  bale("Men Mixed Pants Bale", "MS-PANTS", "Men's Fashion", 18000, 10, BALE_PANTS, { Bale: "45kg / 55kg", "Est. Pieces": "40–50", "Resale Potential": "Sell individually at KSh 80–120 each", "Target Customer": "Market vendors & retailers" }),
+  bale("Ladies Jeans Bale", "LS-JEANS", "Women's Fashion", 15000, 11, BALE_JEANS, { Bale: "45kg / 55kg", "Est. Pieces": "35–45", "Resale Potential": "Sell individually at KSh 80–150 each", "Target Customer": "Thrift & boutique stores" }),
+  bale("Flanel Shirt Bale", "MS-FLANEL", "Men's Fashion", 15000, 3, BALE_FLANEL, { Bale: "45kg / 55kg", "Est. Pieces": "40–50", "Resale Potential": "Sell individually at KSh 50–60 each", "Target Customer": "Market vendors" }),
+  bale("Cotton Blouse Bale", "LS-BLOUSE", "Women's Fashion", 10000, 10, BALE_BLOUSE, { Bale: "40kg / 45kg", "Est. Pieces": "45–55", "Resale Potential": "Sell individually at KSh 40–60 each", "Target Customer": "Thrift stores" }),
+  bale("Shorts Bale", "MS-SHORTS", "Men's Fashion", 14000, 7, BALE_SHORTS, { Bale: "40kg / 45kg", "Est. Pieces": "45–55", "Resale Potential": "Sell individually at KSh 40–60 each", "Target Customer": "Market vendors" }),
+  bale("Cotton Dress Bale", "LS-DRESS", "Women's Fashion", 13000, 3, BALE_DRESS, { Bale: "45kg / 55kg", "Est. Pieces": "25–35", "Resale Potential": "Sell individually at KSh 80–150 each", "Target Customer": "Boutique stores" }),
+  bale("Hawaii [Palazo] Bale", "LS-PALAZZO", "Women's Fashion", 12000, 2, BALE_PALAZZO, { Bale: "45kg / 55kg", "Est. Pieces": "35–45", "Resale Potential": "Sell individually at KSh 50–90 each", "Target Customer": "Thrift & boutique stores" }),
+  bale("Anoraks / Zippers Bale", "JK-ANORAK", "Jackets", 18000, 5, BALE_ANORAK, { Bale: "40kg / 45kg", "Est. Pieces": "20–30", "Resale Potential": "Sell individually at KSh 100–150 each", "Target Customer": "Cold-weather retailers" }),
+  bale("Sweatshirts with Capchion Bale", "JK-HOODIE", "Jackets", 15000, 15, BALE_HOODIE, { Bale: "45kg / 55kg", "Est. Pieces": "30–40", "Resale Potential": "Sell individually at KSh 60–100 each", "Target Customer": "Youth clothing retailers" }),
+  bale("Baby Medium Rummage 25kg", "KD-BABY25", "Kids", 7500, 30, BALE_BABY, { Bale: "25kg", "Est. Pieces": "60–80", "Resale Potential": "Sell individually at KSh 20–35 each", "Target Customer": "Baby & kids stores" }),
+  bale("Children Medium Rummage 30kg", "KD-CHILD30", "Kids", 10000, 33, BALE_CHILDREN, { Bale: "30kg", "Est. Pieces": "70–90", "Resale Potential": "Sell individually at KSh 25–40 each", "Target Customer": "Kids clothing retailers" }),
+  bale("Jogging Pants 25kg", "SW-JOG25", "Sportswear", 7500, 7, BALE_JOG, { Bale: "25kg", "Est. Pieces": "35–45", "Resale Potential": "Sell individually at KSh 40–60 each", "Target Customer": "Sportswear & market vendors" }),
+  bale("Leggings Bale", "SW-LEGGINGS", "Sportswear", 10000, 10, BALE_LEGGINGS, { Bale: "25kg / 30kg", "Est. Pieces": "50–70", "Resale Potential": "Sell individually at KSh 30–45 each", "Target Customer": "Athleisure retailers" }),
+  bale("Mix T-Shirts Bale", "TS-MIX", "T-Shirts", 13000, 31, BALE_TEE, { Bale: "45kg / 55kg", "Est. Pieces": "60–80", "Resale Potential": "Sell individually at KSh 30–40 each", "Target Customer": "Market vendors" }),
+  bale("Sportwear Bale", "SW-SPORT", "Sportswear", 15000, 6, BALE_SPORTS, { Bale: "45kg / 55kg", "Est. Pieces": "30–40", "Resale Potential": "Sell individually at KSh 80–120 each", "Target Customer": "Sportswear retailers" }),
+  bale("Ladies Handbags Bale", "HB-LADIES", "Handbags", 22000, 6, BALE_HANDBAG, { Bale: "25kg / 30kg", "Est. Pieces": "25–35", "Resale Potential": "Sell individually at KSh 100–200 each", "Target Customer": "Accessories & boutique stores" }),
+  bale("Sweatshirt Light Bale", "TS-SWEATLIGHT", "T-Shirts", 11000, 4, BALE_HOODIE, { Bale: "45kg", "Est. Pieces": "40–50", "Resale Potential": "Sell individually at KSh 50–70 each", "Target Customer": "Market vendors" }),
+  bale("Leather Pants / Skirts [U] Bale", "LE-PANTS", "Leather", 25000, 3, BALE_LEATHER, { Bale: "25kg", "Est. Pieces": "10–20", "Resale Potential": "Sell individually at KSh 200–400 each", "Target Customer": "Premium thrift & boutiques" }),
+  bale("Ladies Fashion Jackets [Leather] Bale", "LE-LADIES", "Leather", 30000, 3, BALE_LEATHER_LADIES, { Bale: "30kg / 45kg", "Est. Pieces": "12–20", "Resale Potential": "Sell individually at KSh 250–400 each", "Target Customer": "Premium boutiques" }),
+  bale("Men Leather Jackets Bale", "LE-MEN", "Leather", 35000, 5, BALE_LEATHER, { Bale: "45kg / 55kg", "Est. Pieces": "15–22", "Resale Potential": "Sell individually at KSh 300–450 each", "Target Customer": "Premium thrift stores" }),
+  bale("Light Zipper Jackets Bale", "JK-ZIPPER", "Jackets", 16000, 10, BALE_ZIPPER, { Bale: "45kg", "Est. Pieces": "35–45", "Resale Potential": "Sell individually at KSh 60–90 each", "Target Customer": "Market vendors" }),
 
-  // ═══════════ FOOTWEAR — Lifestyle & Classics ═══════════
-  fashion("Karl Kani White Premium Sneaker", "KARLKA-WHITE", "Footwear", 8000, 4, "photo-1560769629-975ec94e6a86"),
-  fashion("Karl Kani Beige Premium Sneaker", "KARLKA-BEIGE", "Footwear", 8500, 4, "photo-1560769629-975ec94e6a86"),
-  fashion("Converse Chuck Taylor — White Canvas", "CONV-CT", "Footwear", 4500, 12, "photo-1607522370275-f14206abe5d3"),
-
-  // ═══════════ FOOTWEAR — Premium Boots ═══════════
-  fashion("Women's Black Fashion Boot", "BOOT-BLACK", "Footwear", 9000, 5, "photo-1543163521-1bf539c55dd2"),
-  fashion("Women's Cream Fashion Boot", "BOOT-CREAM", "Footwear", 10000, 4, "photo-1543163521-1bf539c55dd2"),
-  fashion("Women's Beige Fashion Boot", "BOOT-BEIGE", "Footwear", 9500, 4, "photo-1543163521-1bf539c55dd2"),
-
-  // ═══════════ FOOTWEAR — Summer Slides ═══════════
-  fashion("Premium Slide — White", "SLIDE-WHITE", "Footwear", 3000, 15, "photo-1595950653106-6c9ebd614d3a"),
-  fashion("Premium Slide — Stone", "SLIDE-STONE", "Footwear", 3200, 14, "photo-1595950653106-6c9ebd614d3a"),
-
-  // ═══════════ FASHION — Women's Collection ═══════════
-  fashion("Women's Casual Sundress", "WOM-DRESS-CAS", "Women's Fashion", 1200, 20, "photo-1496747611176-843222e1e57c"),
-  fashion("Women's Floral Maxi Dress", "WOM-MAXI", "Women's Fashion", 1800, 15, "photo-1496747611176-843222e1e57c"),
-  fashion("Women's Office Dress", "WOM-OFFICE", "Women's Fashion", 2000, 12, "photo-1496747611176-843222e1e57c"),
-  fashion("Women's Fashion Blouse", "WOM-BLOUSE", "Women's Fashion", 900, 25, "photo-1567401893414-76b7b1e5a7a5"),
-  fashion("Women's Slim-Fit Jeans", "WOM-JEANS", "Women's Fashion", 1200, 22, "photo-1541099649105-f69ad21f3246"),
-
-  // ═══════════ FASHION — Men's Collection ═══════════
-  fashion("Men's Business Shirt", "MEN-BIZ", "Men's Fashion", 1400, 25, "photo-1596755094514-f87e34085b2c"),
-  fashion("Men's Classic Polo Shirt", "MEN-POLO", "Men's Fashion", 1000, 30, "photo-1576566588028-4147f3842f27"),
-  fashion("Men's Slim-Fit Jeans", "MEN-JEANS", "Men's Fashion", 1200, 24, "photo-1541099649105-f69ad21f3246"),
-  fashion("Men's Casual Chinos", "MEN-CHINO", "Men's Fashion", 1400, 18, "photo-1624623278318-a93f702e8607"),
-
-  // ═══════════ FASHION — Bags & Accessories ═══════════
-  fashion("Everyday Handbag — Black", "BAG-HB-BLACK", "Bags & Accessories", 4000, 8, "photo-1584917865442-de89df76afd3"),
-  fashion("Crossbody Bag — Beige", "BAG-CB-BEIGE", "Bags & Accessories", 3500, 10, "photo-1584917865442-de89df76afd3"),
-  fashion("Premium Wallet — Brown", "BAG-WAL-BROWN", "Bags & Accessories", 2000, 15, "photo-1627123424574-724758594e93"),
-  fashion("Mini Handbag — Cream", "BAG-MINI-CREAM", "Bags & Accessories", 2500, 9, "photo-1584917865442-de89df76afd3"),
+  // ═══════════ WHOLESALE BALE TIERS (25kg–70kg, KSh + USD) ═══════════
+  bale("25kg Starter Bale", "WM-25", "Wholesale Bales", 350000, 40, BALE_25, { Weight: "25kg", "Est. Pieces": "90–130", "USD Price": "$130", "Best For": "First-time importers & small traders" }),
+  bale("30kg Business Starter Bale", "WM-30", "Wholesale Bales", 500000, 40, BALE_30, { Weight: "30kg", "Est. Pieces": "110–150", "USD Price": "$185", "Best For": "Growing stalls & online sellers" }),
+  bale("45kg Wholesale Bale", "WM-45", "Wholesale Bales", 700000, 40, BALE_45, { Weight: "45kg", "Est. Pieces": "160–220", "USD Price": "$260", "Best For": "Established retailers" }),
+  bale("55kg Premium Business Bale", "WM-55", "Wholesale Bales", 900000, 40, BALE_55, { Weight: "55kg", "Est. Pieces": "200–260", "USD Price": "$335", "Best For": "Multi-stall traders & distributors" }),
+  bale("70kg Commercial Bale", "WM-70", "Wholesale Bales", 1200000, 40, BALE_70, { Weight: "70kg", "Est. Pieces": "250–330", "USD Price": "$445", "Best For": "Wholesalers & regional distributors" }),
 ];
