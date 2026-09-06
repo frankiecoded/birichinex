@@ -2394,7 +2394,12 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 17,
+      version: 18,
+      // Volatile UI state is never worth persisting: an interrupted tour used to
+      // store guideActive=true and re-open the dim blocker over the business OS
+      // on every visit (mobile Safari + Chrome). guideCompleted stays persisted so
+      // the tour still only auto-runs until a founder has finished it once.
+      partialize: (state) => ({ ...state, guideActive: false, guideStep: 0 }),
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).
@@ -2466,6 +2471,11 @@ export const useStore = create<StoreState>()(
           );
           return {
             ...base,
+            // v18: an interrupted onboarding tour could persist guideActive=true
+            // and restore a full-screen blocker over the OS on every visit.
+            // Rehydrating with the tour force-closed rescues anyone stuck behind it.
+            guideActive: false,
+            guideStep: 0,
             entrySeen: typeof base.entrySeen === 'boolean' ? base.entrySeen : false,
             selectedCurrency: base.selectedCurrency && typeof base.selectedCurrency === 'string'
               ? base.selectedCurrency
@@ -2520,6 +2530,8 @@ export const useStore = create<StoreState>()(
         }
         return {
           ...base,
+          guideActive: false,
+          guideStep: 0,
           entrySeen: false,
           selectedCurrency: 'KES',
           contacts: [],

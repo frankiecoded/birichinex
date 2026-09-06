@@ -143,7 +143,7 @@ export default function GuideTour() {
 
   return (
     <>
-      <div className="guide-dim" />
+      <div className="guide-dim cursor-pointer" onClick={end} />
 
       {rect && current.target && (
         <motion.div
