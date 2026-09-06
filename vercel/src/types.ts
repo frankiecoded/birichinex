@@ -621,7 +621,7 @@ export type AccountType = "shopper" | "business";
 
 export type BillingPeriod = "monthly" | "yearly";
 export type PaymentMethod = "card" | "mpesa";
-export type PaymentMode = "flutterwave" | "simulation";
+export type PaymentMode = "paystack" | "simulation";
 
 export interface SubscriptionState {
   plan: MembershipTier;

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Package,
@@ -24,6 +24,7 @@ import {
   Phone,
   ShieldCheck,
   Building2,
+  Loader2,
 } from "lucide-react";
 import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
@@ -33,6 +34,7 @@ import TiltCard from "../components/three/TiltCard";
 import { DROPSHIP_SUPPLIERS, supplierForItem } from "../data/suppliers";
 import MagneticButton from "../components/three/MagneticButton";
 import { DROPSHIP_TIERS, formatPrice } from "../data/platform";
+import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../lib/checkoutResume";
 import { useStore, usePortmetalsMarketplaceItems } from "../store/useStore";
 import type { DropshippingTier, DropshipOrderStatus, DropshipProduct } from "../types";
 
@@ -77,11 +79,15 @@ export default function DropshippingPage() {
   const addToInventoryFromDropship = useStore((s) => s.addToInventoryFromDropship);
   const creditWalletRevenue = useStore((s) => s.creditWalletRevenue);
   const addNotification = useStore((s) => s.addNotification);
+  const user = useStore((s) => s.user);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
   const [subscribeModal, setSubscribeModal] = useState<DropshippingTier | null>(null);
+  const [subscribePhase, setSubscribePhase] = useState<"idle" | "processing" | "simulate" | "failed">("idle");
+  const [subscribeRef, setSubscribeRef] = useState("");
+  const [subscribeError, setSubscribeError] = useState("");
   const [orderDetailModal, setOrderDetailModal] = useState<string | null>(null);
   const [checkoutModal, setCheckoutModal] = useState<DropshipProduct | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<"deliver" | "store">("deliver");
@@ -161,9 +167,136 @@ export default function DropshippingPage() {
     return { totalOrders, totalRevenue, activeProducts, discount };
   }, [dropshipOrders, currentTierConfig, portmetalsItems]);
 
-  const handleSubscribe = (tier: DropshippingTier) => {
-    subscribeDropship(tier);
+  const closeSubscribe = () => {
     setSubscribeModal(null);
+    setSubscribePhase("idle");
+    setSubscribeRef("");
+    setSubscribeError("");
+  };
+
+  const pollDropshipStatus = useCallback((reference: string, tier: DropshippingTier) => {
+    let attempts = 0;
+    const timer = setInterval(async () => {
+      attempts += 1;
+      try {
+        const res = await fetch(`/api/payments/status?reference=${encodeURIComponent(reference)}`);
+        const data = await res.json().catch(() => ({}));
+        if (data?.status === "paid") {
+          clearInterval(timer);
+          clearPendingCheckout();
+          subscribeDropship(tier);
+          setSubscribePhase("idle");
+          setSubscribeModal(null);
+          addNotification({
+            title: "Dropshipping plan activated",
+            body: `Your ${tier} plan is live.`,
+            type: "system",
+            actionView: "dropshipping",
+          });
+        } else if (data?.status === "failed") {
+          clearInterval(timer);
+          clearPendingCheckout();
+          setSubscribePhase("failed");
+          setSubscribeError("Payment was declined. No charge was made.");
+        } else if (attempts > 24) {
+          clearInterval(timer);
+          clearPendingCheckout();
+          setSubscribePhase("failed");
+          setSubscribeError("Payment is taking too long. Check your gateway and try again.");
+        }
+      } catch {
+        if (attempts > 24) {
+          clearInterval(timer);
+          clearPendingCheckout();
+          setSubscribePhase("failed");
+          setSubscribeError("Could not reach the payment service. Try again.");
+        }
+      }
+    }, 1000);
+  }, [subscribeDropship, addNotification]);
+
+  useEffect(() => {
+    const pending = loadPendingCheckout();
+    if (!pending || pending.kind !== "dropship" || !pending.tier) return;
+    const tier = pending.tier as DropshippingTier;
+    if (TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(dropshipSubscription.tier)) return;
+    pollDropshipStatus(pending.reference, tier);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const subscribeWithPayment = async (tier: DropshippingTier) => {
+    const target = DROPSHIP_TIERS.find((t) => t.tier === tier);
+    if (!target || target.monthlyPrice === 0) return;
+    setSubscribeError("");
+    setSubscribePhase("processing");
+    try {
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "dropship",
+          tier,
+          billingPeriod: "monthly",
+          method: "card",
+          email: user?.email?.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.reference) {
+        setSubscribePhase("failed");
+        setSubscribeError(data?.error || "Checkout could not be started. Please try again.");
+        return;
+      }
+      setSubscribeRef(data.reference);
+      if (data.redirectUrl) {
+        savePendingCheckout({ reference: data.reference, kind: "dropship", tier });
+        window.location.href = data.redirectUrl;
+        return;
+      }
+      setSubscribePhase("simulate");
+    } catch {
+      setSubscribePhase("failed");
+      setSubscribeError("Could not reach the payment service. Are you connected?");
+    }
+  };
+
+  const simulateSubscribe = async (approved: boolean) => {
+    if (!subscribeRef) return;
+    setSubscribePhase("processing");
+    setSubscribeError("");
+    try {
+      const res = await fetch(approved ? "/api/payments/simulate-pay" : "/api/payments/simulate-fail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference: subscribeRef }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSubscribePhase("simulate");
+        setSubscribeError(data?.error || "Simulation request failed.");
+        return;
+      }
+      if (!approved) {
+        setSubscribePhase("failed");
+        setSubscribeError("Payment was declined. No charge was made.");
+        return;
+      }
+      if (subscribeModal) pollDropshipStatus(subscribeRef, subscribeModal);
+    } catch {
+      setSubscribePhase("simulate");
+      setSubscribeError("Simulation request failed. Try again.");
+    }
+  };
+
+  const handleSubscribe = (tier: DropshippingTier) => {
+    const target = DROPSHIP_TIERS.find((t) => t.tier === tier);
+    const isDowngrade = TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(dropshipSubscription.tier);
+    if (!isDowngrade && target && target.monthlyPrice > 0) {
+      void subscribeWithPayment(tier);
+    } else {
+      subscribeDropship(tier);
+      setSubscribeModal(null);
+    }
   };
 
   const handleAddToDropship = (product: DropshipProduct) => {
@@ -793,7 +926,7 @@ export default function DropshippingPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm"
-            onClick={() => setSubscribeModal(null)}
+            onClick={closeSubscribe}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -818,7 +951,7 @@ export default function DropshippingPage() {
                               : `Upgrade to ${modalTier?.label}`}
                         </p>
                         <button
-                          onClick={() => setSubscribeModal(null)}
+                          onClick={closeSubscribe}
                           className="h-8 w-8 rounded-full bg-surface-secondary/80 flex items-center justify-center hover:bg-surface-secondary transition-colors"
                         >
                           <X className="h-4 w-4 text-ink-secondary" />
@@ -826,10 +959,10 @@ export default function DropshippingPage() {
                       </div>
                       <p className="text-callout text-ink-secondary">
                         {subscribeModal === "enterprise"
-                          ? "Enterprise offers custom pricing, dedicated support, and white-glove service. Let's discuss your needs."
+                          ? "Enterprise offers custom pricing, dedicated support, and white-glove service. Payment is processed securely via Paystack."
                           : isDowngradeModal
                             ? `Downgrade to ${modalTier?.label}? You'll move from ${currentTierConfig.label} to ${modalTier?.label} with ${modalTier?.discount}% discount. Some features may no longer be available.`
-                            : `Subscribe to ${modalTier?.label} and enjoy ${modalTier?.discount}% discount with ${modalTier?.deliveryDays}-day delivery.`}
+                            : `Subscribe to ${modalTier?.label} and enjoy ${modalTier?.discount}% discount with ${modalTier?.deliveryDays}-day delivery. You'll be redirected to Paystack to complete payment securely.`}
                       </p>
                       <div className="p-3 rounded-[10px] bg-surface-secondary/40">
                         <div className="flex items-center justify-between mb-1">
@@ -851,18 +984,52 @@ export default function DropshippingPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-3">
-                        <Button variant="secondary" fullWidth onClick={() => setSubscribeModal(null)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          variant={isDowngradeModal ? "secondary" : "brand"}
-                          fullWidth
-                          onClick={() => handleSubscribe(subscribeModal)}
-                        >
-                          {subscribeModal === "enterprise" ? "Request Quote" : isDowngradeModal ? "Confirm Downgrade" : "Confirm Subscription"}
-                        </Button>
-                      </div>
+                      {isDowngradeModal ? null : (
+                        <p className="text-caption text-ink-tertiary">
+                          <Badge variant="info" size="sm">Paystack</Badge>{" "}
+                          Billed monthly in KES via Paystack · Card, Bank Transfer & M-Pesa
+                        </p>
+                      )}
+                      {subscribePhase === "simulate" && (
+                        <p className="text-caption text-ink-secondary">
+                          <Badge variant="info" size="sm">Simulation mode</Badge>{" "}
+                          Paystack is not configured yet, so this checkout is simulated. Approve to confirm, or decline to test the failure path.
+                        </p>
+                      )}
+                      {subscribeError && (
+                        <p className="flex items-start gap-1.5 text-[12px] text-error">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                          {subscribeError}
+                        </p>
+                      )}
+                      {!isDowngradeModal && subscribePhase === "simulate" ? (
+                        <div className="flex gap-3">
+                          <Button variant="danger" fullWidth onClick={() => void simulateSubscribe(false)}>
+                            Decline payment
+                          </Button>
+                          <Button variant="brand" fullWidth icon={<Check className="h-4 w-4" />} onClick={() => void simulateSubscribe(true)}>
+                            Approve payment
+                          </Button>
+                        </div>
+                      ) : subscribePhase === "processing" ? (
+                        <div className="py-3 flex items-center justify-center gap-3">
+                          <Loader2 className="h-5 w-5 text-brand animate-spin" />
+                          <span className="text-caption text-ink-secondary">Contacting Paystack…</span>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3">
+                          <Button variant="secondary" fullWidth onClick={closeSubscribe}>
+                            Cancel
+                          </Button>
+                          <Button
+                            variant={isDowngradeModal ? "secondary" : "brand"}
+                            fullWidth
+                            onClick={() => handleSubscribe(subscribeModal)}
+                          >
+                            {subscribeModal === "enterprise" ? "Subscribe & Pay" : isDowngradeModal ? "Confirm Downgrade" : "Subscribe & Pay"}
+                          </Button>
+                        </div>
+                      )}
                     </>
                   );
                 })()}

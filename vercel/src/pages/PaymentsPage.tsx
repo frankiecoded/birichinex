@@ -243,7 +243,7 @@ export default function PaymentsPage() {
   const [wdrBranchCode, setWdrBranchCode] = useState(payoutBank?.destinationBranchCode ?? "");
   const [wdrError, setWdrError] = useState("");
   const [wdrLoading, setWdrLoading] = useState(false);
-  const [payMode, setPayMode] = useState<"flutterwave" | "simulation">("simulation");
+  const [payMode, setPayMode] = useState<"paystack" | "simulation">("simulation");
   const [withdrawLimits, setWithdrawLimits] = useState<{ min: number; max: number } | null>(null);
 
   useEffect(() => {
@@ -1125,8 +1125,8 @@ export default function PaymentsPage() {
                   <Landmark className="h-5 w-5 text-brand" strokeWidth={1.5} />
                 </div>
                 <span className="text-overline font-bold uppercase tracking-[0.15em] text-ink-tertiary">Business Earnings</span>
-                <Badge variant={payMode === "flutterwave" ? "success" : "info"} size="sm">
-                  {payMode === "flutterwave" ? "Live gateway" : "Simulation mode"}
+                <Badge variant={payMode === "paystack" ? "success" : "info"} size="sm">
+                  {payMode === "paystack" ? "Live gateway" : "Simulation mode"}
                 </Badge>
               </div>
               <p className="text-[13px] text-ink-tertiary">Withdrawable balance (owner payout)</p>

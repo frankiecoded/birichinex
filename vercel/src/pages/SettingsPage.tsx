@@ -837,7 +837,7 @@ function BillingSection({ currentTier, selectedCurrency, onNavigate }: { current
           <div className="flex items-center justify-between p-3 rounded-[10px] bg-surface/50">
             <div>
               <p className="text-caption font-semibold text-ink">Auto-renew</p>
-              <p className="text-[11px] text-ink-tertiary">Billed via Flutterwave · {subscription.billingPeriod} plan</p>
+              <p className="text-[11px] text-ink-tertiary">Billed via Paystack · {subscription.billingPeriod} plan</p>
             </div>
             <button
               type="button"
@@ -855,7 +855,7 @@ function BillingSection({ currentTier, selectedCurrency, onNavigate }: { current
       <GlassCard padding="md" className="space-y-3">
         <div>
           <p className="text-subhead font-bold text-ink">Payment Method</p>
-          <p className="text-caption text-ink-tertiary">Subscriptions are charged in USD and settle to the owner's bank via Flutterwave</p>
+          <p className="text-caption text-ink-tertiary">Subscriptions are charged in USD and settle to the owner's bank via Paystack</p>
         </div>
         <div className="flex items-center justify-between p-3 rounded-[12px] bg-surface/50">
           <div className="flex items-center gap-3">
@@ -869,7 +869,7 @@ function BillingSection({ currentTier, selectedCurrency, onNavigate }: { current
               <p className="text-[11px] text-ink-tertiary">Pay securely on the Membership page</p>
             </div>
           </div>
-          <Badge variant="info" size="sm">Flutterwave</Badge>
+          <Badge variant="info" size="sm">Paystack</Badge>
         </div>
       </GlassCard>
 

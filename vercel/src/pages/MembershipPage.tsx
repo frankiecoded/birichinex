@@ -181,7 +181,7 @@ export default function MembershipPage() {
       setCheckoutMode(data.mode);
       setCheckoutAmount(data.amount ?? amount);
       if (data.redirectUrl) {
-        // Live Flutterwave hosted checkout — the user pays on Flutterwave's page
+        // Live Paystack hosted checkout — the user pays on Paystack's page
         // and is redirected back here; polling resumes on return.
         window.location.href = data.redirectUrl;
         return;
@@ -535,7 +535,7 @@ export default function MembershipPage() {
                       </Button>
                     </div>
                     <p className="text-[11px] text-ink-quaternary text-center">
-                      Secured by Flutterwave · Card & M-Pesa · Money settles to the owner's bank account
+                      Secured by Paystack · Card & M-Pesa · Money settles to the owner's bank account
                     </p>
                   </div>
                 )}
@@ -550,7 +550,7 @@ export default function MembershipPage() {
                     </div>
                     <p className="text-caption text-ink-secondary">
                       <Badge variant="info" size="sm">Simulation mode</Badge>{" "}
-                      No gateway is configured yet, so this is a simulated Flutterwave checkout. Approve to confirm payment, or decline to test the failure path.
+                      No gateway is configured yet, so this is a simulated Paystack checkout. Approve to confirm payment, or decline to test the failure path.
                     </p>
                     {checkoutError && (
                       <p className="flex items-start gap-1.5 text-[12px] text-error">

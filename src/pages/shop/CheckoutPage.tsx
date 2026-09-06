@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft, ArrowRight, Check, Lock, Truck, CreditCard,
@@ -7,6 +7,7 @@ import {
 import Button from "../../components/ui/Button";
 import { formatPrice, calculateLoyaltyPoints } from "../../data/platform";
 import { getCityPricing, resolveCityCoords } from "../../data/delivery";
+import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../../lib/checkoutResume";
 import type { TrackedOrder } from "../../data/delivery";
 import { Currency, CartItem } from "../../types";
 import { useStore } from "../../store/useStore";
@@ -122,6 +123,38 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
     }
   };
 
+  // Resume an interrupted Paystack order: the browser left for the hosted
+  // checkout, paid, and came back. Verified here so the order only completes
+  // after actual payment (never a silent free order).
+  useEffect(() => {
+    const pending = loadPendingCheckout();
+    if (!pending || pending.kind !== "order" || !pending.shipping) return;
+    if (cart.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/payments/status?reference=${encodeURIComponent(pending.reference)}`);
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (data?.status === "paid") {
+          clearPendingCheckout();
+          setShipping(pending.shipping ?? shipping);
+          setStep(2);
+          finalizeOrder(pending.shipping ?? shipping);
+        } else if (data?.status === "failed") {
+          clearPendingCheckout();
+          setPayError("Your payment was declined. No charge was made — review and try again.");
+        }
+      } catch {
+        // transient — leave the pending record for the next visit
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handlePlaceOrder = async () => {
     setPayError("");
     setAcctError("");
@@ -174,20 +207,31 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data?.redirectUrl) {
-          // Live Flutterwave hosted checkout — redirect to gateway.
+          // Live Paystack hosted checkout — park the reference so the order is
+          // finalized only after a confirmed payment, then redirect.
+          savePendingCheckout({ reference: data.reference, kind: "order", shipping });
           window.location.href = data.redirectUrl;
           return;
         }
-        // Simulation mode or gateway error — fall through to local finalization.
+        if (data?.mode === "paystack") {
+          setProcessing(false);
+          setPayError("Payment could not be started. Check your details and try again.");
+          return;
+        }
+        // Simulation mode — the demo finalizes the order locally. Live mode
+        // never silently falls through to a free order.
       } catch {
-        // Offline — continue with local finalization.
+        setProcessing(false);
+        setPayError("Could not reach the payment service. Please try again.");
+        return;
       }
     }
 
     window.setTimeout(() => finalizeOrder(), 1100);
   };
 
-  const finalizeOrder = () => {
+  const finalizeOrder = (shippingOverride?: typeof shipping) => {
+    const ship = shippingOverride ?? shipping;
     const now = new Date();
     const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
     const seq = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
@@ -197,8 +241,8 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
     const originCity = "Dar es Salaam";
     const originCountry = "Tanzania";
     const originCoords = resolveCityCoords(originCity, originCountry);
-    const destCity = shipping.city.trim() || "Dar es Salaam";
-    const destCountry = shipping.country.trim() || "Tanzania";
+    const destCity = ship.city.trim() || "Dar es Salaam";
+    const destCountry = ship.country.trim() || "Tanzania";
     const destPricing = getCityPricing(destCity, destCountry);
     const destCoords = destPricing
       ? { lat: destPricing.lat, lng: destPricing.lng, zone: destPricing.zones[0]?.name ?? destPricing.city }
@@ -253,8 +297,8 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
         { status: "placed", timestamp: now.toISOString(), location: originCity, lat: originCoords.lat, lng: originCoords.lng, note: "Order placed successfully" },
         { status: "confirmed", timestamp: new Date(now.getTime() + 15 * 60000).toISOString(), location: originCity, lat: originCoords.lat, lng: originCoords.lng, note: "Order confirmed — preparing your items" },
       ],
-      customerName: shipping.name.trim() || "Valued Customer",
-      customerPhone: shipping.phone.trim() || "",
+      customerName: ship.name.trim() || "Valued Customer",
+      customerPhone: ship.phone.trim() || "",
     };
     addOrder(order);
 

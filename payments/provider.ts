@@ -5,10 +5,14 @@
  * Server-side payment gateway abstraction.
  *
  * Two providers sit behind one interface:
- *   - Flutterwave (live) — card / M-Pesa collections settle to the owner's
- *     Flutterwave balance and can be paid out to a bank account in TZ/KE/UG/NG.
+ *   - Paystack (live) — hosted checkout (cards, bank transfer, mobile money)
+ *     through api.paystack.co. Money settles to the owner's Paystack account
+ *     and is reported per transaction via webhooks. The owner is a Kenyan
+ *     business, so the settlement currency is KES by default (see
+ *     PAYSTACK_CURRENCY). Payouts are NOT wired yet — they arrive with the
+ *     fund-tracking update.
  *   - Simulation (local) — an in-memory provider so every flow (checkout →
- *     paid → activate → withdraw) works end-to-end before real API keys exist.
+ *     paid → activate) works end-to-end before real API keys exist.
  *
  * This module is server-only: it reads process.env and never ships to the
  * browser. The client only ever talks to /api/payments/*.
@@ -16,18 +20,21 @@
 
 import crypto from "crypto";
 
-export type PaymentMode = "flutterwave" | "simulation";
+export type PaymentMode = "paystack" | "simulation";
 
 export interface CheckoutRequest {
   reference: string;
-  amount: number; // in the currency below (major units, e.g. 49 USD or 250000 TZS)
-  currency: "USD" | "TZS";
+  /** Amount in `currency` below (major units, e.g. 49 USD or 78000 TZS). */
+  amount: number;
+  /** Charged currency, e.g. "USD" | "TZS" | "KES" | "NGN". Paystack minor = ×100. */
+  currency: string;
   description: string;
   customerEmail?: string;
-  /** Flutterwave payment_options, e.g. ["card", "mobilemoneytz"] */
+  /** Paystack channels shorthand, e.g. ["card"] or ["card", "mobilemoneyke"]. */
   paymentOptions?: string[];
-  /** Where Flutterwave returns the customer after paying. */
+  /** Where Paystack returns the customer after paying. */
   redirectUrl?: string;
+  /** Arbitrary customer/service metadata echoed back on the webhook. */
   meta?: Record<string, string>;
 }
 
@@ -39,7 +46,7 @@ export interface CheckoutResult {
 export type PaymentStatus = "paid" | "pending" | "failed" | "unknown";
 
 export interface PayoutBankAccount {
-  /** Flutterwave bank code, e.g. "NMB" for NMB Tanzania. */
+  /** Bank name, e.g. "NMB Bank Tanzania". */
   accountBank: string;
   accountNumber: string;
   accountName: string;
@@ -51,8 +58,8 @@ export interface PayoutBankAccount {
 
 export interface PayoutRequest {
   reference: string;
-  amount: number; // TZS, major units
-  currency: "TZS";
+  amount: number; // major units
+  currency: string;
   bankAccount: PayoutBankAccount;
   narration?: string;
 }
@@ -69,39 +76,43 @@ export interface PaymentProvider {
   createPayout(req: PayoutRequest): Promise<PayoutResult>;
 }
 
-// ─── Flutterwave (live) ──────────────────────────────────────────────────────
+// ─── Paystack (live) ─────────────────────────────────────────────────────────
 
-const FLW_BASE = "https://api.flutterwave.com/v3";
+const PS_BASE = "https://api.paystack.co";
 
-const FLW_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY || "";
-export const FLW_SECRET_HASH = process.env.FLUTTERWAVE_SECRET_HASH || "";
+export const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
+export const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY || "";
 
-function flwEnabled(): boolean {
-  return Boolean(FLW_SECRET_KEY);
+function psEnabled(): boolean {
+  return Boolean(PAYSTACK_SECRET_KEY);
 }
 
-async function flwFetch(path: string, init: RequestInit = {}): Promise<any> {
-  const res = await fetch(`${FLW_BASE}${path}`, {
+async function psFetch(path: string, init: RequestInit = {}): Promise<any> {
+  const res = await fetch(`${PS_BASE}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${FLW_SECRET_KEY}`,
+      Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
       ...(init.headers || {}),
     },
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok || body.status === "error") {
-    const msg = body?.message || body?.data?.[0]?.message || `Flutterwave ${res.status}`;
+  if (!res.ok || body.status === false) {
+    const msg = body?.message || body?.errors?.[0]?.message || `Paystack ${res.status}`;
     throw new Error(String(msg));
   }
   return body;
 }
 
-export function verifyFlutterwaveWebhook(headers: Record<string, string | undefined>, body: any): boolean {
-  if (!FLW_SECRET_HASH) return false; // fail closed when not configured
-  const signature = headers["verif-hash"] || "";
-  if (!signature || !body || typeof body !== "object") return false;
-  const expected = FLW_SECRET_HASH;
+/** Timing-safe HMAC-SHA512 signature check (Paystack `x-paystack-signature`). */
+export function verifyPaystackWebhook(
+  headers: Record<string, string | undefined>,
+  rawBody: Buffer | null | undefined,
+): boolean {
+  if (!PAYSTACK_SECRET_KEY) return false; // fail closed when not configured
+  const signature = headers["x-paystack-signature"] || "";
+  if (!signature || !rawBody || rawBody.length === 0) return false;
+  const expected = crypto.createHmac("sha512", PAYSTACK_SECRET_KEY).update(rawBody).digest("hex");
   const a = Buffer.from(signature);
   const b = Buffer.from(expected);
   return a.length === b.length && crypto_timingSafeEqual(a, b);
@@ -115,61 +126,65 @@ function crypto_timingSafeEqual(a: Buffer, b: Buffer): boolean {
   }
 }
 
-class FlutterwaveProvider implements PaymentProvider {
-  readonly mode: PaymentMode = "flutterwave";
+/** Map the app's payment_options shorthand to Paystack channels. */
+function toPaystackChannels(options?: string[]): string[] {
+  const wanted = new Set((options || []).map((o) => o.toLowerCase()));
+  if (wanted.size === 0) return ["card"];
+  const channels: string[] = [];
+  if (wanted.has("card")) channels.push("card");
+  if (
+    wanted.has("mobilemoney") ||
+    wanted.has("mobilemoneyke") ||
+    wanted.has("mobilemoneytz") ||
+    wanted.has("mpesa")
+  ) {
+    channels.push("bank", "mobile_money");
+  }
+  if (wanted.has("bank") || wanted.has("transfer")) channels.push("bank");
+  return channels.length > 0 ? channels : ["card"];
+}
+
+class PaystackProvider implements PaymentProvider {
+  readonly mode: PaymentMode = "paystack";
 
   async createCheckout(req: CheckoutRequest): Promise<CheckoutResult> {
     const body: Record<string, any> = {
-      tx_ref: req.reference,
-      amount: req.amount,
+      email: req.customerEmail || "owner@portmetals.co.tz",
+      amount: Math.round(req.amount * 100), // Paystack charges minor units (×100)
       currency: req.currency,
-      description: req.description.slice(0, 191),
-      payment_options: req.paymentOptions?.join(",") || "card,mobilemoneytz",
-      customer: { email: req.customerEmail || "owner@portmetals.co.tz" },
-      customizations: {
-        title: "BirichiNex Membership",
-        description: req.description.slice(0, 191),
-        logo: "https://portmetals.co.tz/logo.png",
+      reference: req.reference,
+      channels: toPaystackChannels(req.paymentOptions),
+      metadata: {
+        birichinex: true,
+        ...(req.meta || {}),
       },
     };
-    if (req.redirectUrl) body.redirect_url = req.redirectUrl;
-    const res = await flwFetch("/payments", { method: "POST", body: JSON.stringify(body) });
-    const link: string | null = res?.data?.link || null;
-    if (!link) throw new Error("Flutterwave returned no checkout link");
+    if (req.description) body.description = req.description.slice(0, 120);
+    if (req.redirectUrl) body.callback_url = req.redirectUrl;
+
+    const res = await psFetch("/transaction/initialize", { method: "POST", body: JSON.stringify(body) });
+    const link: string | null = res?.data?.authorization_url || null;
+    if (!link) throw new Error("Paystack returned no checkout link");
     return { redirectUrl: link };
   }
 
   async getStatus(reference: string): Promise<{ status: PaymentStatus; amount?: number; currency?: string }> {
-    const res = await flwFetch(
-      `/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`,
-    );
-    const status = String(res?.data?.status || "").toLowerCase();
-    if (status === "successful") {
-      return { status: "paid", amount: res?.data?.amount, currency: res?.data?.currency };
+    const res = await psFetch(`/transaction/verify/${encodeURIComponent(reference)}`);
+    const data = res?.data || {};
+    const status = String(data?.status || "").toLowerCase();
+    const matches = String(data?.reference || "") === reference;
+    if (status === "success" && matches) {
+      return { status: "paid", amount: data?.amount, currency: data?.currency };
     }
-    if (status === "failed" || status === "cancelled") return { status: "failed" };
+    if (status === "abandoned" || status === "failed") return { status: "failed" };
     return { status: "pending" };
   }
 
-  async createPayout(req: PayoutRequest): Promise<PayoutResult> {
-    const body: Record<string, any> = {
-      account_bank: req.bankAccount.accountBank,
-      account_number: req.bankAccount.accountNumber,
-      amount: req.amount,
-      currency: req.currency,
-      narration: req.narration || "BirichiNex wallet withdrawal",
-      reference: req.reference,
-      beneficiary_name: req.bankAccount.accountName,
-      beneficiary_country: req.bankAccount.country,
-    };
-    if (req.bankAccount.destinationBranchCode) {
-      body.destination_branch_code = req.bankAccount.destinationBranchCode;
-    }
-    const res = await flwFetch("/transfers", { method: "POST", body: JSON.stringify(body) });
-    const data = res?.data || {};
+  async createPayout(_req: PayoutRequest): Promise<PayoutResult> {
     return {
-      status: "completed",
-      message: `Transfer ${data.id || req.reference} submitted to Flutterwave`,
+      status: "failed",
+      message:
+        "Payouts via Paystack are not enabled yet — they arrive with the fund-tracking update. Funds settle straight to your Paystack account for now.",
     };
   }
 }
@@ -219,7 +234,7 @@ class SimulationProvider implements PaymentProvider {
   async createPayout(req: PayoutRequest): Promise<PayoutResult> {
     return {
       status: "completed",
-      message: `Simulated transfer of ${req.amount.toLocaleString("en-US")} TZS to ${req.bankAccount.accountName} (${req.bankAccount.accountNumber})`,
+      message: `Simulated transfer of ${req.amount.toLocaleString("en-US")} ${req.currency} to ${req.bankAccount.accountName} (${req.bankAccount.accountNumber})`,
     };
   }
 }
@@ -228,14 +243,14 @@ class SimulationProvider implements PaymentProvider {
 
 let provider: PaymentProvider | null = null;
 
-/** Lazy singleton resolved from env. FLUTTERWAVE_ENABLED=true + a secret key → live. */
+/** Lazy singleton resolved from env. PAYSTACK_SECRET_KEY present → live. */
 export function getPaymentProvider(): PaymentProvider {
   if (provider) return provider;
-  if (flwEnabled()) {
-    console.log("Payments: Flutterwave provider active.");
-    provider = new FlutterwaveProvider();
+  if (psEnabled()) {
+    console.log("Payments: Paystack provider active.");
+    provider = new PaystackProvider();
   } else {
-    console.log("Payments: simulation provider active (set FLUTTERWAVE_SECRET_KEY to go live).");
+    console.log("Payments: simulation provider active (set PAYSTACK_SECRET_KEY to go live).");
     provider = new SimulationProvider();
   }
   return provider;

@@ -71,7 +71,7 @@ ssh root@169.58.184.20 "systemctl restart portmetals"
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | set | Cloud sync |
 | `SYNC_DEVICE_SECRET` / `VITE_SYNC_DEVICE_SECRET` | set | Must mirror in Vercel |
 | `PORT` / `NODE_ENV` / `APP_URL` | set | `APP_URL=http://169.58.184.20:3000` (Twilio callbacks) |
-| `FLUTTERWAVE_SECRET_KEY` / `FLUTTERWAVE_SECRET_HASH` | pending | Live payments (simulation until then) |
+| `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` / `PAYSTACK_CURRENCY` | pending | Live payments (simulation until then) |
 | `TWILIO_*` | not set | Live AI voice calls (simulated until then) |
 
 ## Live checks

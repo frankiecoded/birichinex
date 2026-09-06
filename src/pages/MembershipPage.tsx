@@ -21,8 +21,9 @@ import CursorSpotlight from "../components/three/CursorSpotlight";
 import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
 import { MEMBERSHIP_TIERS, formatPrice } from "../data/platform";
+import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../lib/checkoutResume";
 import { useStore } from "../store/useStore";
-import type { MembershipTier, BillingPeriod, PaymentMethod, PaymentMode } from "../types";
+import type { Currency, MembershipTier, BillingPeriod, PaymentMethod, PaymentMode } from "../types";
 
 const TIER_ORDER: MembershipTier[] = ["silver", "gold", "platinum", "enterprise"];
 
@@ -59,6 +60,7 @@ export default function MembershipPage() {
   const [checkoutRef, setCheckoutRef] = useState("");
   const [checkoutMode, setCheckoutMode] = useState<PaymentMode>("simulation");
   const [checkoutAmount, setCheckoutAmount] = useState(0);
+  const [checkoutCurrency, setCheckoutCurrency] = useState<Currency>("USD");
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutNote, setCheckoutNote] = useState("");
 
@@ -108,6 +110,7 @@ export default function MembershipPage() {
           const data = await res.json().catch(() => ({}));
           if (data?.status === "paid") {
             stopPolling();
+            clearPendingCheckout();
             activateSubscription(tier, period);
             setCheckoutPhase("done");
             setJustActivated(tier);
@@ -119,16 +122,19 @@ export default function MembershipPage() {
             });
           } else if (data?.status === "failed") {
             stopPolling();
+            clearPendingCheckout();
             setCheckoutPhase("failed");
             setCheckoutNote("Payment was declined. No charge was made.");
           } else if (attempts > 24) {
             stopPolling();
+            clearPendingCheckout();
             setCheckoutPhase("failed");
             setCheckoutNote("Payment is taking too long. Check your gateway and try again.");
           }
         } catch {
           if (attempts > 24) {
             stopPolling();
+            clearPendingCheckout();
             setCheckoutPhase("failed");
             setCheckoutNote("Could not reach the payment service. Try again.");
           }
@@ -137,6 +143,17 @@ export default function MembershipPage() {
     },
     [activateSubscription, addNotification, stopPolling],
   );
+
+  // Resume an interrupted Paystack purchase: the browser left for the hosted
+  // checkout and came back. Whatever page the user lands on, revisiting
+  // Membership verifies the pending reference and activates on payment.
+  useEffect(() => {
+    const pending = loadPendingCheckout();
+    if (!pending || pending.kind !== "membership" || !pending.tier) return;
+    const tier = pending.tier as MembershipTier;
+    const period = pending.billingPeriod === "yearly" ? "yearly" : "monthly";
+    pollStatus(pending.reference, tier, period);
+  }, [pollStatus]);
 
   const handleChooseTier = useCallback((tier: MembershipTier) => {
     if (tier === currentTier) return;
@@ -179,10 +196,18 @@ export default function MembershipPage() {
       }
       setCheckoutRef(data.reference);
       setCheckoutMode(data.mode);
-      setCheckoutAmount(data.amount ?? amount);
+      setCheckoutAmount(data?.display?.amount ?? data.amount ?? amount);
+      setCheckoutCurrency(data?.display?.currency ?? "USD");
       if (data.redirectUrl) {
-        // Live Flutterwave hosted checkout — the user pays on Flutterwave's page
-        // and is redirected back here; polling resumes on return.
+        // Live Paystack hosted checkout — the user pays on Paystack's page and
+        // is returned to the app. The pending reference is parked so the
+        // subscription activates from the payment confirmation on return.
+        savePendingCheckout({
+          reference: data.reference,
+          kind: "membership",
+          tier: checkoutTier,
+          billingPeriod,
+        });
         window.location.href = data.redirectUrl;
         return;
       }
@@ -535,7 +560,7 @@ export default function MembershipPage() {
                       </Button>
                     </div>
                     <p className="text-[11px] text-ink-quaternary text-center">
-                      Secured by Flutterwave · Card & M-Pesa · Money settles to the owner's bank account
+                      Secured by Paystack · Card & Bank Transfer & M-Pesa · Money settles to the owner's Paystack account
                     </p>
                   </div>
                 )}
@@ -546,11 +571,13 @@ export default function MembershipPage() {
                       <p className="text-[12px] text-ink-tertiary">Reference</p>
                       <p className="text-[13px] font-mono text-ink break-all">{checkoutRef}</p>
                       <p className="text-[12px] text-ink-tertiary mt-2">Amount</p>
-                      <p className="text-[13px] font-semibold text-ink">${checkoutAmount.toFixed(2)} USD</p>
+                      <p className="text-[13px] font-semibold text-ink">
+                        {formatPrice(checkoutAmount, checkoutCurrency, checkoutCurrency)}
+                      </p>
                     </div>
                     <p className="text-caption text-ink-secondary">
                       <Badge variant="info" size="sm">Simulation mode</Badge>{" "}
-                      No gateway is configured yet, so this is a simulated Flutterwave checkout. Approve to confirm payment, or decline to test the failure path.
+                      Paystack is not configured yet, so this is a simulated checkout. Approve to confirm payment, or decline to test the failure path.
                     </p>
                     {checkoutError && (
                       <p className="flex items-start gap-1.5 text-[12px] text-error">

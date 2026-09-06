@@ -20,7 +20,7 @@ Browser ──► VPS directly ──► http://100.74.243.92:3000  (Tailscale U
   and no DNS records needed.
 - The browser talks only to the Vercel domain (same-origin, no CORS); Vercel
   proxies `/api/:path*` → the Funnel URL server-side.
-- Flutterwave webhooks/redirects are sent to the Vercel domain and proxied
+- Paystack webhooks/redirects are sent to the Vercel domain and proxied
   through the same path (`paymentOrigin` derives the host from the forwarded
   headers).
 

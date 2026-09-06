@@ -40,15 +40,16 @@ Then add the env vars from the table below.
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | no | Twilio Console — enables live AI calling. |
 | `TWILIO_PHONE_NUMBER` | no | Your Twilio voice number (E.164). |
 | `TWILIO_TWIML_BASE_URL` | no | `https://<your-app>.onrender.com` — where Twilio fetches call scripts. |
-| `FLUTTERWAVE_SECRET_KEY` | no* | Flutterwave dashboard → Settings → API. **Enables live payments.** |
-| `FLUTTERWAVE_SECRET_HASH` | no* | `openssl rand -hex 16` — set the same value in Flutterwave → Webhooks → Webhook Hash. |
+| `PAYSTACK_SECRET_KEY` | no* | Paystack dashboard → Settings → API Keys & Webhooks. **Enables live payments.** |
+| `PAYSTACK_PUBLIC_KEY` | no* | Paystack public key (same screen). |
+| `PAYSTACK_CURRENCY` | no* | Settlement currency, default `KES`. |
 
 \* Without Supabase the app runs fully offline (localStorage), exactly as in
 dev. Add Supabase when you want cloud state sync (see `deploy/SUPABASE.md`).
 
-\* Without Flutterwave keys the entire payments flow runs in **local simulation
-mode** — checkout, simulate pay/decline, status polling and bank withdrawals all
-work locally with no keys. Set the two keys to go live (see `deploy/PAYMENTS.md`).
+\* Without Paystack keys the entire payments flow runs in **local simulation
+mode** — checkout, simulate pay/decline, status polling and plan activation all
+work locally with no keys. Set the Paystack keys to go live (see `deploy/PAYMENTS.md`).
 
 `PORT` and `NODE_ENV` are set automatically by Render.
 
@@ -68,8 +69,8 @@ need to do anything else.
   `https://<your-app>.onrender.com/api/twilio/inbound` and
   `/api/twilio/status`. Twilio signature validation is on automatically when
   `TWILIO_AUTH_TOKEN` is set.
-- Payments: see `deploy/PAYMENTS.md` to switch from simulation to live
-  Flutterwave checkout + payouts.
+- Payments: see `deploy/PAYMENTS.md` to switch from simulation to live Paystack
+  checkout + payment ledger.
 
 ## 5. Updating
 

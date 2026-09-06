@@ -31,9 +31,11 @@ import {
   getPaymentMode,
   getPaymentProvider,
   isSimulationProvider,
-  verifyFlutterwaveWebhook,
+  PAYSTACK_PUBLIC_KEY,
+  verifyPaystackWebhook,
 } from "./payments/provider";
-import { MEMBERSHIP_TIERS } from "./src/data/platform";
+import { DROPSHIP_TIERS, EXCHANGE_RATES, MEMBERSHIP_TIERS, convertPrice } from "./src/data/platform";
+import type { Currency } from "./src/types";
 import {
   HF_MODEL,
   callHuggingFaceChat,
@@ -54,7 +56,14 @@ app.disable("x-powered-by");
 app.set("trust proxy", true);
 // Business snapshots (inventory, orders, docs…) can be a few MB of JSON.
 // 2mb cap on JSON bodies — larger than any legitimate request this app makes.
-app.use(express.json({ limit: "2mb" }));
+// The `verify` hook preserves the raw bytes so Paystack webhooks can be
+// signature-checked over the untouched body.
+app.use(express.json({
+  limit: "2mb",
+  verify: (req, _res, buf) => {
+    (req as any).rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // ─── Security hardening: headers, origin guard, host guard ───────────────────
@@ -590,20 +599,45 @@ app.delete("/api/sync", async (req, res) => {
   }
 });
 
-// ─── Payments & Membership Billing (Flutterwave / local simulation) ──────────
-// Subscriptions are charged in USD (matching MEMBERSHIP_TIERS); wallet payouts
-// are made in TZS to a configured bank account. Prices are validated server-side
-// so the client can never send a discounted amount.
+// ─── Payments & Membership Billing (Paystack / local simulation) ─────────────
+// Membership plans are priced in USD (matching MEMBERSHIP_TIERS), dropshipping
+// plans in TZS (matching DROPSHIP_TIERS). Whatever the source currency, Paystack
+// charges in PAYSTACK_CURRENCY (default KES — the owner's settlement currency).
+// Prices are validated server-side so the client can never send a discounted
+// amount. Wallet payouts stay simulation-only until the fund-tracking update.
 
 const PAYMENT_REF = /^[a-zA-Z0-9_-]{1,80}$/;
 const VALID_BILLING_PERIODS = new Set(["monthly", "yearly"]);
 const VALID_PAYMENT_METHODS = new Set(["card", "mpesa"]);
 const YEARLY_PRICE_MONTHS = 10; // two months free on annual plans
 
+const PAYSTACK_CURRENCY = (process.env.PAYSTACK_CURRENCY || "KES").toUpperCase();
+if (EXCHANGE_RATES[PAYSTACK_CURRENCY as Currency] === undefined) {
+  console.warn(`Payments: PAYSTACK_CURRENCY=${PAYSTACK_CURRENCY} is not in the FX table — falling back to KES.`);
+}
+const CHARGE_CURRENCY: Currency = EXCHANGE_RATES[PAYSTACK_CURRENCY as Currency] !== undefined
+  ? (PAYSTACK_CURRENCY as Currency)
+  : "KES";
+const PAYSTACK_MINOR = 100; // Paystack always charges minor units (×100).
+
+/** Convert any source-currency major amount into the Paystack charge currency. */
+function toCharge(amount: number, from: string): { amount: number; minor: number } {
+  const inTZS = convertPrice(amount, (from || "TZS") as Currency, "TZS");
+  const charge = convertPrice(inTZS, "TZS", CHARGE_CURRENCY);
+  return { amount: charge, minor: Math.round(charge * PAYSTACK_MINOR) };
+}
+
 const PAID_TIER_PRICES = new Map<string, number>();
 for (const t of MEMBERSHIP_TIERS) {
   if (t.monthlyPrice !== null && t.monthlyPrice > 0) {
     PAID_TIER_PRICES.set(t.tier, t.monthlyPrice);
+  }
+}
+
+const DROPSHIP_PAID_TIERS = new Map<string, number>();
+for (const t of DROPSHIP_TIERS) {
+  if (t.monthlyPrice !== null && t.monthlyPrice > 0) {
+    DROPSHIP_PAID_TIERS.set(t.tier, t.monthlyPrice);
   }
 }
 
@@ -617,21 +651,39 @@ function paymentOrigin(req: express.Request): string {
   return `${proto}://${req.get("host")}`;
 }
 
-// 1. Create a checkout (subscription purchase).
+// 1. Create a checkout (subscription purchase — membership or dropshipping).
 app.post("/api/payments/checkout", async (req, res) => {
   try {
     if (applyRateLimit(req, res)) return;
-    const { tier, billingPeriod, method, email } = req.body || {};
+    const { tier, billingPeriod, method, email, kind } = req.body || {};
+    const kindName = String(kind || "membership").toLowerCase();
+    if (kindName !== "membership" && kindName !== "dropship") {
+      return res.status(400).json({ error: "kind must be membership or dropship" });
+    }
     const tierName = String(tier || "").toLowerCase();
     const period = String(billingPeriod || "monthly").toLowerCase();
     const payMethod = String(method || "card").toLowerCase();
 
-    const monthlyPrice = PAID_TIER_PRICES.get(tierName);
+    let monthlyPrice: number | undefined;
+    let billCurrency: string;
+    let billing: string;
+    if (kindName === "dropship") {
+      if (period !== "monthly") {
+        return res.status(400).json({ error: "dropship plans are billed monthly" });
+      }
+      monthlyPrice = DROPSHIP_PAID_TIERS.get(tierName);
+      billCurrency = "TZS";
+      billing = "monthly";
+    } else {
+      if (!VALID_BILLING_PERIODS.has(period)) {
+        return res.status(400).json({ error: "billingPeriod must be monthly or yearly" });
+      }
+      monthlyPrice = PAID_TIER_PRICES.get(tierName);
+      billCurrency = "USD";
+      billing = period;
+    }
     if (monthlyPrice === undefined) {
       return res.status(400).json({ error: "Invalid tier. Enterprise is quoted via the sales team." });
-    }
-    if (!VALID_BILLING_PERIODS.has(period)) {
-      return res.status(400).json({ error: "billingPeriod must be monthly or yearly" });
     }
     if (!VALID_PAYMENT_METHODS.has(payMethod)) {
       return res.status(400).json({ error: "method must be card or mpesa" });
@@ -641,21 +693,31 @@ app.post("/api/payments/checkout", async (req, res) => {
       return res.status(400).json({ error: "Invalid email" });
     }
 
-    const amount = period === "yearly" ? monthlyPrice * YEARLY_PRICE_MONTHS : monthlyPrice;
+    const displayAmount = billing === "yearly" ? monthlyPrice * YEARLY_PRICE_MONTHS : monthlyPrice;
+    const charge = toCharge(displayAmount, billCurrency);
     const reference = `sub_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
     const provider = getPaymentProvider();
     const { redirectUrl } = await provider.createCheckout({
       reference,
-      amount,
-      currency: "USD",
-      description: `BirichiNex ${tierName} membership — ${period} plan`,
+      amount: charge.amount,
+      currency: CHARGE_CURRENCY,
+      description: `BirichiNex ${kindName} ${tierName} plan — ${billing}`,
       customerEmail,
-      paymentOptions: payMethod === "mpesa" ? ["mobilemoneytz"] : ["card"],
+      paymentOptions: payMethod === "mpesa" ? ["mobilemoneyke", "mobilemoney"] : ["card"],
       redirectUrl: `${paymentOrigin(req)}/`,
-      meta: { tier: tierName, billingPeriod: period },
+      meta: { kind: kindName, tier: tierName, billingPeriod: billing, purpose: "subscription" },
     });
 
-    res.json({ reference, amount, currency: "USD", billingPeriod: period, mode: provider.mode, redirectUrl });
+    res.json({
+      reference,
+      amount: charge.amount,
+      currency: CHARGE_CURRENCY,
+      display: { amount: displayAmount, currency: billCurrency },
+      billingPeriod: billing,
+      kind: kindName,
+      mode: provider.mode,
+      redirectUrl,
+    });
   } catch (error: any) {
     console.error("POST /api/payments/checkout error:", error);
     res.status(500).json({ error: "Checkout failed" });
@@ -684,20 +746,28 @@ app.post("/api/payments/order", async (req, res) => {
       return res.status(400).json({ error: "Invalid email" });
     }
     const desc = String(description || "BirichiNex Marketplace Order").slice(0, 191);
+    const charge = toCharge(amountNum, curr);
     const reference = `ord_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
     const provider = getPaymentProvider();
     const { redirectUrl } = await provider.createCheckout({
       reference,
-      amount: amountNum,
-      currency: curr as "USD" | "TZS",
+      amount: charge.amount,
+      currency: CHARGE_CURRENCY,
       description: desc,
       customerEmail,
-      paymentOptions: payMethod === "mpesa" ? ["mobilemoneyke"] : ["card"],
+      paymentOptions: payMethod === "mpesa" ? ["mobilemoneyke", "mobilemoney"] : ["card"],
       redirectUrl: `${paymentOrigin(req)}/`,
-      meta: { ...(meta || {}), kind: "order" },
+      meta: { ...(meta || {}), kind: "order", purpose: "order" },
     });
 
-    res.json({ reference, amount: amountNum, currency: curr, mode: provider.mode, redirectUrl });
+    res.json({
+      reference,
+      amount: charge.amount,
+      currency: CHARGE_CURRENCY,
+      display: { amount: amountNum, currency: curr },
+      mode: provider.mode,
+      redirectUrl,
+    });
   } catch (error: any) {
     console.error("POST /api/payments/order error:", error);
     res.status(500).json({ error: "Checkout failed" });
@@ -804,6 +874,9 @@ app.post("/api/payments/withdraw", async (req, res) => {
         destinationBranchCode,
       },
     });
+    if (result.status === "failed") {
+      return res.status(400).json({ error: result.message || "Withdrawal not available" });
+    }
 
     res.json({ reference, amount: amountNum, currency: "TZS", mode: provider.mode, status: result.status, message: result.message });
   } catch (error: any) {
@@ -817,23 +890,96 @@ app.get("/api/payments/config", (_req, res) => {
   const mode = getPaymentMode();
   res.json({
     mode,
-    live: mode === "flutterwave",
-    currency: "TZS",
+    live: mode === "paystack",
+    gateway: { name: "paystack", label: "Paystack", live: mode === "paystack", publicKey: PAYSTACK_PUBLIC_KEY },
+    currency: CHARGE_CURRENCY,
     withdraw: { min: WITHDRAW_MIN_TZS, max: WITHDRAW_MAX_TZS, currency: "TZS" },
-    subscriptions: { currency: "USD", yearlyMonthsCharged: YEARLY_PRICE_MONTHS },
+    subscriptions: {
+      currency: "USD",
+      chargeCurrency: CHARGE_CURRENCY,
+      yearlyMonthsCharged: YEARLY_PRICE_MONTHS,
+    },
   });
 });
 
-// 6. Flutterwave webhook (production). Signature verified against the secret
-//    hash; the client independently confirms via GET /api/payments/status.
-app.post("/api/payments/webhook", (req, res) => {
-  if (!verifyFlutterwaveWebhook(req.headers as Record<string, string | undefined>, req.body)) {
+// 6. Paystack webhook (production). HMAC-SHA512 signature verified over the raw
+//    body; every successful charge is written to the payments ledger so money
+//    movement can be audited later ("how much went where, for what").
+const LEDGER_FILE = path.join(process.cwd(), "payments", "ledger.jsonl");
+const seenWebhookRefs = new Set<string>();
+
+function appendLedger(entry: Record<string, unknown>): void {
+  try {
+    fs.mkdirSync(path.dirname(LEDGER_FILE), { recursive: true });
+    fs.appendFileSync(LEDGER_FILE, JSON.stringify(entry) + "\n", "utf8");
+  } catch (err) {
+    console.error("[payments-ledger] write failed:", err);
+  }
+}
+
+function handlePaystackEvent(body: any): void {
+  const event = String(body?.event || "unknown");
+  const data = body?.data || {};
+  const ref = String(data?.reference || data?.txRef || "");
+  if (!ref || seenWebhookRefs.has(ref)) return;
+  if (event === "charge.success" && String(data?.status || "").toLowerCase() === "success") {
+    seenWebhookRefs.add(ref);
+    const meta = data?.metadata || {};
+    const entry: Record<string, unknown> = {
+      at: new Date().toISOString(),
+      event,
+      reference: ref,
+      transactionId: data?.id,
+      amount: data?.amount,
+      currency: data?.currency,
+      channel: data?.channel,
+      kind: meta?.kind || "order",
+      purpose: meta?.purpose || "order",
+      tier: meta?.tier || undefined,
+      billingPeriod: meta?.billingPeriod || undefined,
+      email: data?.customer?.email || meta?.email || "",
+    };
+    appendLedger(entry);
+    console.log(
+      `[payments-webhook] ${event} ${ref} → ${data.amount} ${data.currency} (${meta?.kind || "order"}${meta?.tier ? ` / ${meta.tier}` : ""})`,
+    );
+  } else {
+    console.log(`[payments-webhook] ${event} → ${ref} (ignored)`);
+  }
+}
+
+const paystackWebhookHandler: express.RequestHandler = (req, res) => {
+  if (!verifyPaystackWebhook(req.headers as Record<string, string | undefined>, (req as any).rawBody)) {
     return res.status(401).json({ error: "Invalid signature" });
   }
-  const txRef = String(req.body?.txRef || req.body?.tx_ref || "");
-  const event = String(req.body?.event || "unknown");
-  console.log(`[payments-webhook] ${event} → ${txRef}`);
+  try {
+    handlePaystackEvent(req.body);
+  } catch (err) {
+    console.error("[payments-webhook] handler error:", err);
+  }
   res.sendStatus(200);
+};
+
+app.post("/api/payments/webhook", paystackWebhookHandler);
+app.post("/api/payments/webhook/paystack", paystackWebhookHandler);
+
+// 6b. Payment ledger (admin). Same owner secret that gates sync writes —
+//     foundation for the fund-tracking dashboard coming in the next phase.
+app.get("/api/payments/ledger", (req, res) => {
+  if (applyRateLimit(req, res)) return;
+  if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const lines = fs.existsSync(LEDGER_FILE)
+      ? fs.readFileSync(LEDGER_FILE, "utf8").split("\n").map((l) => l.trim()).filter(Boolean)
+      : [];
+    const entries = lines
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter((e): e is Record<string, unknown> => Boolean(e));
+    res.json({ count: entries.length, entries: entries.slice(-200).reverse() });
+  } catch (err: any) {
+    console.error("GET /api/payments/ledger error:", err);
+    res.status(500).json({ error: "Could not read ledger" });
+  }
 });
 
 // 2. Chat Endpoint (Ollama → Gemini → local)
