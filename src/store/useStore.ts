@@ -559,7 +559,22 @@ export const useStore = create<StoreState>()(
       authView: null,
       introComplete: false,
       entrySeen: false,
-      users: {},
+      // The Portmetals Africa showcase account ships with every fresh store so
+      // the public marketplace is populated from the very first visit — no
+      // account required to browse and buy. (Previously this seed lived only in
+      // migrate(), which never runs for first-time visitors with no stored
+      // state, leaving brand-new guests with 0 products and an empty
+      // marketplace.) New business signups still start with their OWN inventory
+      // empty — this account is platform-owned, not seeded into their shop.
+      users: {
+        'sales@portmetalsafrica.com': {
+          name: 'Portmetals Africa',
+          accountType: 'business',
+          createdAt: new Date('2026-08-30T09:00:00.000Z').toISOString(),
+          password: 's1$ed4a23f745b5263c7dc3229574cafed20df3e670d60053a69d7b5088af42140f',
+          inventoryItems: PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item })),
+        },
+      },
       loginHistory: [],
       sessions: [],
 
@@ -1034,7 +1049,10 @@ export const useStore = create<StoreState>()(
       setContactFilter: (f) => set({ contactFilter: f }),
 
       // ── Inventory ─────────────────────────────────────────────────────────
-      inventoryItems: [],
+      // The shared marketplace feed for fresh visitors mirrors the migrated
+      // state: the published Portmetals catalogue (bales + retail + tech posted,
+      // the unpriced Canada container lines carried for the owner to price).
+      inventoryItems: PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item })),
       inventorySearchQuery: '',
 
       getUserInventory: () => {
@@ -2394,7 +2412,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 18,
+      version: 19,
       // Volatile UI state is never worth persisting: an interrupted tour used to
       // store guideActive=true and re-open the dim blocker over the business OS
       // on every visit (mobile Safari + Chrome). guideCompleted stays persisted so
