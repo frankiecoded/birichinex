@@ -30,7 +30,7 @@ import CursorSpotlight from "../components/three/CursorSpotlight";
 import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
 import { DROPSHIP_TIERS, formatPrice } from "../data/platform";
-import { useStore } from "../store/useStore";
+import { useStore, usePortmetalsMarketplaceItems } from "../store/useStore";
 import type { DropshippingTier, DropshipOrderStatus, DropshipProduct } from "../types";
 
 const TIER_ORDER: DropshippingTier[] = ["starter", "growth", "pro", "enterprise"];
@@ -92,7 +92,7 @@ export default function DropshippingPage() {
     [dropshipSubscription.tier]
   );
 
-  const portmetalsItems = useStore((s) => s.portmetalsMarketplaceItems());
+  const portmetalsItems = usePortmetalsMarketplaceItems();
 
   const categories = useMemo(() => {
     const set = new Set<string>();

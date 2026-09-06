@@ -8,7 +8,7 @@ import { formatPrice } from "../../data/platform";
 import { Currency, Product } from "../../types";
 import TiltCard from "../../components/three/TiltCard";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
-import { useStore } from "../../store/useStore";
+import { useStore, useMarketplaceItems } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
 
 interface ShopCategoryPageProps {
@@ -193,7 +193,7 @@ export default function ShopCategoryPage({ categoryPath, selectedCurrency, onNav
   const ecosystemId = decodeURIComponent(parts[1] ?? "");
   const subcategory = parts[2] ? decodeURIComponent(parts[2]) : undefined;
 
-  const inventoryItems = useStore((s) => s.marketplaceItems());
+  const inventoryItems = useMarketplaceItems();
   const allProducts = postedInventoryToProducts(inventoryItems);
   const ecosystemLabel = subcategory || ecosystemId || "Catalog";
 

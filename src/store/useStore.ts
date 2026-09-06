@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useMemo } from 'react';
 import {
   BirichiNexView,
   Currency,
@@ -2562,3 +2563,50 @@ export const useStore = create<StoreState>()(
     },
   ),
 );
+
+// ─── Stable marketplace selectors ──────────────────────────────────────────
+// The store getters return a fresh array per read, which defeats React's
+// referential-equality bailout and can cause render churn on every store
+// update. These hooks memoize the aggregation on their raw inputs so pages
+// only re-render when inventory or accounts actually change.
+
+type MarketplaceUser = { inventoryItems?: InventoryItem[] };
+
+function collectMarketplace(inventoryItems: InventoryItem[], users: Record<string, MarketplaceUser>, onlyPortmetals: boolean) {
+  const seen = new Set<string>();
+  const out: InventoryItem[] = [];
+  const push = (items: InventoryItem[] | undefined) => {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+      if (item.postedToMarketplace && !seen.has(item.id)) {
+        seen.add(item.id);
+        out.push(item);
+      }
+    }
+  };
+  push(inventoryItems);
+  if (onlyPortmetals) {
+    push(users['sales@portmetalsafrica.com']?.inventoryItems);
+  } else {
+    for (const u of Object.values(users)) push(u?.inventoryItems);
+  }
+  return out;
+}
+
+export function useMarketplaceItems(): InventoryItem[] {
+  const inventoryItems = useStore((s) => s.inventoryItems);
+  const users = useStore((s) => s.users);
+  return useMemo(
+    () => collectMarketplace(inventoryItems, users as Record<string, MarketplaceUser>, false),
+    [inventoryItems, users],
+  );
+}
+
+export function usePortmetalsMarketplaceItems(): InventoryItem[] {
+  const inventoryItems = useStore((s) => s.inventoryItems);
+  const users = useStore((s) => s.users);
+  return useMemo(
+    () => collectMarketplace(inventoryItems, users as Record<string, MarketplaceUser>, true),
+    [inventoryItems, users],
+  );
+}

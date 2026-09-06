@@ -11,7 +11,7 @@ import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { formatPrice } from "../../data/platform";
 import { Currency, Product, BirichiNexView } from "../../types";
-import { useStore } from "../../store/useStore";
+import { useStore, useMarketplaceItems } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
 import ParticleField from "../../components/three/ParticleField";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
@@ -246,7 +246,7 @@ function ProductCard({ product, selectedCurrency, onNavigate, onAddToCart, index
 
 export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart, onOpenAiSetup, onNavigateBusiness }: ShopHomePageProps) {
   const accountType = useStore((s) => s.user?.accountType ?? "shopper");
-  const inventoryItems = useStore((s) => s.marketplaceItems());
+  const inventoryItems = useMarketplaceItems();
   const orders = useStore((s) => s.orders);
   const users = useStore((s) => s.users);
   const profile = useStore((s) => s.settings.profile);

@@ -14,7 +14,7 @@ import { Product, Currency, BirichiNexView } from "../types";
 import CursorSpotlight from "../components/three/CursorSpotlight";
 import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
-import { useStore } from "../store/useStore";
+import { useStore, useMarketplaceItems } from "../store/useStore";
 import { postedInventoryToProducts } from "../lib/inventoryListings";
 
 interface MarketplacePageProps {
@@ -23,7 +23,7 @@ interface MarketplacePageProps {
 
 export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
   const { selectedCurrency, addToCart, cart, removeFromCart, clearCart, addOrder, earnPointsFromPurchase, addNotification, user, wallet, spendWalletFunds } = useStore();
-  const inventoryItems = useStore((s) => s.marketplaceItems());
+  const inventoryItems = useMarketplaceItems();
   const profile = useStore((s) => s.settings.profile);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");

@@ -14,7 +14,7 @@ import TiltCard from "../../components/three/TiltCard";
 import MagneticButton from "../../components/three/MagneticButton";
 import ParallaxSection from "../../components/three/ParallaxSection";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
-import { useStore } from "../../store/useStore";
+import { useStore, useMarketplaceItems } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
 
 interface ShopProductPageProps {
@@ -206,7 +206,7 @@ function SpecCard({ label, value, index }: { label: string; value: string; index
 }
 
 export default function ShopProductPage({ productId, selectedCurrency, onNavigate, onAddToCart }: ShopProductPageProps) {
-  const inventoryItems = useStore((s) => s.marketplaceItems());
+  const inventoryItems = useMarketplaceItems();
   const allProducts = postedInventoryToProducts(inventoryItems);
   const product = allProducts.find((p) => p.id === productId);
   const [quantity, setQuantity] = useState(1);

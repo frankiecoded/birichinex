@@ -10,7 +10,7 @@ import MagneticButton from "../../components/three/MagneticButton";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
 import { formatPrice } from "../../data/platform";
 import type { Currency, Product } from "../../types";
-import { useStore } from "../../store/useStore";
+import { useStore, useMarketplaceItems } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
 
 interface BalesPageProps {
@@ -164,7 +164,7 @@ function TierCard({ product, selectedCurrency, onAddToCart, index }: {
 // ── Main Page ──────────────────────────────────────────────────────────────
 
 export default function BalesPage({ selectedCurrency, onNavigate, onAddToCart }: BalesPageProps) {
-  const inventoryItems = useStore((s) => s.marketplaceItems());
+  const inventoryItems = useMarketplaceItems();
   const allProducts = postedInventoryToProducts(inventoryItems);
   const tiers = allProducts.filter((p) => p.category === "Wholesale Bales");
 
