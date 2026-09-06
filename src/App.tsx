@@ -106,9 +106,19 @@ export default function App() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // ── Owner control plane (hidden branch) ────────────────────────────────
+  // Opens on #/admin (discreet, credential-gated entry point — the founder
+  // must be able to reach the console for the first time, while the endpoint
+  // paths stay unguessable) or when a valid owner session already exists.
   const [adminActive, setAdminActive] = useState(false);
   useEffect(() => {
-    if (getOwnerSession()) setAdminActive(true);
+    if (getOwnerSession() || window.location.hash.toLowerCase() === "#/admin") {
+      setAdminActive(true);
+    }
+    const onHash = () => {
+      if (window.location.hash.toLowerCase() === "#/admin") setAdminActive(true);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   // ── Privacy-light page-visit ping (server analytics, no cookies) ────────

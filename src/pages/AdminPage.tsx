@@ -286,6 +286,13 @@ export default function AdminPage({ onSignOut }: AdminPageProps) {
             <p className="text-center text-[11px] text-white/30 mt-5">
               Credentials are never stored in client code or the public repo.
             </p>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="w-full text-center text-[12px] text-white/40 hover:text-white/70 transition-colors mt-4 flex items-center justify-center gap-1.5"
+            >
+              ← Return to the store
+            </button>
           </GlassCard>
         </motion.div>
       </div>
@@ -398,7 +405,7 @@ function OverviewTab() {
         <MetricCard label="Orders" value={fmtNum(data.commerce.orders)} sub={`${fmtNum(data.commerce.dropshipOrders)} dropship`} />
         <MetricCard label="Contacts" value={fmtNum(data.commerce.contacts)} sub={`${fmtNum(data.commerce.inventory)} inventory items`} />
         <MetricCard label="Transactions" value={fmtNum(data.commerce.transactions)} sub="recorded in-store" />
-        <MetricCard label="Business earned" value={fmtNum(data.revenue.businessEarned)} sub="TZS across wallets" accent />
+        <MetricCard label="Business earned" value={fmtNum(data.revenue.businessEarned)} sub="KES across wallets" accent />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-3">
