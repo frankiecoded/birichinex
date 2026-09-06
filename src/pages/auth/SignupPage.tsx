@@ -9,7 +9,7 @@ import ExploreBack from "../../components/auth/ExploreBack";
 import type { AccountType } from "../../types";
 
 interface SignupPageProps {
-  onSignup: (email: string, name: string, accountType: AccountType, password?: string) => void;
+  onSignup: (email: string, name: string, accountType: AccountType, password?: string) => { ok: boolean; error?: string };
   onSwitchToLogin: () => void;
   onBack: () => void;
   onNavigate?: (view: string) => void;
@@ -61,8 +61,11 @@ export default function SignupPage({ onSignup, onSwitchToLogin, onBack, onNaviga
     }
     setLoading(true);
     setTimeout(() => {
-      setLoading(false);
-      onSignup(email, name, accountType, password);
+      const result = onSignup(email, name, accountType, password);
+      if (result && !result.ok) {
+        setError(result.error ?? "Could not create your account.");
+        setLoading(false);
+      }
     }, 800);
   };
 

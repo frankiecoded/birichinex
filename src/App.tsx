@@ -226,11 +226,27 @@ export default function App() {
   // --- AI Discovery Completion ---
   const handleOnboardingComplete = useCallback(() => {
     closeAiSetup();
+    if (!useStore.getState().user) {
+      // Guests never land inside the Business OS without an account.
+      setAppMode("shopping");
+      setShopView("home");
+      return;
+    }
     setAccountType("business");
     setAppMode("business");
     setCurrentView("dashboard");
     scrollToTop();
-  }, [closeAiSetup, setAccountType, setAppMode, setCurrentView]);
+  }, [closeAiSetup, setAccountType, setAppMode, setShopView, setCurrentView]);
+
+  // Opens the AI discovery conversation only for signed-in users — guests are
+  // sent to signup so nobody reaches the Business OS without an account.
+  const handleOpenAiSetup = () => {
+    if (!useStore.getState().user) {
+      setAuthView("signup");
+      return;
+    }
+    openAiSetup();
+  };
 
   // --- Auth Handlers ---
   const handleLogin = (email: string, name: string) => {
@@ -246,8 +262,9 @@ export default function App() {
     }
   };
 
-  const handleSignup = (email: string, name: string, accountType: AccountType, password?: string) => {
-    signup(email, name, accountType, password);
+  const handleSignup = (email: string, name: string, accountType: AccountType, password?: string): { ok: boolean; error?: string } => {
+    const result = signup(email, name, accountType, password);
+    if (!result.ok) return result;
     if (accountType === "business") {
       setAppMode("business");
       setCurrentView("dashboard");
@@ -256,6 +273,7 @@ export default function App() {
       setAppMode("shopping");
       setShopView("home");
     }
+    return result;
   };
 
   // Returns a guest from the auth screens to another point of exploration —
@@ -306,7 +324,7 @@ export default function App() {
   // --- Shopping Router ---
   const renderShopPage = () => {
     if (shopView === "home") {
-      return <ShopHomePage selectedCurrency={selectedCurrency} onNavigate={handleShopNavigate} onAddToCart={addToCart} onOpenAiSetup={openAiSetup} onNavigateBusiness={handleOpenBusinessView} />;
+      return <ShopHomePage selectedCurrency={selectedCurrency} onNavigate={handleShopNavigate} onAddToCart={addToCart} onOpenAiSetup={handleOpenAiSetup} onNavigateBusiness={handleOpenBusinessView} />;
     }
 
     if (shopView === "cart") {
@@ -402,7 +420,7 @@ export default function App() {
       return <ReturnsPage onNavigate={handleShopNavigate} />;
     }
 
-    return <ShopHomePage selectedCurrency={selectedCurrency} onNavigate={handleShopNavigate} onAddToCart={addToCart} onOpenAiSetup={openAiSetup} onNavigateBusiness={handleOpenBusinessView} />;
+    return <ShopHomePage selectedCurrency={selectedCurrency} onNavigate={handleShopNavigate} onAddToCart={addToCart} onOpenAiSetup={handleOpenAiSetup} onNavigateBusiness={handleOpenBusinessView} />;
   };
 
   // --- Business Router ---
@@ -503,7 +521,7 @@ export default function App() {
           onNavigate={handleShopNavigate}
           currentView={shopView}
           loyaltyPoints={loyalty.points}
-          onOpenAiSetup={openAiSetup}
+          onOpenAiSetup={handleOpenAiSetup}
           onSignIn={() => setAuthView("login")}
           onSignUp={() => setAuthView("signup")}
         >

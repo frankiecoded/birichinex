@@ -22,12 +22,15 @@ import {
   MapPin,
   User,
   Phone,
+  ShieldCheck,
+  Building2,
 } from "lucide-react";
 import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import CursorSpotlight from "../components/three/CursorSpotlight";
 import TiltCard from "../components/three/TiltCard";
+import { DROPSHIP_SUPPLIERS, supplierForItem } from "../data/suppliers";
 import MagneticButton from "../components/three/MagneticButton";
 import { DROPSHIP_TIERS, formatPrice } from "../data/platform";
 import { useStore, usePortmetalsMarketplaceItems } from "../store/useStore";
@@ -109,6 +112,7 @@ export default function DropshippingPage() {
         return true;
       })
       .map<DropshipProduct>((item) => {
+        const supplier = supplierForItem(item);
         const retailPrice = item.marketplacePrice ?? item.price;
         const dropshipPrice = {
           amount: Math.max(1, Math.round(retailPrice.amount * (1 - currentTierConfig.discount / 100))),
@@ -119,6 +123,7 @@ export default function DropshippingPage() {
           sourceProductId: `inv-${item.id}`,
           name: item.name,
           category: item.category,
+          supplierId: supplier.id,
           retailPrice,
           dropshipPrice,
           discount: currentTierConfig.discount,
@@ -127,7 +132,7 @@ export default function DropshippingPage() {
           description: item.description && item.description.trim().length > 0
             ? item.description
             : `${item.category} listing · SKU ${item.sku}`,
-          origin: "Imported from Europe",
+          origin: supplier.location,
           grade: "A",
         };
       });
@@ -139,6 +144,14 @@ export default function DropshippingPage() {
     if (!statuses) return dropshipOrders;
     return dropshipOrders.filter((o) => statuses.includes(o.status));
   }, [dropshipOrders, orderStatusFilter]);
+
+  const supplierMap = useMemo(() => new Map(DROPSHIP_SUPPLIERS.map((s) => [s.id, s])), []);
+
+  const supplierCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of filteredProducts) counts.set(p.supplierId, (counts.get(p.supplierId) ?? 0) + 1);
+    return counts;
+  }, [filteredProducts]);
 
   const stats = useMemo(() => {
     const totalOrders = dropshipOrders.length;
@@ -154,6 +167,7 @@ export default function DropshippingPage() {
   };
 
   const handleAddToDropship = (product: DropshipProduct) => {
+    const supplier = supplierMap.get(product.supplierId) ?? DROPSHIP_SUPPLIERS[0];
     const retailProduct = {
       id: product.sourceProductId,
       name: product.name,
@@ -161,7 +175,7 @@ export default function DropshippingPage() {
       category: product.category,
       price: product.retailPrice,
       images: product.images,
-      supplier: { id: "portmetals", name: "Portmetals Africa", verified: true, rating: 5, location: "Nairobi, Kenya" },
+      supplier: { id: supplier.id, name: supplier.name, verified: supplier.verified, rating: supplier.rating, location: supplier.location },
       grade: product.grade,
       origin: product.origin,
       specifications: {},
@@ -443,6 +457,62 @@ export default function DropshippingPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mt-8"
         >
+          <h2 className="text-title font-bold text-ink mb-1">Verified Suppliers</h2>
+          <p className="text-caption text-ink-tertiary mb-5">
+            The supply network behind every dropship product — each supplier verified, rated, and traceable to its catalog source.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {DROPSHIP_SUPPLIERS.map((sup, i) => {
+              const count = sup.id === "portmetals" ? filteredProducts.length : (supplierCounts.get(sup.id) ?? 0);
+              return (
+                <motion.div
+                  key={sup.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <GlassCard hover className="h-full flex flex-col p-5">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-brand/10 text-brand">
+                        <Building2 className="h-5 w-5" strokeWidth={1.5} />
+                      </div>
+                      <Badge variant="success" size="sm">
+                        <ShieldCheck className="h-3 w-3" /> Verified
+                      </Badge>
+                    </div>
+                    <h4 className="text-subhead font-bold text-ink leading-tight">{sup.name}</h4>
+                    <p className="flex items-center gap-1 text-caption text-ink-tertiary mt-1">
+                      <MapPin className="h-3 w-3" strokeWidth={1.5} /> {sup.location}
+                    </p>
+                    <div className="flex items-center gap-1 mt-2">
+                      <Star className="h-3.5 w-3.5 fill-brand text-brand" strokeWidth={1} />
+                      <span className="text-caption font-semibold text-ink-secondary">{sup.rating.toFixed(1)}</span>
+                      <span className="text-caption text-ink-quaternary">· {sup.region}</span>
+                    </div>
+                    <p className="text-caption text-ink-tertiary leading-relaxed mt-3 flex-1">{sup.description}</p>
+                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-glass-border/40">
+                      <span className="text-[11px] font-semibold text-ink-secondary flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-ink-quaternary" strokeWidth={1.5} />
+                        {sup.fulfillmentDays}
+                      </span>
+                      <span className="text-[11px] font-semibold text-brand">{count} product{count === 1 ? "" : "s"}</span>
+                    </div>
+                  </GlassCard>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mt-8"
+        >
           <h2 className="text-title font-bold text-ink mb-1">Product Catalog</h2>
           <p className="text-caption text-ink-tertiary mb-5">
             Dropship items sourced exclusively from the Portmetals Africa marketplace — the catalog's verified supplier
@@ -532,7 +602,7 @@ export default function DropshippingPage() {
 
                         <div className="flex items-center gap-1.5 mt-2 text-caption text-ink-tertiary">
                           <Store className="h-3.5 w-3.5 text-success" strokeWidth={1.5} />
-                          <span className="font-semibold text-ink-secondary">Portmetals Africa</span>
+                          <span className="font-semibold text-ink-secondary">{supplierMap.get(p.supplierId)?.name ?? "Portmetals Africa"}</span>
                           <span className="text-ink-quaternary">·</span>
                           <span>{p.stock} in stock</span>
                         </div>

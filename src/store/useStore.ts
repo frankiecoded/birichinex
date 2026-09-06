@@ -206,7 +206,7 @@ interface StoreState {
     }
   >;
   login: (email: string, name: string, accountType?: AccountType) => void;
-  signup: (email: string, name: string, accountType: AccountType, password?: string) => void;
+  signup: (email: string, name: string, accountType: AccountType, password?: string) => { ok: boolean; error?: string };
   attemptLogin: (email: string, password: string) => { ok: boolean; error?: string; needsTwoFactor?: boolean; name?: string };
   verifyTwoFactor: (email: string, code: string) => { ok: boolean; error?: string };
   changePassword: (currentPassword: string, newPassword: string) => { ok: boolean; error?: string };
@@ -589,8 +589,12 @@ export const useStore = create<StoreState>()(
       },
 
       signup: (email, name, accountType, password) => {
+        const key = email.trim().toLowerCase();
+        const existing = get().users[key];
+        if (existing && (existing.password || existing.twoFactorCode)) {
+          return { ok: false, error: "An account with this email already exists — sign in instead." };
+        }
         set((state) => {
-          const key = email.trim().toLowerCase();
           const reserved = state.users[key];
           const resolvedType = reserved?.accountType ?? accountType;
           const resolvedName = reserved?.name ?? name;
@@ -613,12 +617,16 @@ export const useStore = create<StoreState>()(
             authView: null,
           };
         });
+        return { ok: true };
       },
 
       attemptLogin: (email, password) => {
         const key = email.trim().toLowerCase();
         const rec = get().users[key];
         if (!rec) return { ok: false, error: "No account found for this email." };
+        if (!rec.password) {
+          return { ok: false, error: "This account has no password set. Sign in from the device you created it on, then add one in Settings." };
+        }
         if (rec.password) {
           let matches: boolean;
           if (isHashedPassword(rec.password)) {
@@ -2386,7 +2394,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'birichinex-store',
-      version: 16,
+      version: 17,
       // v9: production launch — wipe all demo/seed content left over from
       // pre-launch builds so every shop starts genuinely empty. Business data
       // from this point on comes only from real usage (manual entry + events).

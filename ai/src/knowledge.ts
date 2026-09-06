@@ -756,7 +756,7 @@ export function respondToQuery(
   const trackingNumber = q.match(/\bpm-[a-z]{2,3}-\d{4}-\d{3,}\b/);
   if (trackingNumber) {
     const num = trackingNumber[0].toUpperCase();
-    const item = ctx.trackedItems?.find((i) => i.trackingNumber.toUpperCase() === num);
+    const item = ctx.trackedItems?.find((i) => (i.trackingNumber ?? "").toUpperCase() === num);
     if (item) {
       return {
         text: `${item.title} (${item.trackingNumber}) is ${STATUS_LABELS[item.status]}. ${item.originCity} → ${item.destinationCity} via ${item.carrier}, expected ${formatEstimate(item.estimatedDelivery)}. See it live on the map.`,

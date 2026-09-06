@@ -38,75 +38,89 @@ async function callServerChat(
   onToken?: (delta: string) => void,
 ): Promise<{ content: string; live: boolean; provider: string }> {
   const useStream = typeof onToken === 'function';
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: useStream ? 'text/event-stream' : 'application/json',
-    },
-    body: JSON.stringify({
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      stream: useStream,
-    }),
-  });
-  if (!response.ok) throw new Error(`Server AI error: ${response.status}`);
-  const isSSE = (response.headers.get("content-type") || "").includes("text/event-stream");
-  if (!useStream || !isSSE) {
-    // Non-stream response (or provider downgraded to non-stream) — parse JSON.
-    const data = await response.json();
-    return {
-      content: data?.text ?? '',
-      live: data?.live === true,
-      provider: data?.source ?? 'local',
-    };
-  }
-  if (!response.body) throw new Error('Streaming is not supported by this browser');
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let content = '';
-  let provider = 'server';
-  let lastEvent = 'message';
+  // Hard cap so the chat never spins forever on a stalled provider. The
+  // server-side fallback engines still produce a reply if this aborts.
+  const timeoutMs = 30000;
+  const supportsSignalTimeout =
+    typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function';
+  const controller = supportsSignalTimeout ? null : new AbortController();
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
 
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      let nl: number;
-      while ((nl = buffer.indexOf('\n')) !== -1) {
-        const line = buffer.slice(0, nl).trim();
-        buffer = buffer.slice(nl + 1);
-        if (!line) continue;
-        if (line.startsWith('event:')) {
-          lastEvent = line.slice(6).trim();
-          continue;
-        }
-        if (!line.startsWith('data:')) continue;
-        const payload = line.slice(5).trim();
-        if (!payload || payload === '[DONE]') continue;
-        let j: any = null;
-        try { j = JSON.parse(payload); } catch { continue; }
-        if (lastEvent === 'meta') {
-          provider = j?.source ?? provider;
-        } else if (lastEvent === 'error') {
-          throw new Error(j?.error || 'Server stream failed');
-        } else {
-          const delta = j?.delta ?? j?.content ?? '';
-          if (delta) {
-            content += delta;
-            onToken(delta);
-          }
-        }
-        lastEvent = 'message';
-      }
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: useStream ? 'text/event-stream' : 'application/json',
+      },
+      signal: controller ? controller.signal : (AbortSignal as any).timeout(timeoutMs),
+      body: JSON.stringify({
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        stream: useStream,
+      }),
+    });
+    if (!response.ok) throw new Error(`Server AI error: ${response.status}`);
+    const isSSE = (response.headers.get("content-type") || "").includes("text/event-stream");
+    if (!useStream || !isSSE) {
+      // Non-stream response (or provider downgraded to non-stream) — parse JSON.
+      const data = await response.json();
+      return {
+        content: data?.text ?? '',
+        live: data?.live === true,
+        provider: data?.source ?? 'local',
+      };
     }
-  } finally {
-    reader.releaseLock();
-  }
+    if (!response.body) throw new Error('Streaming is not supported by this browser');
 
-  return { content, live: content.length > 0, provider };
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let content = '';
+    let provider = 'server';
+    let lastEvent = 'message';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line) continue;
+          if (line.startsWith('event:')) {
+            lastEvent = line.slice(6).trim();
+            continue;
+          }
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          let j: any = null;
+          try { j = JSON.parse(payload); } catch { continue; }
+          if (lastEvent === 'meta') {
+            provider = j?.source ?? provider;
+          } else if (lastEvent === 'error') {
+            throw new Error(j?.error || 'Server stream failed');
+          } else {
+            const delta = j?.delta ?? j?.content ?? '';
+            if (delta) {
+              content += delta;
+              onToken(delta);
+            }
+          }
+          lastEvent = 'message';
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return { content, live: content.length > 0, provider };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 async function callOpenAI(messages: ChatMessage[], config: AIConfig): Promise<string> {

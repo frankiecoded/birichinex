@@ -138,11 +138,15 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
         setAcctError("Enter a valid email — it becomes your shopper account.");
         return;
       }
-      if (acctPassword && acctPassword.trim().length < 6) {
-        setAcctError("Password must be at least 6 characters (or leave it blank).");
+      if (acctPassword.trim().length < 6) {
+        setAcctError("Create a password of at least 6 characters for your shopper account.");
         return;
       }
-      signup(email, name, "shopper", acctPassword.trim() || undefined);
+      const signupRes = signup(email, name, "shopper", acctPassword.trim());
+      if (!signupRes.ok) {
+        setAcctError(signupRes.error ?? "Could not create your account.");
+        return;
+      }
     }
     const err = validatePayment();
     if (err) {
@@ -404,7 +408,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
                     </div>
                     <div className="mt-3">
                       <label className="text-caption text-ink-secondary font-semibold block mb-1.5">
-                        Password <span className="font-normal text-ink-quaternary">(optional — set one to sign back in later)</span>
+                        Password <span className="font-normal text-ink-quaternary">(min 6 characters — you'll use it to sign back in)</span>
                       </label>
                       <input type="password" value={acctPassword} onChange={(e) => setAcctPassword(e.target.value)} placeholder="••••••••" className="w-full h-11 px-4 bg-surface-secondary/60 border border-glass-border rounded-[12px] text-body text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all" />
                     </div>

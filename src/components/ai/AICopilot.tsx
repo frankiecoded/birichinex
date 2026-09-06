@@ -26,8 +26,7 @@ interface AICopilotProps {
 
 const speechSupported =
   typeof window !== "undefined" &&
-  !!(window as any).SpeechRecognition ||
-  !!(window as any).webkitSpeechRecognition;
+  (!!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition);
 
 const NAV_INTENT = /^(open|go to|take me to|show me|switch to|navigate to|let'?s (go|head) to)\b/i;
 
@@ -740,7 +739,15 @@ export default function AICopilot({ onNavigate }: AICopilotProps) {
 
     // Q&A path.
     setTyping(true);
-    const reply = respondToQuery(text, ctx);
+    let reply: ReturnType<typeof respondToQuery>;
+    try {
+      reply = respondToQuery(text, ctx);
+    } catch {
+      reply = {
+        text: "I hit a snag recalling that — try again with a simpler question.",
+        actions: [],
+      };
+    }
     const delay = 750 + Math.min(text.length * 12, 500);
     setTimeout(() => {
       setMessages((m) => [

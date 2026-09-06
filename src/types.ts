@@ -411,6 +411,7 @@ export interface DropshipProduct {
   sourceProductId: string;
   name: string;
   category: string;
+  supplierId: string;
   retailPrice: PriceAmount;
   dropshipPrice: PriceAmount;
   discount: number;

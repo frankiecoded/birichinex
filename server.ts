@@ -1640,6 +1640,27 @@ app.post("/api/twilio/status", (req, res) => {
   res.sendStatus(200);
 });
 
+app.post("/api/error-log", async (req, res) => {
+  const entry = {
+    at: new Date().toISOString(),
+    message: String(req.body?.message ?? "").slice(0, 2000),
+    stack: String(req.body?.stack ?? "").slice(0, 4000),
+    componentStack: String(req.body?.componentStack ?? "").slice(0, 2000),
+    href: String(req.body?.href ?? "").slice(0, 500),
+    userAgent: String(req.body?.userAgent ?? "").slice(0, 300),
+  };
+  console.error("[client-error]", JSON.stringify(entry));
+  try {
+    const fs = await import("fs");
+    const logDir = path.join(process.cwd(), "logs");
+    fs.mkdirSync(logDir, { recursive: true });
+    fs.appendFileSync(path.join(logDir, "client-errors.log"), JSON.stringify(entry) + "\n");
+  } catch {
+    /* best-effort */
+  }
+  res.sendStatus(200);
+});
+
 // Vite server integration
 async function setupVite() {  if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");

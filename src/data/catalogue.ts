@@ -224,16 +224,19 @@ const CATEGORY_DESC: Record<string, string> = {
 
 const lastRestocked = new Date("2026-08-30T10:00:00.000Z").toISOString();
 
+// Technology catalogue entry — the amount is stored in the platform's TZS base
+// so the default KSh display shows the founder's retail figure exactly
+// (amount = KES figure ÷ 0.05, same convention as bale() and retail()).
 function tech(
   name: string,
   sku: string,
   category: string,
-  price: number,
+  priceKES: number,
   stock: number,
   imageIds: string | string[],
   extra: Record<string, string> = {},
 ): InventoryItem {
-  return make({ name, sku, category, price, stock, imageIds, source: "technology", ...extra });
+  return make({ name, sku, category, price: Math.round(priceKES / 0.05), stock, imageIds, source: "technology", currency: "KES", ...extra });
 }
 
 // Bale catalogue entry — a wholesale bale of one clothing grade, priced from
