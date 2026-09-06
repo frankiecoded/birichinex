@@ -11,6 +11,7 @@ import {
   Filter,
   ArrowUpRight,
   Clock,
+  CreditCard,
   DollarSign,
   Percent,
   Eye,
@@ -23,6 +24,7 @@ import {
   User,
   Phone,
   ShieldCheck,
+  Smartphone,
   Building2,
   Loader2,
 } from "lucide-react";
@@ -36,7 +38,7 @@ import MagneticButton from "../components/three/MagneticButton";
 import { DROPSHIP_TIERS, formatPrice } from "../data/platform";
 import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../lib/checkoutResume";
 import { useStore, usePortmetalsMarketplaceItems } from "../store/useStore";
-import type { DropshippingTier, DropshipOrderStatus, DropshipProduct } from "../types";
+import type { DropshippingTier, DropshipOrderStatus, DropshipProduct, PaymentMethod } from "../types";
 
 const TIER_ORDER: DropshippingTier[] = ["starter", "growth", "pro", "enterprise"];
 
@@ -88,6 +90,7 @@ export default function DropshippingPage() {
   const [subscribePhase, setSubscribePhase] = useState<"idle" | "processing" | "simulate" | "failed">("idle");
   const [subscribeRef, setSubscribeRef] = useState("");
   const [subscribeError, setSubscribeError] = useState("");
+  const [subscribeMethod, setSubscribeMethod] = useState<PaymentMethod>("card");
   const [orderDetailModal, setOrderDetailModal] = useState<string | null>(null);
   const [checkoutModal, setCheckoutModal] = useState<DropshipProduct | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<"deliver" | "store">("deliver");
@@ -237,7 +240,7 @@ export default function DropshippingPage() {
           kind: "dropship",
           tier,
           billingPeriod: "monthly",
-          method: "card",
+          method: subscribeMethod,
           email: user?.email?.trim() || undefined,
         }),
       });
@@ -985,10 +988,43 @@ export default function DropshippingPage() {
                         </div>
                       </div>
                       {isDowngradeModal ? null : (
-                        <p className="text-caption text-ink-tertiary">
-                          <Badge variant="info" size="sm">Paystack</Badge>{" "}
-                          Billed monthly in KES via Paystack · Card, Bank Transfer & M-Pesa
-                        </p>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-[12px] font-semibold text-ink-secondary mb-1.5">
+                              How you'll pay
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {([
+                                { id: "card" as PaymentMethod, label: "Card", icon: CreditCard },
+                                { id: "mpesa" as PaymentMethod, label: "M-Pesa", icon: Smartphone },
+                              ]).map((m) => {
+                                const Icon = m.icon;
+                                return (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    disabled={subscribePhase === "processing"}
+                                    onClick={() => setSubscribeMethod(m.id)}
+                                    className={`h-11 rounded-[12px] border flex items-center justify-center gap-2 text-[13px] font-semibold transition-all ${
+                                      subscribeMethod === m.id
+                                        ? "border-brand bg-brand/10 text-brand"
+                                        : "border-glass-border text-ink-tertiary hover:text-ink-secondary"
+                                    }`}
+                                  >
+                                    <Icon className="h-4 w-4" />
+                                    {m.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <p className="text-caption text-ink-tertiary">
+                            <Badge variant="info" size="sm">Paystack</Badge>{" "}
+                            {subscribeMethod === "mpesa"
+                              ? "Billed monthly in KES via Paystack · M-Pesa (STK Push)"
+                              : "Billed monthly in KES via Paystack · Card"}
+                          </p>
+                        </div>
                       )}
                       {subscribePhase === "simulate" && (
                         <p className="text-caption text-ink-secondary">

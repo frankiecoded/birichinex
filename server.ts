@@ -704,7 +704,7 @@ app.post("/api/payments/checkout", async (req, res) => {
       description: `BirichiNex ${kindName} ${tierName} plan — ${billing}`,
       customerEmail,
       paymentOptions: payMethod === "mpesa" ? ["mobilemoneyke", "mobilemoney"] : ["card"],
-      redirectUrl: `${paymentOrigin(req)}/`,
+      redirectUrl: `${paymentOrigin(req)}/${kindName === "dropship" ? "dropshipping" : "membership"}`,
       meta: { kind: kindName, tier: tierName, billingPeriod: billing, purpose: "subscription" },
     });
 
@@ -756,7 +756,7 @@ app.post("/api/payments/order", async (req, res) => {
       description: desc,
       customerEmail,
       paymentOptions: payMethod === "mpesa" ? ["mobilemoneyke", "mobilemoney"] : ["card"],
-      redirectUrl: `${paymentOrigin(req)}/`,
+      redirectUrl: `${paymentOrigin(req)}/checkout`,
       meta: { ...(meta || {}), kind: "order", purpose: "order" },
     });
 
