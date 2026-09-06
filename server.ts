@@ -142,7 +142,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Permissions-Policy": "camera=(), microphone=(self), geolocation=(self), payment=(self)",
   "Content-Security-Policy": [
     "default-src 'self'",
-    "script-src 'self'",
+    "script-src 'self' https://js.paystack.co",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
@@ -150,6 +150,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "connect-src 'self' wss: ws: https://api.openai.com https://api.anthropic.com",
     "object-src 'none'",
     "base-uri 'self'",
+    "frame-src 'self' https://js.paystack.co https://paystack.com https://checkout.paystack.com https://www.paystack.com",
     "frame-ancestors 'self'",
     "form-action 'self'",
   ].join("; "),
@@ -717,6 +718,7 @@ app.post("/api/payments/checkout", async (req, res) => {
       kind: kindName,
       mode: provider.mode,
       redirectUrl,
+      publicKey: process.env.PAYSTACK_PUBLIC_KEY || "",
     });
   } catch (error: any) {
     console.error("POST /api/payments/checkout error:", error);
@@ -767,6 +769,7 @@ app.post("/api/payments/order", async (req, res) => {
       display: { amount: amountNum, currency: curr },
       mode: provider.mode,
       redirectUrl,
+      publicKey: process.env.PAYSTACK_PUBLIC_KEY || "",
     });
   } catch (error: any) {
     console.error("POST /api/payments/order error:", error);

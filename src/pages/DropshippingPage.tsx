@@ -37,6 +37,7 @@ import { DROPSHIP_SUPPLIERS, supplierForItem } from "../data/suppliers";
 import MagneticButton from "../components/three/MagneticButton";
 import { DROPSHIP_TIERS, formatPrice } from "../data/platform";
 import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../lib/checkoutResume";
+import { loadPaystackInline, openPaystackInline } from "../lib/paystackInline";
 import { useStore, usePortmetalsMarketplaceItems } from "../store/useStore";
 import type { DropshippingTier, DropshipOrderStatus, DropshipProduct, PaymentMethod } from "../types";
 
@@ -252,7 +253,35 @@ export default function DropshippingPage() {
       }
       setSubscribeRef(data.reference);
       if (data.redirectUrl) {
+        // Live Paystack — open the Inline popup over this page. The pending
+        // reference is parked so the plan still activates on reload.
         savePendingCheckout({ reference: data.reference, kind: "dropship", tier });
+        if (data.publicKey && typeof window !== "undefined") {
+          const ref = data.reference as string;
+          try {
+            await loadPaystackInline();
+            openPaystackInline({
+              key: data.publicKey,
+              email: user?.email?.trim() || "owner@portmetals.co.tz",
+              amount: data.amount,
+              currency: data.currency,
+              reference: ref,
+              channel: subscribeMethod,
+              onSuccess: () => {
+                setSubscribePhase("processing");
+                pollDropshipStatus(ref, tier);
+              },
+              onClose: () => {
+                setSubscribePhase("idle");
+                setSubscribeError("Payment window closed. No charge was made — try again when you're ready.");
+              },
+            });
+            return;
+          } catch {
+            window.location.href = data.redirectUrl;
+            return;
+          }
+        }
         window.location.href = data.redirectUrl;
         return;
       }

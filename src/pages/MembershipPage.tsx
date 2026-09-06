@@ -22,6 +22,7 @@ import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
 import { MEMBERSHIP_TIERS, formatPrice } from "../data/platform";
 import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../lib/checkoutResume";
+import { loadPaystackInline, openPaystackInline } from "../lib/paystackInline";
 import { useStore } from "../store/useStore";
 import type { Currency, MembershipTier, BillingPeriod, PaymentMethod, PaymentMode } from "../types";
 
@@ -199,15 +200,44 @@ export default function MembershipPage() {
       setCheckoutAmount(data?.display?.amount ?? data.amount ?? amount);
       setCheckoutCurrency(data?.display?.currency ?? "USD");
       if (data.redirectUrl) {
-        // Live Paystack hosted checkout — the user pays on Paystack's page and
-        // is returned to the app. The pending reference is parked so the
-        // subscription activates from the payment confirmation on return.
+        // Live Paystack — open the Inline popup over this page (no Cloudflare
+        // bot-wall hosted round-trip). The pending reference is still parked so
+        // the subscription activates even if the page reloads mid-payment.
         savePendingCheckout({
           reference: data.reference,
           kind: "membership",
           tier: checkoutTier,
           billingPeriod,
         });
+        if (data.publicKey && typeof window !== "undefined") {
+          const tier = checkoutTier;
+          const period = billingPeriod;
+          try {
+            await loadPaystackInline();
+            openPaystackInline({
+              key: data.publicKey,
+              email: email.trim() || userEmail || "owner@portmetals.co.tz",
+              amount: data.amount,
+              currency: data.currency,
+              reference: data.reference,
+              channel: method === "mpesa" ? "mpesa" : "card",
+              onSuccess: () => {
+                setCheckoutPhase("processing");
+                pollStatus(data.reference, tier, period);
+              },
+              onClose: () => {
+                stopPolling();
+                setCheckoutPhase("form");
+                setCheckoutError("Payment window closed. No charge was made — try again when you're ready.");
+              },
+            });
+            return;
+          } catch {
+            // Inline script blocked (rare) → fall back to the hosted page.
+            window.location.href = data.redirectUrl;
+            return;
+          }
+        }
         window.location.href = data.redirectUrl;
         return;
       }

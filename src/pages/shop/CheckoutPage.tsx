@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft, ArrowRight, Check, Lock, Truck, CreditCard,
@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import { formatPrice, calculateLoyaltyPoints } from "../../data/platform";
 import { getCityPricing, resolveCityCoords } from "../../data/delivery";
 import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../../lib/checkoutResume";
+import { loadPaystackInline, openPaystackInline } from "../../lib/paystackInline";
 import type { TrackedOrder } from "../../data/delivery";
 import { Currency, CartItem } from "../../types";
 import { useStore } from "../../store/useStore";
@@ -155,6 +156,44 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const pollOrderStatus = useCallback(
+    (reference: string) => {
+      let attempts = 0;
+      const timer = window.setInterval(async () => {
+        attempts += 1;
+        try {
+          const res = await fetch(`/api/payments/status?reference=${encodeURIComponent(reference)}`);
+          const data = await res.json().catch(() => ({}));
+          if (data?.status === "paid") {
+            clearInterval(timer);
+            clearPendingCheckout();
+            setProcessing(false);
+            finalizeOrder();
+          } else if (data?.status === "failed") {
+            clearInterval(timer);
+            clearPendingCheckout();
+            setProcessing(false);
+            setPayError("Your payment was declined. No charge was made.");
+          } else if (attempts > 30) {
+            clearInterval(timer);
+            clearPendingCheckout();
+            setProcessing(false);
+            setPayError("Payment is taking too long. Check the payment window or try again.");
+          }
+        } catch {
+          if (attempts > 30) {
+            clearInterval(timer);
+            setProcessing(false);
+          }
+        }
+      }, 1000);
+    },
+    // finalizeOrder is stable within the component; the poll captures current
+    // shipping state by reference at the moment it starts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
   const handlePlaceOrder = async () => {
     setPayError("");
     setAcctError("");
@@ -207,9 +246,35 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data?.redirectUrl) {
-          // Live Paystack hosted checkout — park the reference so the order is
-          // finalized only after a confirmed payment, then redirect.
+          // Live Paystack — open the Inline popup over this page. The pending
+          // reference stays parked so the order is finalized only after a
+          // server-confirmed payment (even if the page reloads).
           savePendingCheckout({ reference: data.reference, kind: "order", shipping });
+          if (data.publicKey && typeof window !== "undefined") {
+            const ref = data.reference as string;
+            try {
+              await loadPaystackInline();
+              openPaystackInline({
+                key: data.publicKey,
+                email: user?.email || shipping.email || undefined,
+                amount: data.amount,
+                currency: data.currency,
+                reference: ref,
+                channel: paymentMethod === "mpesa" ? "mpesa" : "card",
+                onSuccess: () => {
+                  pollOrderStatus(ref);
+                },
+                onClose: () => {
+                  setProcessing(false);
+                  setPayError("Payment window closed. No charge was made — try again when you're ready.");
+                },
+              });
+              return;
+            } catch {
+              window.location.href = data.redirectUrl;
+              return;
+            }
+          }
           window.location.href = data.redirectUrl;
           return;
         }
