@@ -36,6 +36,7 @@ import {
 } from "./payments/provider";
 import { DROPSHIP_TIERS, EXCHANGE_RATES, MEMBERSHIP_TIERS, convertPrice } from "./src/data/platform";
 import type { Currency } from "./src/types";
+import { createAdminRouter, publicPlatformRouter, appendJsonLine, VISITS_FILE } from "./admin";
 import {
   HF_MODEL,
   callHuggingFaceChat,
@@ -983,6 +984,37 @@ app.get("/api/payments/ledger", (req, res) => {
     console.error("GET /api/payments/ledger error:", err);
     res.status(500).json({ error: "Could not read ledger" });
   }
+});
+
+// 6c. Owner control plane + public platform feed + visit tracking.
+//     The admin router is created lazily (after module init) because it reads
+//     the in-memory call arrays that are declared later in this file.
+let adminApi: express.Router | null = null;
+function getAdminApi(): express.Router {
+  if (!adminApi) {
+    adminApi = createAdminRouter({
+      applyRateLimit,
+      getSupabase,
+      syncEnabled,
+      callStatusLog: () => callStatusLog,
+      liveCallTranscripts: () => liveCallTranscripts,
+    });
+  }
+  return adminApi;
+}
+app.use("/api/admin", (req, res, next) => getAdminApi()(req, res, next));
+app.use("/api/platform", publicPlatformRouter());
+
+// Lightweight, privacy-conscious page-visit ping (no cookies, no fingerprinting).
+app.post("/api/visit", (req, res) => {
+  if (applyRateLimit(req, res)) return;
+  appendJsonLine(VISITS_FILE, {
+    t: new Date().toISOString(),
+    path: String(req.body?.path || "/").slice(0, 500),
+    email: String(req.body?.email || "").trim().slice(0, 200) || undefined,
+    v: 1,
+  });
+  res.json({ ok: true });
 });
 
 // 2. Chat Endpoint (Ollama → Gemini → local)

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "motion/react";
 import {
   GraduationCap, Play, CheckCircle, Clock, Star, Award,
@@ -21,13 +21,28 @@ export default function LearningPage() {
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [disabledCourses, setDisabledCourses] = useState<string[]>([]);
 
-  const filteredCourses = filter === "all"
-    ? COURSES
-    : COURSES.filter((c) => c.difficulty === filter);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/platform/academy")
+      .then((r) => (r.ok ? r.json() : { disabled: [] }))
+      .then((d) => {
+        if (alive) setDisabledCourses(Array.isArray(d.disabled) ? d.disabled : []);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const unavailable = COURSES.filter((c) => disabledCourses.includes(c.id));
+  const availableCourses = COURSES.filter((c) => !disabledCourses.includes(c.id));
+
+  const filteredCourses = (filter === "all" ? availableCourses : availableCourses.filter((c) => c.difficulty === filter));
 
   const stats = useMemo(() => {
-    const totalCourses = COURSES.length;
+    const totalCourses = availableCourses.length;
     const startedCount = Object.values(courseProgress).filter((p) => p.started).length;
     const completedCount = Object.values(courseProgress).filter((p) => p.completed).length;
     const totalLessonsCompleted = Object.values(courseProgress).reduce(
@@ -54,6 +69,19 @@ export default function LearningPage() {
           Business education, certifications, and leadership development. Build once, learn everywhere.
         </p>
       </motion.div>
+
+      {unavailable.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-[16px] border border-glass-border bg-gradient-to-r from-brand/[0.08] via-glass/50 to-transparent backdrop-blur-md px-4 py-3 flex flex-wrap items-center gap-2"
+        >
+          <Zap className="h-4 w-4 text-brand" />
+          <span className="text-[13px] text-ink-secondary">
+            <strong className="text-ink">Coming soon:</strong> {unavailable.map((c) => c.title).join(", ")}
+          </span>
+        </motion.div>
+      )}
 
       {activeCourse ? (
         <CourseDetailView

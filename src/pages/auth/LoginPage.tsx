@@ -7,15 +7,17 @@ import ParticleField from "../../components/three/ParticleField";
 import MagneticButton from "../../components/three/MagneticButton";
 import ExploreBack from "../../components/auth/ExploreBack";
 import { useStore } from "../../store/useStore";
+import { setOwnerSession } from "../../lib/ownerSession";
 
 interface LoginPageProps {
   onLogin: (email: string, name: string) => void;
   onSwitchToSignup: () => void;
   onSwitchToForgot: () => void;
   onBack: () => void;
+  onAdminLogin?: () => void;
 }
 
-export default function LoginPage({ onLogin, onSwitchToSignup, onSwitchToForgot, onBack }: LoginPageProps) {
+export default function LoginPage({ onLogin, onSwitchToSignup, onSwitchToForgot, onBack, onAdminLogin }: LoginPageProps) {
   const attemptLogin = useStore((s) => s.attemptLogin);
   const verifyTwoFactor = useStore((s) => s.verifyTwoFactor);
   const [email, setEmail] = useState("");
@@ -28,11 +30,36 @@ export default function LoginPage({ onLogin, onSwitchToSignup, onSwitchToForgot,
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     setError(null);
     setLoading(true);
+    // Probe the owner control plane first — same screen, invisible branch.
+    // A normal account is unaffected: the endpoint is rate-limited and simply
+    // not configured for non-owners, so the request falls through to the app.
+    try {
+      const probe = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (probe.ok) {
+        const data = (await probe.json()) as { ok?: boolean; token?: string; email?: string; expiresIn?: number };
+        if (data?.token) {
+          setOwnerSession({
+            token: data.token,
+            email: data.email || email,
+            expiresAt: Date.now() + (data.expiresIn || 12 * 3600) * 1000,
+          });
+          setLoading(false);
+          onAdminLogin?.();
+          return;
+        }
+      }
+    } catch {
+      /* offline or proxy hiccup → fall back to the local app login below */
+    }
     setTimeout(() => {
       setLoading(false);
       const res = attemptLogin(email, password);

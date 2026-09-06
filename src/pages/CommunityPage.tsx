@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Globe,
@@ -162,6 +162,30 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
 
   // ── Tab State ────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<Tab>("forums");
+
+  // ── BirichiNex platform feed (published from the owner's News console) ───
+  interface PlatformPostItem {
+    id: string;
+    title: string;
+    body: string;
+    category: string;
+    pinned?: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }
+  const [platformPosts, setPlatformPosts] = useState<PlatformPostItem[]>([]);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/platform/posts")
+      .then((r) => (r.ok ? r.json() : { posts: [] }))
+      .then((d) => {
+        if (alive) setPlatformPosts((d.posts || []) as PlatformPostItem[]);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // ── Forum State ──────────────────────────────────────────────────────────
   const [postSearch, setPostSearch] = useState("");
@@ -580,6 +604,32 @@ export default function CommunityPage({ onNavigate }: CommunityPageProps) {
               </Button>
             </MagneticButton>
           </div>
+
+          {/* BirichiNex official feed (platform posts) */}
+          {platformPosts.length > 0 && (
+            <div className="space-y-3">
+              {platformPosts.map((p) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="relative overflow-hidden rounded-[18px] border border-brand/25 bg-gradient-to-br from-brand/[0.10] via-glass/60 to-surface-secondary/70 backdrop-blur-xl"
+                >
+                  <div className="absolute inset-y-0 left-0 w-[3px] bg-brand" />
+                  <div className="p-4 sm:p-5 pl-5 sm:pl-6">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <Badge variant="brand" size="sm">BirichiNex</Badge>
+                      {p.pinned && <Badge variant="warning" size="sm">pinned</Badge>}
+                      <span className="text-[11px] text-ink-tertiary">{p.category}</span>
+                      <span className="text-[11px] text-ink-quaternary">{timeAgo(p.createdAt)}</span>
+                    </div>
+                    <h3 className="text-[15px] font-semibold text-ink tracking-tight">{p.title}</h3>
+                    <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary whitespace-pre-wrap">{p.body}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
           {/* Posts List */}
           <div className="space-y-4">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import NavigationShell from "./components/shell/NavigationShell";
 import ShoppingShell from "./components/shell/ShoppingShell";
 import AuthIntro from "./components/AuthIntro";
@@ -6,6 +6,7 @@ import EntryPage from "./pages/EntryPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import AdminPage from "./pages/AdminPage";
 import DashboardPage from "./pages/DashboardPage";
 import MarketplacePage from "./pages/MarketplacePage";
 import CRMPage from "./pages/CRMPage";
@@ -67,6 +68,7 @@ import { BirichiNexView, AccountType } from "./types";
 import { getHubForView } from "../ai/src/navigation";
 import { useStore } from "./store/useStore";
 import { pullSnapshot, pushSnapshot, subscribeToSync } from "./lib/sync";
+import { getOwnerSession } from "./lib/ownerSession";
 
 export default function App() {
   const appMode = useStore((s) => s.appMode);
@@ -102,6 +104,35 @@ export default function App() {
   const theme = useStore((s) => s.settings.theme);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // ── Owner control plane (hidden branch) ────────────────────────────────
+  const [adminActive, setAdminActive] = useState(false);
+  useEffect(() => {
+    if (getOwnerSession()) setAdminActive(true);
+  }, []);
+
+  // ── Privacy-light page-visit ping (server analytics, no cookies) ────────
+  const pageLabel = !user
+    ? authView
+      ? `auth:${authView}`
+      : entrySeen
+        ? "guest"
+        : "entry"
+    : appMode === "shopping"
+      ? `shop:${shopView}`
+      : currentView;
+  useEffect(() => {
+    try {
+      void fetch("/api/visit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({ path: pageLabel, email: user?.email || undefined }),
+      }).catch(() => undefined);
+    } catch {
+      /* ignore */
+    }
+  }, [pageLabel, user?.email]);
 
   const accountType: AccountType = user?.accountType ?? "shopper";
   const isSubscribed = subscription.status !== "cancelled" && subscription.status !== "expired";
@@ -291,6 +322,11 @@ export default function App() {
     return <AuthIntro onComplete={handleIntroComplete} />;
   }
 
+  // --- Owner control plane (locked branch — only reachable with an HMAC session) ---
+  if (adminActive || getOwnerSession()) {
+    return <AdminPage onSignOut={() => setAdminActive(false)} />;
+  }
+
   // --- Entry / Auth Pages ---
   if (!user) {
     if (authView === "signup") {
@@ -301,7 +337,7 @@ export default function App() {
     }
     // Explicit sign-in intent (returning member after logout, gated shop views)
     if (authView === "login") {
-      return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthView("signup")} onSwitchToForgot={() => setAuthView("forgot")} onBack={handleBackFromAuth} />;
+      return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthView("signup")} onSwitchToForgot={() => setAuthView("forgot")} onBack={handleBackFromAuth} onAdminLogin={() => setAdminActive(true)} />;
     }
     // First contact with the platform — explore before registering.
     if (!entrySeen) {
