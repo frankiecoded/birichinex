@@ -52,6 +52,15 @@ export function loadPaystackInline(): Promise<void> {
       existing.addEventListener("error", () => reject(new Error("no network")));
       return;
     }
+    // Paystack Inline insists its script tag lives inside a <form> and throws
+    // an uncaught "Please put your Paystack Inline javascript file inside of a
+    // form element" into the console otherwise. We drive the popup
+    // programmatically (PaystackPop.setup().openIframe()), so the form is only
+    // a host for the tag — inert and visually hidden.
+    const host = document.createElement("form");
+    host.style.display = "none";
+    host.setAttribute("aria-hidden", "true");
+    host.dataset.paystackInlineHost = "1";
     const s = document.createElement("script");
     s.src = "https://js.paystack.co/v1/inline.js";
     s.async = true;
@@ -61,7 +70,8 @@ export function loadPaystackInline(): Promise<void> {
       else reject(new Error("Paystack inline did not expose an API"));
     };
     s.onerror = () => reject(new Error("no network"));
-    document.head.appendChild(s);
+    host.appendChild(s);
+    document.body.appendChild(host);
   });
   return scriptPromise;
 }
