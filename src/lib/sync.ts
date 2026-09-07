@@ -48,12 +48,23 @@ function syncHeaders(): Record<string, string> {
 
 // ── Identity ────────────────────────────────────────────────────────────────
 
+function safeUuid(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* insecure context (plain http) — fall through */
+  }
+  return "x-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+
 export function currentUserKey(): string {
   const email = useStore.getState().user?.email?.trim();
   if (email) return email.toLowerCase();
   let id = localStorage.getItem(DEVICE_KEY);
   if (!id) {
-    id = "dev-" + crypto.randomUUID();
+    id = "dev-" + safeUuid();
     localStorage.setItem(DEVICE_KEY, id);
   }
   return id;

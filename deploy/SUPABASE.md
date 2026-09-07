@@ -104,3 +104,30 @@ In Supabase → **Table Editor** you'll see the `business_state` row appear.
 - RLS with no policies means even a leaked anon key cannot read user data.
 - `save_business_state` is `security definer` with a pinned `search_path`, so
   it can only touch `public.business_state`.
+
+## Global accounts registry (shared customer roster)
+
+Every registered account across **all** devices is stored in the existing
+`business_state` table under the reserved key `__platform_accounts` (no extra
+schema migration required — the sync RLS/RPC grants already lock it down).
+
+- `GET /api/accounts` — returns the full shared roster
+  (`{ accounts: [{ email, name, accountType, createdAt, lastLogin }] }`).
+- `PUT /api/accounts` — upserts one account (signup, login or profile refresh).
+  Public metadata only; passwords/2FA are never sent to the server.
+
+The app pulls this on boot (`pullAccounts`) and merge-merges it into the local
+`users` map (`mergeAccounts`), so the "Customers" counter and roster are
+identical on every phone/laptop. Signups and logins push the account
+(`pushAccount`), making new customers appear everywhere immediately.
+
+Both endpoints require the same `X-Device-Secret` header as `/api/sync`.
+
+## Freshness (always-latest state)
+
+Each device tracks `syncVersion` (the cloud document version it last applied).
+On boot `pullSnapshot` re-hydrates whenever the server's version is **newer**
+than local — stale localStorage no longer wins silently. A successful push
+records the returned version via `setSyncVersion`. Pending local edits made
+offline are still protected, because an equal/older cloud doc is never applied
+over them.
