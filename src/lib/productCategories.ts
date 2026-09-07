@@ -102,7 +102,7 @@ export function classifyItem(item: ClassifiableItem): ProductCategory {
  */
 export function orderCategories(categories: Iterable<string>): string[] {
   const present = new Set(categories);
-  const ordered = ["All", ...PRODUCT_CATEGORIES].filter((c) => present.has(c));
+  const ordered = ["All", ...PRODUCT_CATEGORIES].filter((c) => c === "All" || present.has(c));
   const leftovers = Array.from(present)
     .filter((c) => c !== "All" && !(PRODUCT_CATEGORIES as string[]).includes(c))
     .sort((a, b) => a.localeCompare(b));
