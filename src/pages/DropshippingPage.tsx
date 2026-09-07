@@ -39,6 +39,7 @@ import { DROPSHIP_TIERS, formatPrice } from "../data/platform";
 import { clearPendingCheckout, loadPendingCheckout, savePendingCheckout } from "../lib/checkoutResume";
 import { loadPaystackInline, openPaystackInline } from "../lib/paystackInline";
 import { useStore, usePortmetalsMarketplaceItems } from "../store/useStore";
+import { classifyItem } from "../lib/productCategories";
 import type { DropshippingTier, DropshipOrderStatus, DropshipProduct, PaymentMethod } from "../types";
 
 const TIER_ORDER: DropshippingTier[] = ["starter", "growth", "pro", "enterprise"];
@@ -109,7 +110,7 @@ export default function DropshippingPage() {
 
   const categories = useMemo(() => {
     const set = new Set<string>();
-    for (const item of portmetalsItems) set.add(item.category);
+    for (const item of portmetalsItems) set.add(classifyItem(item));
     return ["all", ...Array.from(set)];
   }, [portmetalsItems]);
 
@@ -117,8 +118,8 @@ export default function DropshippingPage() {
     const q = searchQuery.trim().toLowerCase();
     return portmetalsItems
       .filter((item) => {
-        if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
-        if (q && !(`${item.name} ${item.category} ${item.sku}`.toLowerCase().includes(q))) return false;
+        if (categoryFilter !== "all" && classifyItem(item) !== categoryFilter) return false;
+        if (q && !(`${item.name} ${classifyItem(item)} ${item.sku}`.toLowerCase().includes(q))) return false;
         return true;
       })
       .map<DropshipProduct>((item) => {
@@ -132,7 +133,7 @@ export default function DropshippingPage() {
           id: `dp-${item.id}`,
           sourceProductId: `inv-${item.id}`,
           name: item.name,
-          category: item.category,
+          category: classifyItem(item),
           supplierId: supplier.id,
           retailPrice,
           dropshipPrice,
@@ -141,7 +142,7 @@ export default function DropshippingPage() {
           images: item.images && item.images.length > 0 ? item.images : item.image ? [item.image] : [],
           description: item.description && item.description.trim().length > 0
             ? item.description
-            : `${item.category} listing · SKU ${item.sku}`,
+            : `${classifyItem(item)} listing · SKU ${item.sku}`,
           origin: supplier.location,
           grade: "A",
         };

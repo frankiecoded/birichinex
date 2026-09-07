@@ -11,9 +11,13 @@ import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { formatPrice } from "../../data/platform";
 import { Currency, Product, BirichiNexView } from "../../types";
-import { useStore, useMarketplaceItems } from "../../store/useStore";
+import { useStore, useMarketplaceItems, type InventoryItem } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
-import { CATEGORY_COLORS as categoryColors } from "../../lib/productCategories";
+import {
+  classifyItem,
+  CATEGORY_COLORS as categoryColors,
+  type ProductCategory,
+} from "../../lib/productCategories";
 import ParticleField from "../../components/three/ParticleField";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
 import MagneticButton from "../../components/three/MagneticButton";
@@ -60,19 +64,21 @@ const BUSINESS_PERKS = [
 const HERO_VIDEO_URL =
   "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/cd/City_at_night.webm/City_at_night.webm.720p.vp9.webm";
 
-function getFeaturedCategories(items: { id: string; category: string; stock: number }[]) {
-  const counts = new Map<string, number>();
-  for (const item of items) counts.set(item.category, (counts.get(item.category) ?? 0) + item.stock);
-  const palette = ["#FF6482", "#007AFF", "#30D158", "#AF52DE", "#FF9500", "#00C7BE", "#5856D6", "#FF2D55"];
+function getFeaturedCategories(items: InventoryItem[]) {
+  const counts = new Map<ProductCategory, number>();
+  for (const item of items) {
+    const cat = classifyItem(item);
+    counts.set(cat, (counts.get(cat) ?? 0) + item.stock);
+  }
   return Array.from(counts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
-    .map(([label, count], i) => ({
+    .map(([label, count]) => ({
       id: label,
       label,
-      subtitle: `${count} units in stock`,
-      color: palette[i % palette.length],
-      count: `${count} units`,
+      subtitle: `${count.toLocaleString()} units in stock`,
+      color: categoryColors[label],
+      count: `${count.toLocaleString()} units`,
       gradient: "from-[#FF6482]/8 to-[#FF6482]/2",
     }));
 }

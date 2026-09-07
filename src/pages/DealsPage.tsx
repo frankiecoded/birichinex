@@ -221,8 +221,8 @@ export default function DealsPage({ onNavigate }: DealsPageProps) {
     });
 
     // Bundle deals — pair a premium tech item with a fashion/accessory item.
-    const techItems = products.filter((p) => ["Laptops", "Desktops", "Smartphones", "Audio", "Accessories"].includes(p.category));
-    const softItems = products.filter((p) => !["Laptops", "Desktops", "Smartphones", "Audio", "Accessories", "Storage"].includes(p.category));
+    const techItems = products.filter((p) => p.category === "Tech");
+    const softItems = products.filter((p) => p.category !== "Tech");
     const techSeeds = pick(techItems, `${seed}-bundle-tech`, 3);
     const softSeeds = pick(softItems, `${seed}-bundle-soft`, 2);
     const bundleSeeds = [...techSeeds, ...softSeeds].slice(0, 3);
