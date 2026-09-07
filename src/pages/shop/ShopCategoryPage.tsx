@@ -10,6 +10,7 @@ import TiltCard from "../../components/three/TiltCard";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
 import { useStore, useMarketplaceItems } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
+import { CATEGORY_COLORS as categoryColors, PRODUCT_CATEGORIES, type ProductCategory } from "../../lib/productCategories";
 
 interface ShopCategoryPageProps {
   categoryPath: string;
@@ -31,29 +32,6 @@ function CategoryProductCard({ product, selectedCurrency, onNavigate, onAddToCar
   const [transform, setTransform] = useState("perspective(1000px) rotateX(0deg) rotateY(0deg)");
   const [glarePos, setGlarePos] = useState({ x: 50, y: 50 });
   const [hovering, setHovering] = useState(false);
-
-  const categoryColors: Record<string, string> = {
-    "Men's Fashion": "#007AFF",
-    "Women's Fashion": "#FF6482",
-    "Leather": "#8B5E3C",
-    Accessories: "#AF52DE",
-    Kids: "#30D158",
-    Sportswear: "#FF9500",
-    "T-Shirts": "#FF2D55",
-    Jackets: "#5E5CE6",
-    Handbags: "#00C7BE",
-    "Wholesale Bales": "#FF9500",
-    "Mens Items": "#007AFF",
-    "Ladies Items": "#FF6482",
-    "Misc + Children Items": "#30D158",
-    "Grade (B) Items": "#8E8E93",
-    Laptops: "#007AFF",
-    Smartphones: "#5856D6",
-    Audio: "#FF375F",
-    Footwear: "#0A84FF",
-    "Bags & Accessories": "#00C7BE",
-    "Formal Wear": "#5E5CE6",
-  };
 
   const color = categoryColors[product.category] || "#d4af37";
 
@@ -197,13 +175,21 @@ export default function ShopCategoryPage({ categoryPath, selectedCurrency, onNav
   const allProducts = postedInventoryToProducts(inventoryItems);
   const ecosystemLabel = subcategory || ecosystemId || "Catalog";
 
+  const ECOSYSTEM_TO_CANONICAL: Record<string, string[]> = {
+    fashion: ["Bale", "Women's", "Men's", "General"],
+    technology: ["Tech", "General"],
+  };
+  const allowed =
+    ECOSYSTEM_TO_CANONICAL[ecosystemId] ??
+    (PRODUCT_CATEGORIES.includes(ecosystemId as ProductCategory) ? [ecosystemId] : undefined);
   const filtered = allProducts.filter((p) => {
+    const matchesEco = !allowed || allowed.includes(p.category);
     const matchesSub = !subcategory || p.category === subcategory;
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase());
-    return matchesSub && matchesSearch;
+    return matchesEco && matchesSub && matchesSearch;
   });
 
-  const categories = [...new Set(allProducts.map((p) => p.category))];
+  const categories = [...new Set(filtered.map((p) => p.category))];
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-8">

@@ -16,6 +16,7 @@ import ParallaxSection from "../../components/three/ParallaxSection";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
 import { useStore, useMarketplaceItems } from "../../store/useStore";
 import { postedInventoryToProducts } from "../../lib/inventoryListings";
+import { CATEGORY_COLORS as categoryColors } from "../../lib/productCategories";
 
 interface ShopProductPageProps {
   productId: string;
@@ -30,29 +31,6 @@ function ProductImageViewer({ product }: { product: Product }) {
   const [transform, setTransform] = useState("perspective(800px) rotateX(0deg) rotateY(0deg)");
   const [glarePos, setGlarePos] = useState({ x: 50, y: 50 });
   const [activeIdx, setActiveIdx] = useState(0);
-
-  const categoryColors: Record<string, string> = {
-    "Men's Fashion": "#007AFF",
-    "Women's Fashion": "#FF6482",
-    "Leather": "#8B5E3C",
-    Accessories: "#AF52DE",
-    Kids: "#30D158",
-    Sportswear: "#FF9500",
-    "T-Shirts": "#FF2D55",
-    Jackets: "#5E5CE6",
-    Handbags: "#00C7BE",
-    "Wholesale Bales": "#FF9500",
-    "Mens Items": "#007AFF",
-    "Ladies Items": "#FF6482",
-    "Misc + Children Items": "#30D158",
-    "Grade (B) Items": "#8E8E93",
-    Laptops: "#007AFF",
-    Smartphones: "#5856D6",
-    Audio: "#FF375F",
-    Footwear: "#0A84FF",
-    "Bags & Accessories": "#00C7BE",
-    "Formal Wear": "#5E5CE6",
-  };
 
   const color = categoryColors[product.category] || "#d4af37";
   const images = (product.images && product.images.length > 0 ? product.images : []).filter(Boolean);

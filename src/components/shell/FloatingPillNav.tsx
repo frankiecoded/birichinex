@@ -8,8 +8,8 @@ import { Currency } from "../../types";
 import { useViewport } from "../../lib/useDraggableFloat";
 
 const SHOP_CATEGORIES = [
-  { id: "fashion", label: "Fashion", icon: "👗", subcategories: ["Men's Fashion", "Women's Fashion", "Kids", "Sportswear", "Leather", "Jackets", "T-Shirts", "Handbags"] },
-  { id: "technology", label: "Technology", icon: "💻", subcategories: ["Laptops", "Smartphones", "Audio", "Accessories", "Refurbished"] },
+  { id: "fashion", label: "Fashion", icon: "👗", subcategories: ["Women's", "Men's", "Bale"] },
+  { id: "technology", label: "Technology", icon: "💻", subcategories: ["Tech"] },
 ];
 
 interface FloatingPillNavProps {

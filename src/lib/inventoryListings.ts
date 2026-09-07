@@ -1,5 +1,6 @@
 import type { Product } from "../types";
 import type { InventoryItem } from "../store/useStore";
+import { classifyItem } from "./productCategories";
 
 export function inventoryItemToProduct(item: InventoryItem): Product {
   const brand = (item.supplier || "Portmetals Africa").replace(/\s+/g, " ").trim();
@@ -16,7 +17,7 @@ export function inventoryItemToProduct(item: InventoryItem): Product {
     id: `inv-${item.id}`,
     name: item.name,
     description: item.description && item.description.trim().length > 0 ? item.description : fallbackDesc,
-    category: item.category,
+    category: classifyItem(item),
     price: item.marketplacePrice ?? item.price,
     images,
     supplier: { id: "self", name: brand, verified: true, rating: 5, location: "Nairobi, Kenya" },

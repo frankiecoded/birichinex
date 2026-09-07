@@ -16,6 +16,7 @@ import TiltCard from "../components/three/TiltCard";
 import MagneticButton from "../components/three/MagneticButton";
 import { useStore, useMarketplaceItems } from "../store/useStore";
 import { postedInventoryToProducts } from "../lib/inventoryListings";
+import { orderCategories } from "../lib/productCategories";
 
 interface MarketplacePageProps {
   onNavigate?: (view: BirichiNexView) => void;
@@ -38,7 +39,7 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
   const [placing, setPlacing] = useState(false);
 
   const catalogProducts = postedInventoryToProducts(inventoryItems);
-  const CATEGORIES = ["All", ...new Set(catalogProducts.map((p) => p.category))];
+  const CATEGORIES = orderCategories(catalogProducts.map((p) => p.category));
 
   const filtered = catalogProducts.filter((p) => {
     const matchesCategory = category === "All" || p.category === category;

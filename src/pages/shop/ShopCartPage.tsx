@@ -9,6 +9,7 @@ import Button from "../../components/ui/Button";
 import { formatPrice, calculateLoyaltyPoints } from "../../data/platform";
 import { Currency, CartItem } from "../../types";
 import { useStore } from "../../store/useStore";
+import { CATEGORY_COLORS as categoryColors } from "../../lib/productCategories";
 import MagneticButton from "../../components/three/MagneticButton";
 import CursorSpotlight from "../../components/three/CursorSpotlight";
 
@@ -60,29 +61,6 @@ export default function ShopCartPage({ cart, selectedCurrency, onNavigate, onRem
   };
 
   const pointsOnOrder = calculateLoyaltyPoints(total, loyalty.currentTier);
-
-  const categoryColors: Record<string, string> = {
-    "Men's Fashion": "#007AFF",
-    "Women's Fashion": "#FF6482",
-    "Leather": "#8B5E3C",
-    Accessories: "#AF52DE",
-    Kids: "#30D158",
-    Sportswear: "#FF9500",
-    "T-Shirts": "#FF2D55",
-    Jackets: "#5E5CE6",
-    Handbags: "#00C7BE",
-    "Wholesale Bales": "#FF9500",
-    "Mens Items": "#007AFF",
-    "Ladies Items": "#FF6482",
-    "Misc + Children Items": "#30D158",
-    "Grade (B) Items": "#8E8E93",
-    Laptops: "#007AFF",
-    Smartphones: "#5856D6",
-    Audio: "#FF375F",
-    Footwear: "#0A84FF",
-    "Bags & Accessories": "#00C7BE",
-    "Formal Wear": "#5E5CE6",
-  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 lg:px-8 py-8 space-y-8">
