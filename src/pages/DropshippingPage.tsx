@@ -263,7 +263,7 @@ export default function DropshippingPage() {
             await loadPaystackInline();
             openPaystackInline({
               key: data.publicKey,
-              email: user?.email?.trim() || "owner@portmetals.co.tz",
+              email: (data.customerEmail as string) || user?.email?.trim() || "owner@portmetals.co.tz",
               amount: data.amount,
               currency: data.currency,
               reference: ref,

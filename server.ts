@@ -699,7 +699,7 @@ app.post("/api/payments/checkout", async (req, res) => {
     const charge = toCharge(displayAmount, billCurrency);
     const reference = `sub_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
     const provider = getPaymentProvider();
-    const { redirectUrl } = await provider.createCheckout({
+    const { redirectUrl, customerEmail: paidEmail } = await provider.createCheckout({
       reference,
       amount: charge.amount,
       currency: CHARGE_CURRENCY,
@@ -720,6 +720,7 @@ app.post("/api/payments/checkout", async (req, res) => {
       mode: provider.mode,
       redirectUrl,
       publicKey: process.env.PAYSTACK_PUBLIC_KEY || "",
+      customerEmail: paidEmail,
     });
   } catch (error: any) {
     console.error("POST /api/payments/checkout error:", error);
@@ -752,7 +753,7 @@ app.post("/api/payments/order", async (req, res) => {
     const charge = toCharge(amountNum, curr);
     const reference = `ord_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
     const provider = getPaymentProvider();
-    const { redirectUrl } = await provider.createCheckout({
+    const { redirectUrl, customerEmail: paidEmail } = await provider.createCheckout({
       reference,
       amount: charge.amount,
       currency: CHARGE_CURRENCY,
@@ -771,6 +772,7 @@ app.post("/api/payments/order", async (req, res) => {
       mode: provider.mode,
       redirectUrl,
       publicKey: process.env.PAYSTACK_PUBLIC_KEY || "",
+      customerEmail: paidEmail,
     });
   } catch (error: any) {
     console.error("POST /api/payments/order error:", error);

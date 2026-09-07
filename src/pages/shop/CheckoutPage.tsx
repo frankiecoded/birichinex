@@ -256,7 +256,7 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
               await loadPaystackInline();
               openPaystackInline({
                 key: data.publicKey,
-                email: user?.email || shipping.email || undefined,
+                email: (data.customerEmail as string) || user?.email || shipping.email || undefined,
                 amount: data.amount,
                 currency: data.currency,
                 reference: ref,

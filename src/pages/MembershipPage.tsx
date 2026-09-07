@@ -216,7 +216,7 @@ export default function MembershipPage() {
             await loadPaystackInline();
             openPaystackInline({
               key: data.publicKey,
-              email: email.trim() || userEmail || "owner@portmetals.co.tz",
+              email: (data.customerEmail as string) || email.trim() || userEmail || "owner@portmetals.co.tz",
               amount: data.amount,
               currency: data.currency,
               reference: data.reference,

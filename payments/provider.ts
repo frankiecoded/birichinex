@@ -41,6 +41,8 @@ export interface CheckoutRequest {
 export interface CheckoutResult {
   /** Hosted checkout link. Null in simulation → the client shows the local modal. */
   redirectUrl: string | null;
+  /** The email the gateway was actually initialised with (fallbacks applied). */
+  customerEmail: string;
 }
 
 export type PaymentStatus = "paid" | "pending" | "failed" | "unknown";
@@ -82,6 +84,23 @@ const PS_BASE = "https://api.paystack.co";
 
 export const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
 export const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY || "";
+
+/** Owner fallback — used when a customer email is missing or Paystack rejects it. */
+export const OWNER_EMAIL = "owner@portmetals.co.tz";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Resolve the email that is actually sent to Paystack. Paystack rejects some
+ * syntactically-valid addresses (e.g. `.test` TLDs), which used to kill the
+ * whole checkout with a 500. A clean customer email wins; anything unusable
+ * falls back to the owner account so the charge always goes through and lands
+ * in the owner's registered Paystack inbox.
+ */
+export function resolveChargeEmail(email?: string): string {
+  const candidate = String(email || "").trim().slice(0, 120);
+  return EMAIL_RE.test(candidate) ? candidate : OWNER_EMAIL;
+}
 
 function psEnabled(): boolean {
   return Boolean(PAYSTACK_SECRET_KEY);
@@ -148,8 +167,25 @@ class PaystackProvider implements PaymentProvider {
   readonly mode: PaymentMode = "paystack";
 
   async createCheckout(req: CheckoutRequest): Promise<CheckoutResult> {
+    const attempt = (email: string): Promise<CheckoutResult> => this.initialize(req, email);
+    const chargeEmail = resolveChargeEmail(req.customerEmail);
+    try {
+      return await attempt(chargeEmail);
+    } catch (error: unknown) {
+      // Paystack's own validation is stricter than a regex — it rejects certain
+      // TLDs (e.g. `.test`). Retry once with the owner account so the payment
+      // still works instead of 500ing the whole checkout.
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("Invalid Email") && chargeEmail !== OWNER_EMAIL) {
+        return await attempt(OWNER_EMAIL);
+      }
+      throw error;
+    }
+  }
+
+  private async initialize(req: CheckoutRequest, email: string): Promise<CheckoutResult> {
     const body: Record<string, any> = {
-      email: req.customerEmail || "owner@portmetals.co.tz",
+      email,
       amount: Math.round(req.amount * 100), // Paystack charges minor units (×100)
       currency: req.currency,
       reference: req.reference,
@@ -165,7 +201,7 @@ class PaystackProvider implements PaymentProvider {
     const res = await psFetch("/transaction/initialize", { method: "POST", body: JSON.stringify(body) });
     const link: string | null = res?.data?.authorization_url || null;
     if (!link) throw new Error("Paystack returned no checkout link");
-    return { redirectUrl: link };
+    return { redirectUrl: link, customerEmail: email };
   }
 
   async getStatus(reference: string): Promise<{ status: PaymentStatus; amount?: number; currency?: string }> {
@@ -208,7 +244,7 @@ class SimulationProvider implements PaymentProvider {
       amount: req.amount,
       currency: req.currency,
     });
-    return { redirectUrl: null };
+    return { redirectUrl: null, customerEmail: resolveChargeEmail(req.customerEmail) };
   }
 
   markPaid(reference: string): boolean {
