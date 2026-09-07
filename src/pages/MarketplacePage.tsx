@@ -266,14 +266,28 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
             {view === "grid" ? (
               <TiltCard intensity={8} className="h-full">
               <GlassCard padding="none" hover onClick={() => setSelectedProduct(product)} className="group overflow-hidden h-full flex flex-col">
-                {/* Product Image Placeholder */}
-                <div className="relative h-44 bg-gradient-to-br from-surface-secondary/80 to-surface-tertiary/80 flex items-center justify-center overflow-hidden">
-                  <div className="text-center space-y-1.5 relative z-10">
-                    <div className="h-12 w-12 rounded-[14px] bg-brand/10 flex items-center justify-center mx-auto">
-                      <ShoppingCart className="h-5 w-5 text-brand" strokeWidth={1.5} />
+                {/* Product Image */}
+                <div className="relative h-48 bg-surface-tertiary/80 overflow-hidden group/image">
+                  {product.images?.[0] ? (
+                    <>
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c10]/80 via-transparent to-transparent" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center space-y-1.5">
+                        <div className="h-12 w-12 rounded-[14px] bg-brand/10 flex items-center justify-center mx-auto">
+                          <ShoppingCart className="h-5 w-5 text-brand" strokeWidth={1.5} />
+                        </div>
+                        <p className="text-caption text-ink-quaternary font-medium">{product.category}</p>
+                      </div>
                     </div>
-                    <p className="text-caption text-ink-quaternary font-medium">{product.category}</p>
-                  </div>
+                  )}
                   <div className="absolute top-3 right-3 z-10">
                     <Badge variant="brand" size="sm">{product.grade}</Badge>
                   </div>
@@ -294,26 +308,26 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
                     )}
                   </div>
 
-                  <div className="mt-auto flex items-end justify-between gap-2">
-                    <div>
-                      <p className="text-title font-bold text-ink tracking-tight">{formatPrice(product.price.amount, selectedCurrency)}</p>
-                      <p className="text-caption text-ink-quaternary">per unit</p>
+                  <div className="mt-auto pt-4 border-t border-glass-border/60">
+                    <div className="flex items-end justify-between gap-2 mb-3">
+                      <div>
+                        <p className="text-title font-bold text-ink tracking-tight">{formatPrice(product.price.amount, selectedCurrency)}</p>
+                        <p className="text-caption text-ink-quaternary">per unit</p>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-caption font-semibold text-ink-tertiary">
+                        {product.stock > 0 && <span className="h-1.5 w-1.5 rounded-full bg-success" />}
+                        {product.stock > 0 ? "In stock" : "Pre-order"}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedProduct(product)}>
-                        Details
-                      </Button>
-                      <MagneticButton strength={0.2}>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          icon={<ShoppingCart className="h-3.5 w-3.5" />}
-                          onClick={(e) => { e.stopPropagation(); addToCart(product); }}
-                        >
-                          Add to Cart
-                        </Button>
-                      </MagneticButton>
-                    </div>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      icon={<ShoppingCart className="h-4 w-4" />}
+                      onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                    >
+                      Add to Cart
+                    </Button>
                   </div>
                 </div>
               </GlassCard>
@@ -321,8 +335,14 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
             ) : (
               <TiltCard intensity={5}>
               <GlassCard padding="md" hover onClick={() => setSelectedProduct(product)} className="flex items-center gap-5 overflow-hidden">
-                <div className="h-16 w-16 rounded-[14px] bg-gradient-to-br from-surface-secondary/80 to-surface-tertiary/80 flex items-center justify-center shrink-0">
-                  <ShoppingCart className="h-5 w-5 text-brand" strokeWidth={1.5} />
+                <div className="h-16 w-16 rounded-[14px] overflow-hidden bg-surface-tertiary/80 shrink-0 relative">
+                  {product.images?.[0] ? (
+                    <img src={product.images[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <ShoppingCart className="h-5 w-5 text-brand" strokeWidth={1.5} />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -384,32 +404,58 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="relative glass-material-lg specular-sheen rounded-[24px] max-w-lg w-full overflow-hidden"
+              className="relative glass-material-lg specular-sheen rounded-[24px] max-w-2xl w-full overflow-hidden"
             >
-              <div className="p-7">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <Badge variant="brand" size="sm" className="mb-2">{selectedProduct.grade}</Badge>
-                    <h2 className="text-title font-bold text-ink tracking-tight">{selectedProduct.name}</h2>
+              <div className="relative h-52 sm:h-64 bg-surface-tertiary/80 overflow-hidden">
+                {selectedProduct.images?.[0] ? (
+                  <>
+                    <img src={selectedProduct.images[0]} alt={selectedProduct.name} className="h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c10]/85 via-transparent to-transparent" />
+                  </>
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <div className="h-14 w-14 rounded-[16px] bg-brand/10 flex items-center justify-center">
+                      <ShoppingCart className="h-6 w-6 text-brand" strokeWidth={1.5} />
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedProduct(null)}
-                    className="h-8 w-8 rounded-full bg-surface-secondary/80 backdrop-blur-sm flex items-center justify-center text-ink-secondary hover:text-ink transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                )}
+                <div className="absolute top-4 right-4">
+                  <Badge variant="brand" size="sm">{selectedProduct.grade}</Badge>
                 </div>
-                <p className="text-callout text-ink-secondary mb-4">{selectedProduct.description}</p>
-                <div className="grid grid-cols-2 gap-3 text-caption mb-6">
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="absolute top-4 left-4 h-9 w-9 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 flex items-center justify-center transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="p-7">
+                <h2 className="text-title font-bold text-ink tracking-tight">{selectedProduct.name}</h2>
+                <p className="text-caption text-ink-tertiary mt-1 flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3 text-brand" strokeWidth={1.5} />
+                  {selectedProduct.origin}
+                  {selectedProduct.supplier.verified && (
+                    <span className="inline-flex items-center gap-1 text-success">
+                      <Shield className="h-3 w-3" strokeWidth={1.5} /> Verified
+                    </span>
+                  )}
+                </p>
+                <p className="text-callout text-ink-secondary mt-3 mb-5">{selectedProduct.description}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-caption mb-6">
                   {Object.entries(selectedProduct.specifications).map(([key, val]) => (
-                    <div key={key} className="bg-surface-secondary/60 rounded-[10px] p-3">
-                      <p className="text-ink-quaternary uppercase text-[10px] font-bold">{key}</p>
-                      <p className="text-ink font-semibold mt-0.5">{String(val)}</p>
+                    <div key={key} className="bg-surface-secondary/60 border border-glass-border rounded-[12px] p-3">
+                      <p className="text-ink-quaternary uppercase text-[10px] font-bold truncate">{key}</p>
+                      <p className="text-ink font-semibold mt-1 truncate">{String(val)}</p>
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-headline font-bold text-ink tracking-tight">{formatPrice(selectedProduct.price.amount, selectedCurrency)}</p>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-glass-border/60">
+                  <div>
+                    <p className="text-headline font-bold text-ink tracking-tight">{formatPrice(selectedProduct.price.amount, selectedCurrency)}</p>
+                    <p className="text-caption text-ink-quaternary mt-0.5">
+                      per unit · {selectedProduct.stock > 0 ? "in stock" : "pre-order"}
+                    </p>
+                  </div>
                   <Button variant="primary" size="lg" icon={<ShoppingCart className="h-4 w-4" />} onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}>
                     Add to Cart
                   </Button>
@@ -424,7 +470,7 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
       {/* Cart Drawer */}
       <AnimatePresence>
         {cartOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -433,155 +479,158 @@ export default function MarketplacePage({ onNavigate }: MarketplacePageProps) {
               onClick={() => setCartOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="relative glass-material-lg specular-sheen rounded-[24px] max-w-lg w-full overflow-hidden"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 32, stiffness: 320 }}
+              className="absolute inset-y-0 right-0 w-full max-w-md bg-surface/95 backdrop-blur-2xl border-l border-glass-border shadow-2xl flex flex-col overflow-hidden"
             >
-              <div className="p-7">
+              <div className="px-6 py-5 border-b border-glass-border flex items-start justify-between shrink-0">
+                <div>
+                  <p className="text-overline font-bold uppercase tracking-[0.15em] text-brand-dark">Your cart</p>
+                  <h2 className="text-title font-bold text-ink tracking-tight">
+                    {cartItemCount} item{cartItemCount !== 1 ? "s" : ""}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setCartOpen(false)}
+                  className="h-8 w-8 rounded-full bg-surface-secondary/80 backdrop-blur-sm flex items-center justify-center text-ink-secondary hover:text-ink transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {cart.length === 0 ? (
+                <div className="flex-1 py-16 text-center">
+                  <div className="h-14 w-14 rounded-[18px] bg-surface-secondary/70 flex items-center justify-center mx-auto mb-4">
+                    <ShoppingCart className="h-6 w-6 text-ink-quaternary" strokeWidth={1.5} />
+                  </div>
+                  <p className="text-callout text-ink-tertiary font-medium">Your cart is empty</p>
+                  <p className="text-caption text-ink-quaternary mt-1 max-w-[220px] mx-auto">Add products from the marketplace to get started.</p>
+                  <Button variant="secondary" size="md" className="mt-5" onClick={() => setCartOpen(false)}>
+                    Continue shopping
+                  </Button>
+                </div>
+              ) : (
                 <>
-                  <div className="flex items-start justify-between mb-5">
-                      <div>
-                        <p className="text-overline font-bold uppercase tracking-[0.15em] text-brand-dark">Your cart</p>
-                        <h2 className="text-title font-bold text-ink tracking-tight">
-                          {cartItemCount} item{cartItemCount !== 1 ? "s" : ""}
-                        </h2>
+                  <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 bg-surface-secondary/50 border border-glass-border rounded-[14px] p-3">
+                        <div className="h-11 w-11 rounded-[12px] overflow-hidden bg-surface-tertiary/80 flex items-center justify-center shrink-0">
+                          {item.product.images?.[0] ? (
+                            <img src={item.product.images[0]} alt={item.product.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <ShoppingCart className="h-4 w-4 text-brand" strokeWidth={1.5} />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-caption font-bold text-ink truncate">{item.product.name}</p>
+                          <p className="text-caption text-ink-quaternary mt-0.5">
+                            {item.quantity} × {formatPrice(item.unitPrice.amount, selectedCurrency)}
+                          </p>
+                        </div>
+                        <p className="text-caption font-bold text-ink shrink-0">
+                          {formatPrice(item.unitPrice.amount * item.quantity, selectedCurrency)}
+                        </p>
+                        <button
+                          onClick={() => removeFromCart(cart.indexOf(item))}
+                          className="h-7 w-7 rounded-full bg-surface/80 flex items-center justify-center text-ink-quaternary hover:text-error transition-colors shrink-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setCartOpen(false)}
-                        className="h-8 w-8 rounded-full bg-surface-secondary/80 backdrop-blur-sm flex items-center justify-center text-ink-secondary hover:text-ink transition-colors"
+                    ))}
+                  </div>
+
+                  <div className="border-t border-glass-border px-6 py-5 space-y-3 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption text-ink-tertiary">Deliver to</span>
+                      <span className="text-caption font-semibold text-ink">{destCity}, {destCountry}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={destCountry}
+                        onChange={(e) => handleDestCountryChange(e.target.value)}
+                        className="h-10 px-2.5 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-[12px] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
                       >
-                        <X className="h-4 w-4" />
-                      </button>
+                        {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <select
+                        value={destCity}
+                        onChange={(e) => { setDestCity(e.target.value); setDestZone(""); setCheckoutError(""); }}
+                        className="h-10 px-2.5 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-[12px] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
+                      >
+                        {destCities.map((c) => <option key={c.city} value={c.city}>{c.city}</option>)}
+                      </select>
+                    </div>
+                    {destPricing && destPricing.zones.length > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-caption text-ink-tertiary">Delivery zone</span>
+                        <select
+                          value={destZone}
+                          onChange={(e) => { setDestZone(e.target.value); setCheckoutError(""); }}
+                          className="h-9 px-2.5 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-[12px] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 max-w-[160px]"
+                        >
+                          <option value="">Fastest</option>
+                          {destPricing.zones.map((z) => <option key={z.id} value={z.name}>{z.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption text-ink-tertiary">Subtotal</span>
+                      <span className="text-caption font-bold text-ink">{formatPrice(cartSubtotal, selectedCurrency)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption text-ink-tertiary">Shipping</span>
+                      <span className="text-caption font-semibold text-ink">{deliveryCost > 0 ? formatPrice(deliveryCost, selectedCurrency) : "Free"}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-glass-border pt-2">
+                      <span className="text-caption font-bold text-ink">Total</span>
+                      <span className="text-subhead font-bold text-ink">{formatPrice(orderTotal, selectedCurrency)}</span>
                     </div>
 
-                    {cart.length === 0 ? (
-                      <div className="py-10 text-center">
-                        <div className="h-12 w-12 rounded-[16px] bg-surface-secondary/70 flex items-center justify-center mx-auto mb-3">
-                          <ShoppingCart className="h-5 w-5 text-ink-quaternary" strokeWidth={1.5} />
-                        </div>
-                        <p className="text-callout text-ink-tertiary">Your cart is empty</p>
-                        <p className="text-caption text-ink-quaternary mt-1">Add products to get started.</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-                          {cart.map((item, i) => (
-                            <div key={item.id} className="flex items-center gap-3 bg-surface-secondary/50 border border-glass-border rounded-[14px] p-3">
-                              <div className="h-11 w-11 rounded-[12px] bg-surface-secondary/80 flex items-center justify-center shrink-0">
-                                <ShoppingCart className="h-4 w-4 text-brand" strokeWidth={1.5} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-caption font-bold text-ink truncate">{item.product.name}</p>
-                                <p className="text-caption text-ink-quaternary mt-0.5">
-                                  {item.quantity} × {formatPrice(item.unitPrice.amount, selectedCurrency)}
-                                </p>
-                              </div>
-                              <p className="text-caption font-bold text-ink shrink-0">
-                                {formatPrice(item.unitPrice.amount * item.quantity, selectedCurrency)}
-                              </p>
-                              <button
-                                onClick={() => removeFromCart(i)}
-                                className="h-7 w-7 rounded-full bg-surface/80 flex items-center justify-center text-ink-quaternary hover:text-error transition-colors shrink-0"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="flex items-center gap-2">
+                      {([
+                        { id: "wallet" as const, label: "Wallet", balance: wallet.balance },
+                        { id: "cod" as const, label: "Cash on Delivery" },
+                      ]).map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => { setPaymentMethod(m.id); setCheckoutError(""); }}
+                          className={`flex-1 h-10 rounded-[10px] border text-[12px] font-semibold transition-colors ${
+                            paymentMethod === m.id
+                              ? "border-brand bg-brand/10 text-brand"
+                              : "border-glass-border text-ink-tertiary hover:text-ink-secondary"
+                          }`}
+                        >
+                          {m.label}
+                          {"balance" in m && m.balance !== undefined && ` · ${formatPrice(m.balance, selectedCurrency)}`}
+                        </button>
+                      ))}
+                    </div>
 
-                        <div className="mt-5 pt-4 border-t border-glass-border space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-caption text-ink-tertiary">Deliver to</span>
-                            <span className="text-caption font-semibold text-ink">{destCity}, {destCountry}</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <select
-                              value={destCountry}
-                              onChange={(e) => handleDestCountryChange(e.target.value)}
-                              className="h-10 px-2.5 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-[12px] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
-                            >
-                              {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                            <select
-                              value={destCity}
-                              onChange={(e) => { setDestCity(e.target.value); setDestZone(""); setCheckoutError(""); }}
-                              className="h-10 px-2.5 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-[12px] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
-                            >
-                              {destCities.map((c) => <option key={c.city} value={c.city}>{c.city}</option>)}
-                            </select>
-                          </div>
-                          {destPricing && destPricing.zones.length > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-caption text-ink-tertiary">Delivery zone</span>
-                              <select
-                                value={destZone}
-                                onChange={(e) => { setDestZone(e.target.value); setCheckoutError(""); }}
-                                className="h-9 px-2.5 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-[12px] text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 max-w-[160px]"
-                              >
-                                <option value="">Fastest</option>
-                                {destPricing.zones.map((z) => <option key={z.id} value={z.name}>{z.name}</option>)}
-                              </select>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span className="text-caption text-ink-tertiary">Subtotal</span>
-                            <span className="text-caption font-bold text-ink">{formatPrice(cartSubtotal, selectedCurrency)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-caption text-ink-tertiary">Shipping</span>
-                            <span className="text-caption font-semibold text-ink">{deliveryCost > 0 ? formatPrice(deliveryCost, selectedCurrency) : "Free"}</span>
-                          </div>
-                          <div className="flex items-center justify-between border-t border-glass-border pt-2">
-                            <span className="text-caption font-bold text-ink">Total</span>
-                            <span className="text-subhead font-bold text-ink">{formatPrice(orderTotal, selectedCurrency)}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {([
-                              { id: "wallet" as const, label: "Wallet", balance: wallet.balance },
-                              { id: "cod" as const, label: "Cash on Delivery" },
-                            ]).map((m) => (
-                              <button
-                                key={m.id}
-                                onClick={() => { setPaymentMethod(m.id); setCheckoutError(""); }}
-                                className={`flex-1 h-10 rounded-[10px] border text-[12px] font-semibold transition-colors ${
-                                  paymentMethod === m.id
-                                    ? "border-brand bg-brand/10 text-brand"
-                                    : "border-glass-border text-ink-tertiary hover:text-ink-secondary"
-                                }`}
-                              >
-                                {m.label}
-                                {"balance" in m && m.balance !== undefined && ` · ${formatPrice(m.balance, selectedCurrency)}`}
-                              </button>
-                            ))}
-                          </div>
-
-                          {checkoutError && (
-                            <p className="text-[12px] text-error">{checkoutError}</p>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3 mt-5">
-                          <Button variant="secondary" size="lg" fullWidth onClick={() => setCartOpen(false)}>
-                            Keep browsing
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="lg"
-                            fullWidth
-                            icon={<Package className="h-4 w-4" />}
-                            onClick={handleCartCheckout}
-                            disabled={placing}
-                          >
-                            {placing ? "Placing order…" : paymentMethod === "wallet" ? `Pay ${formatPrice(orderTotal, selectedCurrency)}` : "Place Order"}
-                          </Button>
-                        </div>
-                      </>
+                    {checkoutError && (
+                      <p className="text-[12px] text-error">{checkoutError}</p>
                     )}
-                  </>
-              </div>
+
+                    <div className="flex items-center gap-3">
+                      <Button variant="secondary" size="lg" fullWidth onClick={() => setCartOpen(false)}>
+                        Browse
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        fullWidth
+                        icon={<Package className="h-4 w-4" />}
+                        onClick={handleCartCheckout}
+                        disabled={placing}
+                      >
+                        {placing ? "Placing order…" : paymentMethod === "wallet" ? `Pay ${formatPrice(orderTotal, selectedCurrency)}` : "Place Order"}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         )}
