@@ -460,6 +460,18 @@ interface StoreState {
 
   // ── Cloud sync hydration ─────────────────────────────────────────────────
   hydrate: (data: Record<string, unknown>) => void;
+
+  // Freshness marker: the cloud document version last applied to this device.
+  // On boot the app re-pulls its cloud doc and, when the server version is
+  // NEWER than syncVersion, re-hydrates so every device stays in sync instead
+  // of silently keeping stale localStorage forever.
+  syncVersion: number;
+  setSyncVersion: (v: number) => void;
+
+  // Merges the global accounts registry into users so the customer roster and
+  // count are identical on every device. Never touches local-only security
+  // fields (password, 2FA, recovery codes) or per-device inventory.
+  mergeAccounts: (accounts: Array<{ email: string; name: string; accountType: string; createdAt: string | null; lastLogin: string | null }>) => void;
 }
 
 // Data slices synced to Supabase (everything except navigation/UI ephemera).
@@ -2408,6 +2420,43 @@ export const useStore = create<StoreState>()(
           if (key in data && data[key] !== undefined) patch[key] = data[key];
         }
         set(patch);
+      },
+
+      syncVersion: 0,
+      setSyncVersion: (v) => set({ syncVersion: Math.max(0, Number(v) || 0) }),
+
+      // ── Global accounts registry merge ─────────────────────────────────────
+      // Merges the shared, server-side account roster into the local users map
+      // so the customer list/count matches on every device. Local-only fields
+      // that must never be clobbered (passwords, 2FA secrets, recovery codes,
+      // per-device inventory) are preserved for accounts that already exist.
+      mergeAccounts: (accounts) => {
+        if (!Array.isArray(accounts) || accounts.length === 0) return;
+        const current = get().users;
+        const merged: Record<string, { name: string; accountType: AccountType; createdAt: string; lastLogin?: string }> = {};
+        let added = 0;
+        for (const account of accounts) {
+          const email = String(account.email || "").trim().toLowerCase();
+          if (!email) continue;
+          const existing = current[email];
+          merged[email] = {
+            name: (account.name || existing?.name || "Customer").trim().slice(0, 120),
+            accountType: existing?.accountType ?? (account.accountType as AccountType) ?? "shopper",
+            createdAt: existing?.createdAt ?? account.createdAt ?? new Date().toISOString(),
+            lastLogin: account.lastLogin ?? existing?.lastLogin,
+          };
+          // Preserve local-only fields (password, 2FA, recovery codes, per-device
+          // inventory) by writing into a full copy of the existing record.
+          if (existing) {
+            merged[email] = { ...existing, ...merged[email] };
+          }
+          if (!existing) added += 1;
+        }
+        if (Object.keys(merged).length === 0) return;
+        set({ users: { ...current, ...merged } });
+        if (added > 0) {
+          console.info(`Accounts: merged ${added} registry account(s) into the customer roster.`);
+        }
       },
     }),
     {

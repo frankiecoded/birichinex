@@ -130,15 +130,21 @@ export async function pullSnapshot(opts?: { requireBlank?: boolean }): Promise<{
     const data = await res.json();
     const hadData = Boolean(data?.payload && typeof data.payload === "object");
     if (hadData) {
-      if (opts?.requireBlank && localStoreHasData()) {
-        // Local state is newer/equal — keep it, never overwrite with the
-        // cloud doc. Leave lastSentJson untouched so the next mutation or the
-        // caller's push re-uploads local as the source of truth.
-        return { ok: true, hadData: false };
+      const cloudVersion = Number(data?.version || 0);
+      const localVersion = useStore.getState().syncVersion;
+      // The app must always show the freshest state, never stale localStorage:
+      // hydrate when (a) cloud is newer than what this device already applied,
+      // or (b) this device has nothing local worth keeping (true restore).
+      const blank = opts?.requireBlank ? !localStoreHasData() : false;
+      const cloudNewer = cloudVersion > localVersion;
+      if (blank || cloudNewer) {
+        useStore.getState().hydrate(data.payload);
+        useStore.getState().setSyncVersion(cloudVersion);
+        lastSentJson = JSON.stringify(serializeSnapshot());
+        return { ok: true, hadData: true };
       }
-      useStore.getState().hydrate(data.payload);
-      lastSentJson = JSON.stringify(serializeSnapshot());
-      return { ok: true, hadData: true };
+      // Local is already at/after the cloud doc — keep it (offline-newer work). 
+      return { ok: true, hadData: false };
     }
     return { ok: true, hadData: false };
   } catch (error) {
@@ -183,6 +189,9 @@ async function pushOnce(): Promise<boolean> {
       console.warn("Sync: push failed", res.status, await res.text().catch(() => ""));
       return false;
     }
+    const data = await res.json().catch(() => null);
+    const version = Number(data?.version || 0);
+    if (version > 0) useStore.getState().setSyncVersion(version);
     return true;
   } catch (error) {
     console.warn("Sync: push failed", error);
@@ -243,4 +252,51 @@ export function subscribeToSync(): () => void {
     lastSentJson = json;
     schedulePush();
   });
+}
+
+// ── Global accounts registry ─────────────────────────────────────────────────
+// Unlike per-user business_state, the account roster is SHARED across all
+// devices (a "Customers" counter must be identical on every phone). These
+// helpers pull the registry on boot and push signups/logins so new accounts
+// appear everywhere immediately.
+
+export type RegistryAccount = {
+  email: string;
+  name: string;
+  accountType: string;
+  createdAt: string | null;
+  lastLogin: string | null;
+};
+
+export async function pullAccounts(): Promise<RegistryAccount[]> {
+  if (!syncConfigured()) return [];
+  try {
+    const res = await fetch("/api/accounts", {
+      headers: syncHeaders(),
+    });
+    if (res.status === 503 || res.status === 401) return [];
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data?.accounts)) return [];
+    return data.accounts as RegistryAccount[];
+  } catch (error) {
+    console.warn("Accounts: pull failed", error);
+    return [];
+  }
+}
+
+export async function pushAccount(account: RegistryAccount): Promise<boolean> {
+  if (!syncConfigured()) return false;
+  try {
+    const res = await fetch("/api/accounts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...syncHeaders() },
+      body: JSON.stringify(account),
+    });
+    if (res.status === 503 || res.status === 401) return false;
+    return res.ok;
+  } catch (error) {
+    console.warn("Accounts: push failed", error);
+    return false;
+  }
 }

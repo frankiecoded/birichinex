@@ -67,7 +67,7 @@ import ReturnsPage from "./pages/legal/ReturnsPage";
 import { BirichiNexView, AccountType } from "./types";
 import { getHubForView } from "../ai/src/navigation";
 import { useStore } from "./store/useStore";
-import { pullSnapshot, pushSnapshot, subscribeToSync } from "./lib/sync";
+import { pullAccounts, pullSnapshot, pushAccount, pushSnapshot, subscribeToSync } from "./lib/sync";
 import { getOwnerSession } from "./lib/ownerSession";
 
 export default function App() {
@@ -149,10 +149,16 @@ export default function App() {
 
   // ── Cloud state sync (Supabase) ──────────────────────────────────────────
   useEffect(() => {
-    void pullSnapshot({ requireBlank: true }).then((r) => {
+    void pullSnapshot({ requireBlank: false }).then((r) => {
       if (r.ok && !r.hadData) void pushSnapshot();
+      // Pull the shared accounts registry so the customer roster and count
+      // are identical on every device (a signup on one phone shows up on all).
+      void pullAccounts().then((accounts) => {
+        if (accounts.length > 0) useStore.getState().mergeAccounts(accounts);
+      });
     });
     return subscribeToSync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Theme (Appearance → Settings) ────────────────────────────────────────
@@ -293,6 +299,16 @@ export default function App() {
   const handleLogin = (email: string, name: string) => {
     login(email, name);
     const loggedIn = useStore.getState().user;
+    if (loggedIn) {
+      const rec = useStore.getState().users[loggedIn.email.trim().toLowerCase()];
+      void pushAccount({
+        email: loggedIn.email,
+        name: loggedIn.name,
+        accountType: loggedIn.accountType,
+        createdAt: rec?.createdAt ?? null,
+        lastLogin: new Date().toISOString(),
+      });
+    }
     if (loggedIn?.accountType === "business") {
       setAppMode("business");
       setCurrentView("dashboard");
@@ -306,6 +322,16 @@ export default function App() {
   const handleSignup = (email: string, name: string, accountType: AccountType, password?: string): { ok: boolean; error?: string } => {
     const result = signup(email, name, accountType, password);
     if (!result.ok) return result;
+    const loggedIn = useStore.getState().user;
+    if (loggedIn) {
+      void pushAccount({
+        email: loggedIn.email,
+        name: loggedIn.name,
+        accountType: accountType,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      });
+    }
     if (accountType === "business") {
       setAppMode("business");
       setCurrentView("dashboard");

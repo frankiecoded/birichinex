@@ -601,6 +601,116 @@ app.delete("/api/sync", async (req, res) => {
   }
 });
 
+// ─── Global accounts registry ────────────────────────────────────────────────
+// The roster of every registered account across ALL devices. Stored in the
+// existing business_state table under a reserved platform key (so no schema
+// migration is required; sync RLS/grants already lock it down). Pulling it on
+// boot makes the customer count and account list identical on every phone, and
+// pushing each signup/login makes new accounts visible everywhere immediately.
+
+const PLATFORM_ACCOUNTS_KEY = "__platform_accounts";
+
+const VALID_ACCOUNT_TYPE = new Set(["shopper", "business", "customer", "retailer", "wholesaler"]);
+
+type RegistryEntry = {
+  email: string;
+  name: string;
+  accountType: string;
+  createdAt: string | null;
+  lastLogin: string | null;
+};
+
+async function readAccountRegistry(): Promise<RegistryEntry[]> {
+  const db = getSupabase();
+  if (!db) throw new Error("Sync not configured");
+  const { data, error } = await db
+    .from("business_state")
+    .select("payload")
+    .eq("user_key", PLATFORM_ACCOUNTS_KEY)
+    .maybeSingle();
+  if (error && error.code !== "PGRST116") throw error;
+  const payload = data?.payload && typeof data.payload === "object" ? data.payload : {};
+  const rows = Array.isArray(payload.accounts) ? payload.accounts : [];
+  return rows.filter((r: unknown): r is RegistryEntry => {
+    if (!r || typeof r !== "object") return false;
+    const rec = r as Record<string, unknown>;
+    return typeof rec.email === "string" && rec.email.trim().length > 0;
+  });
+}
+
+async function writeAccountRegistry(rows: RegistryEntry[]): Promise<void> {
+  const db = getSupabase();
+  if (!db) throw new Error("Sync not configured");
+  const { error } = await db.rpc("save_business_state", {
+    p_key: PLATFORM_ACCOUNTS_KEY,
+    p_payload: { accounts: rows },
+  });
+  if (error) throw error;
+}
+
+async function upsertPlatformAccount(req: express.Request): Promise<void> {
+  const { email, name, accountType, createdAt, lastLogin } = req.body || {};
+  const mail = String(email || "").trim().toLowerCase();
+  if (!VALID_USER_KEY.test(mail)) throw new Error("Invalid email");
+  if (!name || typeof name !== "string" || name.trim().length === 0 || name.length > 120) {
+    throw new Error("Invalid name");
+  }
+  const type = String(accountType || "shopper").toLowerCase();
+  if (!VALID_ACCOUNT_TYPE.has(type)) throw new Error("Invalid accountType");
+
+  const nowIso = new Date().toISOString();
+  const createdRaw = createdAt ? new Date(String(createdAt)) : null;
+  const lastRaw = lastLogin ? new Date(String(lastLogin)) : null;
+  const parsedCreated = createdRaw && !Number.isNaN(createdRaw.getTime()) ? createdRaw.toISOString() : nowIso;
+  const parsedLast = lastRaw && !Number.isNaN(lastRaw.getTime()) ? lastRaw.toISOString() : null;
+
+  const rows = await readAccountRegistry();
+  const idx = rows.findIndex((r) => r.email === mail);
+  const entry: RegistryEntry = {
+    email: mail,
+    name: name.trim().slice(0, 120),
+    accountType: type,
+    createdAt: idx >= 0 ? rows[idx].createdAt ?? parsedCreated : parsedCreated,
+    lastLogin: parsedLast ?? (idx >= 0 ? rows[idx].lastLogin : null),
+  };
+  if (idx >= 0) rows[idx] = entry;
+  else rows.push(entry);
+  await writeAccountRegistry(rows);
+}
+
+app.get("/api/accounts", async (req, res) => {
+  try {
+    if (!syncEnabled()) return res.status(503).json({ error: "Sync disabled", enabled: false });
+    if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+    const rows = await readAccountRegistry();
+    res.json({
+      enabled: true,
+      accounts: rows.map((r) => ({
+        email: r.email,
+        name: r.name,
+        accountType: r.accountType,
+        createdAt: r.createdAt,
+        lastLogin: r.lastLogin,
+      })),
+    });
+  } catch (error: any) {
+    console.error("GET /api/accounts error:", error);
+    res.status(500).json({ error: "Accounts read failed", enabled: true });
+  }
+});
+
+app.put("/api/accounts", async (req, res) => {
+  try {
+    if (!syncEnabled()) return res.status(503).json({ error: "Sync disabled", enabled: false });
+    if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+    await upsertPlatformAccount(req);
+    res.json({ enabled: true, ok: true });
+  } catch (error: any) {
+    console.error("PUT /api/accounts error:", error);
+    res.status(400).json({ error: error?.message || "Accounts write failed", enabled: true });
+  }
+});
+
 // ─── Payments & Membership Billing (Paystack / local simulation) ─────────────
 // Membership plans are priced in USD (matching MEMBERSHIP_TIERS), dropshipping
 // plans in TZS (matching DROPSHIP_TIERS). Whatever the source currency, Paystack

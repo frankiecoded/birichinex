@@ -12,6 +12,7 @@ import { loadPaystackInline, openPaystackInline } from "../../lib/paystackInline
 import type { TrackedOrder } from "../../data/delivery";
 import { Currency, CartItem } from "../../types";
 import { useStore } from "../../store/useStore";
+import { pushAccount } from "../../lib/sync";
 import MagneticButton from "../../components/three/MagneticButton";
 
 interface CheckoutPageProps {
@@ -219,6 +220,13 @@ export default function CheckoutPage({ cart, selectedCurrency, onNavigate, onRem
         setAcctError(signupRes.error ?? "Could not create your account.");
         return;
       }
+      void pushAccount({
+        email,
+        name,
+        accountType: "shopper",
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      });
     }
     const err = validatePayment();
     if (err) {
