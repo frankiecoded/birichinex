@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Package, Search, Plus, ArrowUpRight, ArrowDownRight, Trash2, X, Store, ShoppingBag, Globe, Settings2, Minus, ImagePlus, Link2, Loader2 } from "lucide-react";
+import { Package, Search, Plus, ArrowUpRight, ArrowDownRight, Trash2, X, Store, ShoppingBag, Globe, Settings2, Minus, ImagePlus, Link2, Loader2, Sparkles } from "lucide-react";
 import GlassCard from "../components/ui/GlassCard";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
@@ -54,6 +54,8 @@ export default function InventoryPage() {
   const [newImageUrl, setNewImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
   const addFileRef = useRef<HTMLInputElement>(null);
   const adjustFileRef = useRef<HTMLInputElement>(null);
 
@@ -105,6 +107,48 @@ export default function InventoryPage() {
       images: adjustImages,
     });
     setAdjustItem(null);
+  };
+
+  // AI-assisted description — the model looks at the item's photos AND title,
+  // then writes a sales-grade description with zero invented specs.
+  const generateDescription = async (target: "add" | "adjust", itemName: string, category: string, imageList: string[]) => {
+    if (!imageList.length) {
+      setAiError("Add at least one product photo first — the AI writes from what it can actually see.");
+      return;
+    }
+    const images = imageList.filter(Boolean);
+    if (!images.length) {
+      setAiError("Add at least one product photo first — the AI writes from what it can actually see.");
+      return;
+    }
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const res = await fetch("/api/ai/description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: itemName.trim(),
+          category: category.trim(),
+          specs: undefined,
+          images,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Unable to generate description");
+      const text = String(data?.description ?? "").trim();
+      if (!text) throw new Error("Empty description returned");
+      if (target === "add") {
+        setForm((f) => ({ ...f, description: text }));
+      } else {
+        setAdjustForm((f) => ({ ...f, description: text }));
+      }
+      return text;
+    } catch (err: any) {
+      setAiError(err?.message || "Unable to generate description");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const addImageUrlToAdjust = () => {
@@ -507,6 +551,25 @@ export default function InventoryPage() {
                       className="w-full px-3 py-2 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-caption text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 resize-y"
                       placeholder="Describe the product — condition, material, use case, etc."
                     />
+                    <button
+                      type="button"
+                      onClick={() => generateDescription("add", form.name, form.category, parseImageList(form.images))}
+                      disabled={aiLoading}
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-caption font-semibold text-brand-dark hover:text-brand transition-colors disabled:opacity-50"
+                    >
+                      {aiLoading ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />
+                          Writing from photos…
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 animate-pulse" strokeWidth={1.5} />
+                          Generate from photo + title
+                        </>
+                      )}
+                    </button>
+                    {aiError && <p className="text-caption text-error mt-1">{aiError}</p>}
                   </div>
                   <div className="flex gap-3 pt-2">
                     <Button type="button" variant="ghost" className="flex-1" onClick={() => setModalOpen(false)}>
@@ -626,6 +689,25 @@ export default function InventoryPage() {
                   className="w-full px-3 py-2 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-caption text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 resize-y"
                   placeholder="Describe the product — condition, material, use case, etc."
                 />
+                <button
+                  type="button"
+                  onClick={() => generateDescription("adjust", adjustItem?.name ?? "", adjustItem?.category ?? "", adjustImages)}
+                  disabled={aiLoading}
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-caption font-semibold text-brand-dark hover:text-brand transition-colors disabled:opacity-50"
+                >
+                  {aiLoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />
+                      Writing from photos…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 animate-pulse" strokeWidth={1.5} />
+                      Generate from photo + title
+                    </>
+                  )}
+                </button>
+                {aiError && <p className="text-caption text-error mt-1">{aiError}</p>}
               </div>
 
               <div>

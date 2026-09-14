@@ -201,7 +201,12 @@ export default function ShopProductPage({ productId, selectedCurrency, onNavigat
       const res = await fetch("/api/ai/description", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: product.name, category: product.category, specs: product.specifications }),
+        body: JSON.stringify({
+          name: product.name,
+          category: product.category,
+          specs: product.specifications,
+          images: product.images ?? [],
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Unable to generate description");

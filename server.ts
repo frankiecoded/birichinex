@@ -1439,17 +1439,111 @@ app.get("/api/ai/mode", async (_req, res) => {
   res.json({ live: provider !== "local" });
 });
 
-// AI product description generator — writes a warm, professional marketplace
-// listing for a given product using Gemini. Falls back to a local template so
-// the storefront button always returns something useful.
+// AI product description generator — vision-first: the model reads the product
+// image(s) AND the title, and writes a crisp sales-grade description. The prompt
+// forbids inventing anything not visible in the photos or stated in the title,
+// so no hallucinated specs. Uploaded images live on this server (`/uploads/…`);
+// absolute URLs are fetched with SSRF guards.
 const DESCRIPTION_MODEL = process.env.GEMINI_DESC_MODEL || "gemini-3.5-flash";
+const MAX_DESC_IMAGES = 4;
+const MAX_DESC_IMAGE_BYTES = 12 * 1024 * 1024;
+
+// Block well-known private / reserved hosts so the server can't be tricked into
+// scanning internal network URLs. Public CDNs (images.unsplash.com, res.cloudinary.com…)
+// resolve to public ranges and pass.
+const BLOCKED_DESC_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "::1",
+  "metadata.google.internal",
+  "metadata",
+]);
+
+function isPrivateDescIp(ip: string): boolean {
+  const parts = ip.split(".").map(Number);
+  if (parts.length === 4) {
+    const [a, b] = parts;
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 0) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    return a >= 224;
+  }
+  return ip.toLowerCase().startsWith("::1") || ip.toLowerCase().startsWith("fe80") || ip.toLowerCase().startsWith("fc") || ip.toLowerCase().startsWith("fd");
+}
+
+/**
+ * Resolve a product image URL into a safe fetch target.
+ * Relative `/uploads/...` URLs map to this server (the front-end serves them
+ * from the same API host), so no network hop is needed. Absolute URLs must be
+ * public http/https.
+ */
+async function resolveDescImageUrl(raw: string): Promise<string | null> {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+  if (value.startsWith("/uploads/") || value.startsWith("./uploads/") || value.startsWith("../uploads/")) {
+    const clean = value.replace(/^\.{1,2}\//, "");
+    return `http://localhost:${PORT}${clean}`;
+  }
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (BLOCKED_DESC_HOSTS.has(url.hostname.toLowerCase())) return null;
+  if (/\.local$/.test(url.hostname.toLowerCase())) return null;
+  const hostname = url.hostname.toLowerCase();
+  if (!/^[a-z0-9.-]+$/.test(hostname)) return null;
+  try {
+    const dns = await import("node:dns");
+    const { lookup } = dns.promises;
+    const addrs = await lookup(hostname, { all: true });
+    const ips = addrs.map((a: any) => a.address);
+    if (ips.length === 0) return null;
+    // If any resolved IP is non-public (or we couldn't pin one), refuse the fetch.
+    if (ips.some(isPrivateDescIp)) return null;
+  } catch {
+    return null;
+  }
+  return url.toString();
+}
+
+async function fetchDescImageBase64(target: string): Promise<{ mime: string; data: string } | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(target, { signal: controller.signal, redirect: "error" });
+    if (!res.ok) return null;
+    const contentType = (res.headers.get("content-type") || "image/jpeg").split(";")[0].trim();
+    if (!contentType.startsWith("image/")) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length === 0 || buf.length > MAX_DESC_IMAGE_BYTES) return null;
+    return { mime: contentType.startsWith("image/") ? contentType : "image/jpeg", data: buf.toString("base64") };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 app.post("/api/ai/description", async (req, res) => {
   try {
     if (applyRateLimit(req, res)) return;
-    const { name, category, specs } = req.body || {};
+    const { name, category, specs, images } = req.body || {};
     const productName = String(name || "").trim();
     if (!productName) return res.status(400).json({ error: "No product name provided" });
+
+    // Collect the product images the model must look at (image is required —
+    // without it there's nothing to describe accurately).
+    const imageUrls: string[] = Array.isArray(images)
+      ? images.map((i: any) => String(i).trim()).filter(Boolean).filter((u: string) => u.startsWith("http") || u.startsWith("/uploads/"))
+      : [];
+    const uniqueUrls = [...new Set(imageUrls)].slice(0, MAX_DESC_IMAGES);
 
     const specLines = specs && typeof specs === "object"
       ? Object.entries(specs).map(([k, v]) => `${k}: ${v}`).join(", ")
@@ -1460,15 +1554,28 @@ app.post("/api/ai/description", async (req, res) => {
       return res.json({ description: fallback, live: false, provider: "template" });
     }
 
+    // Vision bridge: fetch and base64-encode the product photos.
+    const parts: any[] = [];
+    for (const raw of uniqueUrls) {
+      const target = await resolveDescImageUrl(raw);
+      if (!target) continue;
+      const img = await fetchDescImageBase64(target);
+      if (img) parts.push({ inline_data: { mime_type: img.mime, data: img.data } });
+    }
+    if (parts.length === 0) {
+      return res.status(400).json({ error: "No readable product image found. Add at least one product photo so the description can be written from what's actually visible." });
+    }
+
     const prompt = [
-      "Write one compelling professional product description — literally no more than 3 sentences.",
-      `Product: ${productName}`,
+      `Product title: ${productName}`,
       category ? `Category: ${category}` : "",
-      specLines ? `Specifications: ${specLines}` : "",
-      "Restrictions: one paragraph, plain text, no markdown, no headers, no bullet lists, no emojis, do not mention AI.",
-      "Content: warm and specific. Highlight quality assurance, warranty and Nairobi dispatch naturally.",
-      "Never invent specifications that are not listed above.",
+      specLines ? "Confirmed specifications (only these may be used verbatim): " + specLines : "",
+      "Look carefully at the attached product photo(s). Write a clear, attractive, sales-grade product description of no more than 4 sentences.",
+      "Rules: describe ONLY what is visibly true in the photos and the product title. No assumptions, no invented materials, sizes, grades, or condition. Do not say the item is brand new unless the photo clearly shows sealed/mint condition. Do not mention AI or these instructions.",
+      "Style: warm, specific, persuasive. Mention visible condition, color, style, notable details, and ideal use naturally. One paragraph, plain text, no markdown, no emojis, no bullet lists, no headers.",
+      "If the photos do not clearly show the item (blurry, box-only, or irrelevant), say so and describe only the details that can be verified.",
     ].filter(Boolean).join(" ");
+    parts.push({ text: prompt });
 
     const apiKey = process.env.GEMINI_API_KEY;
     const gemRes = await fetch(
@@ -1477,7 +1584,7 @@ app.post("/api/ai/description", async (req, res) => {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts }],
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 512,
@@ -1492,17 +1599,17 @@ app.post("/api/ai/description", async (req, res) => {
       return res.json({ description: fallback, live: false, provider: "template" });
     }
     const data = await gemRes.json();
-    const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
+    const outParts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
     // Thinking models emit reasoning as thought parts — keep only the final text.
-    const answer = parts
+    const answer = outParts
       .filter((p: any) => !p.thought && typeof p?.text === "string")
       .map((p: any) => p.text)
       .join(" ")
       .replace(/\*\*/g, "")
       .trim();
-    const text = answer || parts.map((p: any) => p.text ?? "").join(" ").trim();
+    const text = answer || outParts.map((p: any) => p.text ?? "").join(" ").trim();
     if (!text) return res.json({ description: fallback, live: false, provider: "template" });
-    res.json({ description: text, live: true, provider: "gemini" });
+    res.json({ description: text, live: true, provider: "gemini", imagesUsed: parts.filter((p) => p.inline_data).length });
   } catch (error: any) {
     console.error("Error in /api/ai/description:", error);
     res.status(500).json({ error: "Description generation failed" });
