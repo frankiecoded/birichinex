@@ -21,10 +21,11 @@ interface ItemForm {
   price: string;
   unit: string;
   supplier: string;
+  description: string;
   images: string;
 }
 
-const EMPTY_FORM: ItemForm = { name: "", sku: "", category: "", stock: "", minStock: "", price: "", unit: "pcs", supplier: "", images: "" };
+const EMPTY_FORM: ItemForm = { name: "", sku: "", category: "", stock: "", minStock: "", price: "", unit: "pcs", supplier: "", description: "", images: "" };
 
 const parseImageList = (raw: string): string[] =>
   raw
@@ -48,7 +49,7 @@ export default function InventoryPage() {
   const [postModalItem, setPostModalItem] = useState<string | null>(null);
   const [postPrice, setPostPrice] = useState("");
   const [adjustItem, setAdjustItem] = useState<InventoryItem | null>(null);
-  const [adjustForm, setAdjustForm] = useState({ stock: "", minStock: "", price: "" });
+  const [adjustForm, setAdjustForm] = useState({ stock: "", minStock: "", price: "", description: "" });
   const [adjustImages, setAdjustImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -78,7 +79,7 @@ export default function InventoryPage() {
 
   const openAdjust = (item: InventoryItem) => {
     setAdjustItem(item);
-    setAdjustForm({ stock: String(item.stock), minStock: String(item.minStock), price: String(item.price.amount) });
+    setAdjustForm({ stock: String(item.stock), minStock: String(item.minStock), price: String(item.price.amount), description: item.description ?? "" });
     setAdjustImages(item.images && item.images.length > 0 ? [...item.images] : item.image ? [item.image] : []);
     setNewImageUrl("");
     setUploadError("");
@@ -99,6 +100,7 @@ export default function InventoryPage() {
       price: { amount: price, currency: adjustItem.price.currency },
       status,
       lastRestocked: new Date().toISOString(),
+      description: adjustForm.description.trim() || undefined,
       image: adjustImages[0],
       images: adjustImages,
     });
@@ -158,6 +160,7 @@ export default function InventoryPage() {
       unit: form.unit.trim() || "pcs",
       status: stockNum === 0 ? "out-of-stock" : stockNum <= minStockNum ? "low-stock" : "in-stock",
       supplier: form.supplier.trim() || "Unknown",
+      description: form.description.trim() || undefined,
       lastRestocked: new Date().toISOString(),
       source: 'manual',
       postedToMarketplace: false,
@@ -495,6 +498,16 @@ export default function InventoryPage() {
                       </div>
                     )}
                   </div>
+                  <div>
+                    <label className="text-caption text-ink-secondary font-semibold block mb-1.5">Description</label>
+                    <textarea
+                      rows={3}
+                      value={form.description}
+                      onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                      className="w-full px-3 py-2 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-caption text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 resize-y"
+                      placeholder="Describe the product — condition, material, use case, etc."
+                    />
+                  </div>
                   <div className="flex gap-3 pt-2">
                     <Button type="button" variant="ghost" className="flex-1" onClick={() => setModalOpen(false)}>
                       Cancel
@@ -602,6 +615,17 @@ export default function InventoryPage() {
                 <button onClick={() => setAdjustItem(null)} className="h-8 w-8 rounded-full bg-surface-secondary/80 flex items-center justify-center hover:bg-surface-secondary transition-colors">
                   <X className="h-4 w-4 text-ink-secondary" />
                 </button>
+              </div>
+
+              <div>
+                <label className="text-caption text-ink-secondary font-semibold block mb-1.5">Description</label>
+                <textarea
+                  rows={3}
+                  value={adjustForm.description}
+                  onChange={(e) => setAdjustForm((f) => ({ ...f, description: e.target.value }))}
+                  className="w-full px-3 py-2 bg-surface-secondary/60 border border-glass-border rounded-[10px] text-caption text-ink placeholder:text-ink-quaternary focus:outline-none focus:ring-2 focus:ring-brand/30 resize-y"
+                  placeholder="Describe the product — condition, material, use case, etc."
+                />
               </div>
 
               <div>
