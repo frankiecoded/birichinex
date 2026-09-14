@@ -9,7 +9,11 @@
       "destination": "https://portmetals-backend.tailab82b8.ts.net/api/:path*"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/uploads/:path*",
+      "destination": "https://portmetals-backend.tailab82b8.ts.net/uploads/:path*"
+    },
+    {
+      "source": "/((?!api/|uploads/).*)",
       "destination": "/index.html"
     }
   ],
