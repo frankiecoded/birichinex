@@ -275,6 +275,12 @@ interface StoreState {
 
   // ── Inventory ──────────────────────────────────────────────────────────────
   inventoryItems: InventoryItem[];
+  // The shared marketplace catalogue (published items mirroring into a reserved
+  // cloud key). Every device pulls it on boot so the public shop always shows
+  // the owner's LIVE published inventory, not just the static seed anyway a
+  // fresh visitor would otherwise only ever see.
+  marketplaceCatalogue: InventoryItem[];
+  setMarketplaceCatalogue: (items: InventoryItem[]) => void;
   getUserInventory: () => InventoryItem[];
   marketplaceItems: () => InventoryItem[];
   portmetalsMarketplaceItems: () => InventoryItem[];
@@ -1065,6 +1071,8 @@ export const useStore = create<StoreState>()(
       // state: the published Portmetals catalogue (bales + retail + tech posted,
       // the unpriced Canada container lines carried for the owner to price).
       inventoryItems: PORTMETALS_FULL_CATALOGUE.map((item) => ({ ...item })),
+      marketplaceCatalogue: [] as InventoryItem[],
+      setMarketplaceCatalogue: (items) => set({ marketplaceCatalogue: Array.isArray(items) ? items : [] }),
       inventorySearchQuery: '',
 
       getUserInventory: () => {
@@ -1089,8 +1097,9 @@ export const useStore = create<StoreState>()(
             }
           }
         };
-        push(state.inventoryItems);
         for (const u of Object.values(state.users)) push(u?.inventoryItems);
+        push(state.marketplaceCatalogue);
+        push(state.inventoryItems);
         return out;
       },
 
@@ -1107,8 +1116,9 @@ export const useStore = create<StoreState>()(
             }
           }
         };
-        push(state.inventoryItems);
         push(state.users['sales@portmetalsafrica.com']?.inventoryItems);
+        push(state.marketplaceCatalogue);
+        push(state.inventoryItems);
         return out;
       },
 
@@ -2659,7 +2669,12 @@ export const useStore = create<StoreState>()(
 
 type MarketplaceUser = { inventoryItems?: InventoryItem[] };
 
-function collectMarketplace(inventoryItems: InventoryItem[], users: Record<string, MarketplaceUser>, onlyPortmetals: boolean) {
+function collectMarketplace(
+  inventoryItems: InventoryItem[],
+  users: Record<string, MarketplaceUser>,
+  catalogue: InventoryItem[],
+  onlyPortmetals: boolean,
+) {
   const seen = new Set<string>();
   const out: InventoryItem[] = [];
   const push = (items: InventoryItem[] | undefined) => {
@@ -2671,29 +2686,35 @@ function collectMarketplace(inventoryItems: InventoryItem[], users: Record<strin
       }
     }
   };
-  push(inventoryItems);
+  // Fresh per-account inventory first (a vendor's own device always wins over
+  // the shared catalogue for identical ids), then the live shared catalogue,
+  // and finally the static seed as a last resort (visitors with no cloud pull).
   if (onlyPortmetals) {
     push(users['sales@portmetalsafrica.com']?.inventoryItems);
   } else {
     for (const u of Object.values(users)) push(u?.inventoryItems);
   }
+  push(catalogue);
+  push(inventoryItems);
   return out;
 }
 
 export function useMarketplaceItems(): InventoryItem[] {
   const inventoryItems = useStore((s) => s.inventoryItems);
   const users = useStore((s) => s.users);
+  const catalogue = useStore((s) => s.marketplaceCatalogue);
   return useMemo(
-    () => collectMarketplace(inventoryItems, users as Record<string, MarketplaceUser>, false),
-    [inventoryItems, users],
+    () => collectMarketplace(inventoryItems, users as Record<string, MarketplaceUser>, catalogue, false),
+    [inventoryItems, users, catalogue],
   );
 }
 
 export function usePortmetalsMarketplaceItems(): InventoryItem[] {
   const inventoryItems = useStore((s) => s.inventoryItems);
   const users = useStore((s) => s.users);
+  const catalogue = useStore((s) => s.marketplaceCatalogue);
   return useMemo(
-    () => collectMarketplace(inventoryItems, users as Record<string, MarketplaceUser>, true),
-    [inventoryItems, users],
+    () => collectMarketplace(inventoryItems, users as Record<string, MarketplaceUser>, catalogue, true),
+    [inventoryItems, users, catalogue],
   );
 }

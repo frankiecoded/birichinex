@@ -67,7 +67,7 @@ import ReturnsPage from "./pages/legal/ReturnsPage";
 import { BirichiNexView, AccountType } from "./types";
 import { getHubForView } from "../ai/src/navigation";
 import { useStore } from "./store/useStore";
-import { pullAccounts, pullSnapshot, pushAccount, pushSnapshot, subscribeToSync } from "./lib/sync";
+import { pullAccounts, pullCatalogue, pullSnapshot, pushAccount, pushSnapshot, subscribeToCatalogue, subscribeToSync } from "./lib/sync";
 import { getOwnerSession } from "./lib/ownerSession";
 
 export default function App() {
@@ -157,7 +157,16 @@ export default function App() {
         if (accounts.length > 0) useStore.getState().mergeAccounts(accounts);
       });
     });
-    return subscribeToSync();
+    // Pull the shared marketplace catalogue so the public shop shows the
+    // owner's LIVE published inventory on every device (visitors, second
+    // phones, logged-out browsers), not just the static seed.
+    void pullCatalogue();
+    const offSync = subscribeToSync();
+    const offCatalogue = subscribeToCatalogue();
+    return () => {
+      offSync();
+      offCatalogue();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -711,6 +711,114 @@ app.put("/api/accounts", async (req, res) => {
   }
 });
 
+// ─── Shared marketplace catalogue ─────────────────────────────────────────────
+// The problem this solves: the PORTMETALS owner's published inventory lives in
+// in-browser state (users[sales@...].inventoryItems / inventoryItems). The
+// public shop pages render from the VISITOR's own browser, which only ever has
+// the static seed — so edits the founder makes in Portmetals never reached the
+// shop. This endpoint exposes a RESERVED cloud key (same pattern as
+// __platform_accounts) that mirrors the published items across every device:
+//   * any device (owner or shopper) writes the catalogue after an inventory
+//     mutation — /api/sync is not involved, so per-user state stays private;
+//   * every device pulls it on boot so the shop always shows live stock.
+// GET is unauthenticated (the public shop needs it). PUT requires the device
+// secret, just like /api/sync and /api/accounts.
+
+const PLATFORM_CATALOGUE_KEY = "__platform_catalogue";
+
+// Fields never allowed into the public listing — mirrors the client-side
+// SENSITIVE_KEYS strip so a buggy client can't leak device secrets etc.
+const CATALOGUE_STRIP_KEYS = new Set([
+  "password", "secret", "apiKey", "token", "privateKey", "refreshToken",
+  "accessToken", "secretKey", "twoFactorCode", "recoveryCodes",
+]);
+
+// Max catalogue size (items) to keep the shared doc bounded.
+const MAX_CATALOGUE_ITEMS = 2000;
+
+function sanitizeCatalogueItem(item: unknown): Record<string, unknown> | null {
+  if (!item || typeof item !== "object") return null;
+  const rec = item as Record<string, unknown>;
+  if (
+    typeof rec.id !== "string" || rec.id.trim().length === 0 ||
+    typeof rec.name !== "string" || rec.name.trim().length === 0 ||
+    rec.postedToMarketplace !== true
+  ) {
+    return null;
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(rec)) {
+    if (CATALOGUE_STRIP_KEYS.has(k)) continue;
+    out[k] = v;
+  }
+  out.id = rec.id.trim();
+  out.name = rec.name.trim();
+  return out;
+}
+
+async function readCatalogue(): Promise<Record<string, unknown>[]> {
+  const db = getSupabase();
+  if (!db) return [];
+  const { data, error } = await db
+    .from("business_state")
+    .select("payload")
+    .eq("user_key", PLATFORM_CATALOGUE_KEY)
+    .maybeSingle();
+  if (error && error.code !== "PGRST116") {
+    console.error("readCatalogue error:", error);
+    return [];
+  }
+  const payload = data?.payload && typeof data.payload === "object" ? data.payload : {};
+  return Array.isArray(payload.items) ? payload.items : [];
+}
+
+async function writeCatalogue(items: Record<string, unknown>[]): Promise<void> {
+  const db = getSupabase();
+  if (!db) throw new Error("Sync not configured");
+  const { error } = await db.rpc("save_business_state", {
+    p_key: PLATFORM_CATALOGUE_KEY,
+    p_payload: { items },
+  });
+  if (error) throw error;
+}
+
+// Public read — any browser (no secret) fetches the live shop catalogue.
+app.get("/api/marketplace", async (_req, res) => {
+  try {
+    if (!syncEnabled()) return res.status(503).json({ error: "Sync disabled", enabled: false });
+    const items = await readCatalogue();
+    res.json({ enabled: true, items });
+  } catch (error: any) {
+    console.error("GET /api/marketplace error:", error);
+    res.status(500).json({ error: "Marketplace read failed", enabled: true });
+  }
+});
+
+// Authenticated write — the emitting device sends its published set after each
+// inventory mutation so the live shop updates immediately everywhere.
+app.put("/api/marketplace", async (req, res) => {
+  try {
+    if (!syncEnabled()) return res.status(503).json({ error: "Sync disabled", enabled: false });
+    if (!deviceSecretValid(req)) return res.status(401).json({ error: "Unauthorized" });
+    const raw: unknown[] = req.body && Array.isArray((req.body as Record<string, unknown>).items)
+      ? (req.body as Record<string, unknown>).items as unknown[]
+      : [];
+    const cleaned = raw.map((i: unknown) => sanitizeCatalogueItem(i)).filter((i): i is Record<string, unknown> => i !== null);
+
+    // Deduplicate by id (last one wins) and bound the doc size.
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const item of cleaned) byId.set(String(item.id), item);
+    let items = [...byId.values()];
+    if (items.length > MAX_CATALOGUE_ITEMS) items = items.slice(0, MAX_CATALOGUE_ITEMS);
+
+    await writeCatalogue(items);
+    res.json({ enabled: true, ok: true, count: items.length });
+  } catch (error: any) {
+    console.error("PUT /api/marketplace error:", error);
+    res.status(500).json({ error: "Marketplace write failed", enabled: true });
+  }
+});
+
 // ─── Payments & Membership Billing (Paystack / local simulation) ─────────────
 // Membership plans are priced in USD (matching MEMBERSHIP_TIERS), dropshipping
 // plans in TZS (matching DROPSHIP_TIERS). Whatever the source currency, Paystack

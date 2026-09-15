@@ -10,12 +10,21 @@
  */
 
 import { SYNCED_KEYS, useStore } from "../store/useStore";
+import type { InventoryItem } from "../store/useStore";
 
 const DEVICE_KEY = "birichinex-device";
 const PUSH_DEBOUNCE_MS = 1500;
+const CATALOGUE_DEBOUNCE_MS = 1200;
 
 let lastSentJson = "";
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
+let catalogueTimer: ReturnType<typeof setTimeout> | null = null;
+let lastCatalogueJson = "";
+
+// The owner account whose published inventory drives the public shop. Its edits
+// live in users[key].inventoryItems which is NOT in SYNCED_KEYS, so we mirror
+// the published subset into a reserved cloud key that every device pulls.
+const OWNER_KEY = "sales@portmetalsafrica.com";
 
 // ── Device secret (gates /api/sync server-side) ─────────────────────────────
 // Baked in at build time from VITE_SYNC_DEVICE_SECRET (matches the server's
@@ -310,4 +319,85 @@ export async function pushAccount(account: RegistryAccount): Promise<boolean> {
     console.warn("Accounts: push failed", error);
     return false;
   }
+}
+
+// ── Shared marketplace catalogue ─────────────────────────────────────────────
+// The owner's LIVE inventory edits are stored in users[key].inventoryItems,
+// which is intentionally NOT in SYNCED_KEYS (per-user cloud docs never exposed
+// the accounts roster) — so a fresh visitor's browser only ever had the static
+// seed catalogue and the shop never reflected the founder's edits. These
+// helpers mirror the PUBLIC subset (postedToMarketplace) into a reserved cloud
+// key (/api/marketplace) that every device pulls on boot.
+
+function publishedCatalogue(): InventoryItem[] {
+  const state = useStore.getState();
+  const seen = new Set<string>();
+  const out: InventoryItem[] = [];
+  // Owner's own live account inventory first (their device is authoritative
+  // for their own listings), then top-level inventoryItems.
+  for (const arr of [state.users[OWNER_KEY]?.inventoryItems, state.inventoryItems]) {
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) {
+      if (item?.postedToMarketplace && item.id && !seen.has(item.id)) {
+        seen.add(item.id);
+        out.push(item);
+      }
+    }
+  }
+  return out;
+}
+
+export async function pullCatalogue(): Promise<void> {
+  if (!syncConfigured()) return;
+  try {
+    const res = await fetch("/api/marketplace", { headers: syncHeaders() });
+    if (res.status === 503 || res.status === 401 || !res.ok) return;
+    const data = await res.json();
+    const items = Array.isArray(data?.items) ? (data.items as InventoryItem[]) : [];
+    useStore.getState().setMarketplaceCatalogue(items);
+  } catch (error) {
+    console.warn("Catalogue: pull failed", error);
+  }
+}
+
+export async function pushCatalogue(): Promise<boolean> {
+  if (!syncConfigured()) return false;
+  try {
+    // Only the owner's device publishes — visitors can read the catalogue but
+    // never re-seed it from their local (seed-only) state.
+    if (useStore.getState().user?.email?.trim().toLowerCase() !== OWNER_KEY) return false;
+    const items = publishedCatalogue();
+    lastCatalogueJson = JSON.stringify(items);
+    const res = await fetch("/api/marketplace", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...syncHeaders() },
+      body: JSON.stringify({ items: stripSensitive(items) }),
+    });
+    if (res.status === 503 || res.status === 401) return false;
+    return res.ok;
+  } catch (error) {
+    console.warn("Catalogue: push failed", error);
+    return false;
+  }
+}
+
+export function scheduleCataloguePush(): void {
+  if (catalogueTimer) clearTimeout(catalogueTimer);
+  catalogueTimer = setTimeout(() => {
+    void pushCatalogue();
+  }, CATALOGUE_DEBOUNCE_MS);
+}
+
+// Subscribes to store mutations and mirrors the owner's published inventory to
+// the shared catalogue whenever it actually changes (deduped + debounced).
+export function subscribeToCatalogue(): () => void {
+  return useStore.subscribe(() => {
+    const state = useStore.getState();
+    // Only publish when the OWNER is signed in (see pushCatalogue guard).
+    if (state.user?.email?.trim().toLowerCase() !== OWNER_KEY) return;
+    const json = JSON.stringify(publishedCatalogue());
+    if (json === lastCatalogueJson) return;
+    lastCatalogueJson = json;
+    scheduleCataloguePush();
+  });
 }
