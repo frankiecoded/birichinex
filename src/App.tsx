@@ -67,7 +67,7 @@ import ReturnsPage from "./pages/legal/ReturnsPage";
 import { BirichiNexView, AccountType } from "./types";
 import { getHubForView } from "../ai/src/navigation";
 import { useStore } from "./store/useStore";
-import { pullAccounts, pullCatalogue, pullSnapshot, pushAccount, pushSnapshot, subscribeToCatalogue, subscribeToSync } from "./lib/sync";
+import { CATALOGUE_POLL_MS, OWNER_EMAIL, pullAccounts, pullCatalogue, pullSnapshot, pushAccount, pushSnapshot, scheduleCataloguePush, subscribeToCatalogue, subscribeToSync } from "./lib/sync";
 import { getOwnerSession } from "./lib/ownerSession";
 
 export default function App() {
@@ -160,12 +160,29 @@ export default function App() {
     // Pull the shared marketplace catalogue so the public shop shows the
     // owner's LIVE published inventory on every device (visitors, second
     // phones, logged-out browsers), not just the static seed.
-    void pullCatalogue();
+    void pullCatalogue().then(() => {
+      // If the founder is signed in on THIS device (their edits live in
+      // users[sales@…].inventoryItems locally), re-seed the shared catalogue
+      // with their LIVE inventory immediately — so a fresh login or a device
+      // that was editing offline for days mirrors its whole published set on
+      // boot, without waiting for the next stock mutation. Visiting shoppers
+      // (users empty) skip this because they'd only clobber the catalogue
+      // with the static seed.
+      const u = useStore.getState().user?.email?.trim().toLowerCase();
+      if (u === OWNER_EMAIL) scheduleCataloguePush();
+    });
     const offSync = subscribeToSync();
     const offCatalogue = subscribeToCatalogue();
+    // Keep every OPEN shop tab in sync with the founder's live catalogue: a
+    // visitor sitting on a product page should see a stock change within a
+    // minute, not only after reloading.
+    const catalogueTimer = setInterval(() => {
+      void pullCatalogue();
+    }, CATALOGUE_POLL_MS);
     return () => {
       offSync();
       offCatalogue();
+      clearInterval(catalogueTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

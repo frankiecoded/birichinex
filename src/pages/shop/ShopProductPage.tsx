@@ -22,7 +22,7 @@ interface ShopProductPageProps {
   productId: string;
   selectedCurrency: Currency;
   onNavigate: (view: string) => void;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, variantLabel?: string) => void;
 }
 
 // Interactive 3D Product Image Viewer

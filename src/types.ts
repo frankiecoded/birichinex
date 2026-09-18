@@ -162,9 +162,15 @@ export interface Product {
   grade: ProductGrade;
   origin: string;
   specifications: Record<string, string>;
+  variants?: VariantGroup[];
   stock: number;
   minOrder: number;
   createdAt: string;
+}
+
+export interface VariantGroup {
+  name: string;
+  options: string[];
 }
 
 export type ProductGrade = "A+" | "A" | "B+" | "B" | "C";
@@ -192,6 +198,12 @@ export interface CartItem {
   quantity: number;
   unitPrice: PriceAmount;
   addedAt: string;
+  /** Human-readable chosen values, e.g. "Colour: Navy, Size: L" when the
+   *  shopper picked a jacket variant (colour/size) or a MacBook's RAM.
+   *  Absent for plain single listings → rendered as no suffix. The cart
+   *  line is keyed by product.id + this label, so "Colour: Navy" and
+   *  "Colour: Black" are two separate cart lines (never merged). */
+  variantLabel?: string;
 }
 
 export type OrderStatus =

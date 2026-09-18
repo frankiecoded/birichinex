@@ -347,6 +347,17 @@ function publishedCatalogue(): InventoryItem[] {
   return out;
 }
 
+// ── Catalogue sync: shared live marketplace ────────────────────────────────
+// The shop reads the owner's MARKETPLACE items, not the seed. A founder edit
+// to a published line is pushed here; a phone browsing the shop polls here so
+// it sees the change within a minute instead of on next reload. The BOOT also
+// pulls this so every device reconciles to the same live catalogue.
+//
+// Single canonical owner identity (mirrors OWNER_KEY above) + the poll cadence
+// the app boot uses to keep open shop tabs fresh.
+export const OWNER_EMAIL = OWNER_KEY;
+export const CATALOGUE_POLL_MS = 30_000; // 30s — live stock/photo freshness
+
 export async function pullCatalogue(): Promise<void> {
   if (!syncConfigured()) return;
   try {

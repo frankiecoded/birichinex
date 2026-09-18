@@ -161,6 +161,18 @@ export interface InventoryItem {
   description?: string;
   aiDescription?: boolean;
   specs?: Record<string, string>;
+  // A shopper-facing variant model so e.g. "Steel Coil" can be bought as
+  // Colour: Galvanised/Smooth + Size: 0.4mm/0.5mm, or "MacBook" as
+  // RAM: 8GB/16GB + Finish: Silver/Space Grey. Each choice becomes its own
+  // cart line (and its own checkout line + Paystack description). Empty →
+  // classic single listing (no picker shown in the shop).
+  variants?: InventoryVariant[];
+}
+
+export interface InventoryVariant {
+  id: string;
+  name: string; // "Colour", "Size", "RAM"
+  options: string[]; // ["Galvanised","Smooth"], ["0.4mm","0.5mm"], ["8GB","16GB"]
 }
 
 interface TransactionItem {
@@ -243,7 +255,7 @@ interface StoreState {
 
   // ── Cart ───────────────────────────────────────────────────────────────────
   cart: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, variantLabel?: string) => void;
   removeFromCart: (index: number) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -929,10 +941,11 @@ export const useStore = create<StoreState>()(
       // ── Cart ──────────────────────────────────────────────────────────────
       cart: [],
 
-      addToCart: (product) =>
+      addToCart: (product, variantLabel) =>
         set((state) => {
+          const variantKey = variantLabel ? ` :: ${variantLabel}` : "";
           const existingIndex = state.cart.findIndex(
-            (item) => item.product.id === product.id,
+            (item) => item.product.id === product.id && (item.variantLabel ?? "") === (variantLabel ?? ""),
           );
           if (existingIndex >= 0) {
             const updated = [...state.cart];
@@ -944,10 +957,14 @@ export const useStore = create<StoreState>()(
           }
           const cartItem: CartItem = {
             id: crypto.randomUUID(),
-            product,
+            product: {
+              ...product,
+              name: variantLabel ? `${product.name}${variantKey}` : product.name,
+            },
             quantity: 1,
             unitPrice: product.price,
             addedAt: new Date().toISOString(),
+            variantLabel,
           };
           return { cart: [...state.cart, cartItem] };
         }),
