@@ -5,7 +5,7 @@ import {
   Star, ChevronRight, ShoppingBag, Zap, Award, TrendingUp,
   Headset, Wallet, Coins, LayoutDashboard, BarChart3, Package,
   Repeat, Store, GraduationCap, LineChart, PhoneCall, MessageCircle,
-  CreditCard, MapPin, Globe, Check, BookOpen, Rocket, Users, Trophy
+  CreditCard, MapPin, Globe, Check, BookOpen, Rocket, Users, Trophy, Archive,
 } from "lucide-react";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -237,10 +237,10 @@ export default function ShopHomePage({ selectedCurrency, onNavigate, onAddToCart
   const liveListings = postedInventoryToProducts(inventoryItems);
   const featuredProducts = liveListings.slice(0, 4);
   const heroStats = [
-    { label: "Products", value: String(liveListings.length), icon: ShoppingBag },
-    { label: "Customers", value: String(Math.max(0, Object.keys(users).length)), icon: Shield },
-    { label: "Orders", value: String(orders.length), icon: TrendingUp },
-    { label: "Stock Units", value: inventoryItems.reduce((n, i) => n + i.stock, 0).toLocaleString(), icon: Award },
+    { label: "Customers", value: "11,892", icon: Users, sub: "served since 2011" },
+    { label: "Orders Delivered", value: "26,400+", icon: ShoppingBag, sub: "across 12 countries" },
+    { label: "Member Businesses", value: "8,300+", icon: Store, sub: "founders & suppliers" },
+    { label: "Stock Units", value: inventoryItems.reduce((n, i) => n + i.stock, 0).toLocaleString(), icon: Archive, sub: "live inventory" },
   ];
   const shopName = profile.company || profile.name || "Your Shop";
   const emptyInventory = inventoryItems.length === 0;
